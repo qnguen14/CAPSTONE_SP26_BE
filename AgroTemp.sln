@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgroTemp.API", "AgroTemp.API\AgroTemp.API.csproj", "{7D60CD1E-4F78-40EB-827E-89479D60ACA5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgroTemp.Domain", "AgroTemp.Domain\AgroTemp.Domain.csproj", "{A325D71E-0F49-4A9A-9B26-5EDE8C750A03}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgroTemp.Service", "AgroTemp.Service\AgroTemp.Service.csproj", "{92519362-11C8-4061-B29C-DEEB6835903E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgroTemp.Repository", "AgroTemp.Repository\AgroTemp.Repository.csproj", "{D18F8835-366C-480D-A551-2DD9C5B42E5B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7D60CD1E-4F78-40EB-827E-89479D60ACA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D60CD1E-4F78-40EB-827E-89479D60ACA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D60CD1E-4F78-40EB-827E-89479D60ACA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D60CD1E-4F78-40EB-827E-89479D60ACA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A325D71E-0F49-4A9A-9B26-5EDE8C750A03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A325D71E-0F49-4A9A-9B26-5EDE8C750A03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A325D71E-0F49-4A9A-9B26-5EDE8C750A03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A325D71E-0F49-4A9A-9B26-5EDE8C750A03}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92519362-11C8-4061-B29C-DEEB6835903E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92519362-11C8-4061-B29C-DEEB6835903E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92519362-11C8-4061-B29C-DEEB6835903E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92519362-11C8-4061-B29C-DEEB6835903E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D18F8835-366C-480D-A551-2DD9C5B42E5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D18F8835-366C-480D-A551-2DD9C5B42E5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D18F8835-366C-480D-A551-2DD9C5B42E5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D18F8835-366C-480D-A551-2DD9C5B42E5B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
