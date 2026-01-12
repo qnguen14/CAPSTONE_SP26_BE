@@ -7,6 +7,7 @@ public interface IMapperlyMapper
 {
     // User
     UserDTO UserToUserDto(User user);
+    List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
     // LoginResponse UserToLoginResponse(User user);
     // User RegisterRequestToUser(RegisterRequest resquest);
     // User RequestDTOToUser(UserRequestDTO request);
