@@ -1,80 +1,58 @@
+using AgroTemp.API.Configuration;
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Implements;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Implements;
 using AgroTemp.Service.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+Env.Load(); // Load environment variables from .env file
 
+// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddServices(builder.Configuration);
+builder.Services.AddCorsConfiguration();
+builder.Services.AddSwaggerConfiguration();
+builder.Services.AddJwtAuthenticationService(builder.Configuration);
+builder.Services.AddAuthorizationPolicies();
+DatabaseConfiguration.ConfigureDatabase(builder.Services, builder.Configuration);
 
-// Add CORS
-builder.Services.AddCors(options =>
+builder.Services.ConfigureHttpJsonOptions(options =>
 {
-    options.AddPolicy("AllowAll",
-        builder =>
-        {
-            builder.AllowAnyOrigin()
-                   .AllowAnyMethod()
-                   .AllowAnyHeader();
-        });
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
-builder.Services.AddScoped<IUnitOfWork<AgroTempDbContext>, UnitOfWork<AgroTempDbContext>>();
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-builder.Services.AddScoped<IMapperlyMapper, MapperlyMapper>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-
-builder.Services.AddDbContext<AgroTempDbContext>(options =>
+builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        npgsqlOptionsAction: sqlOptions =>
-        {
-            sqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorCodesToAdd: null);
-        });
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 
-// Add Authentication
-builder.Services.AddAuthentication(options => 
+// Configure form options for larger file uploads
+builder.Services.Configure<FormOptions>(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-    };
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = 500_000_000; // 500MB
+    options.MultipartHeadersLengthLimit = int.MaxValue;
 });
 
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 
 
-
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
