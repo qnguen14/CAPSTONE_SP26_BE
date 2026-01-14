@@ -17,6 +17,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                   .AllowAnyMethod()
+                   .AllowAnyHeader();
+        });
+});
+
 builder.Services.AddScoped<IUnitOfWork<AgroTempDbContext>, UnitOfWork<AgroTempDbContext>>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IMapperlyMapper, MapperlyMapper>();
@@ -36,7 +48,7 @@ builder.Services.AddDbContext<AgroTempDbContext>(options =>
 });
 
 // Add Authentication
-builder.Services.AddAuthentication(options =>
+builder.Services.AddAuthentication(options => 
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -58,6 +70,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 
+
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -67,6 +81,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowAll"); // Enable CORS
 
 app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();

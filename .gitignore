@@ -6,3 +6,7 @@ AgroTemp.Service/bin
 AgroTemp.Service/obj
 AgroTemp.Repository/obj
 AgroTemp.Domain/obj
+
+# Don't commit development settings with secrets
+appsettings.Development.json
+/.vs
