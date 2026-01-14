@@ -10,3 +10,4 @@ AgroTemp.Domain/obj
 # Don't commit development settings with secrets
 appsettings.Development.json
 /.vs
+REAPPLY-COMPLETE.md
