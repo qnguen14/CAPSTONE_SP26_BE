@@ -11,3 +11,6 @@ AgroTemp.Domain/obj
 appsettings.Development.json
 /.vs
 REAPPLY-COMPLETE.md
+.idea
+/AgroTemp.API/appsettings.Development.json
+/AgroTemp.API/appsettings.json
