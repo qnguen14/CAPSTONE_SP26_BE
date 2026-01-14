@@ -1,6 +1,7 @@
 ﻿using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace AgroTemp.API.Configuration;
 
@@ -10,11 +11,17 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AgroTempDb
     {
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json")
+            .AddJsonFile("appsettings.json", optional: true)
+            .AddUserSecrets<Program>() // ✅ Add user secrets support
             .Build();
 
         var optionsBuilder = new DbContextOptionsBuilder<AgroTempDbContext>();
         var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new InvalidOperationException("Connection string 'DefaultConnection' not found in user secrets or appsettings.json");
+        }
 
         optionsBuilder.UseNpgsql(connectionString);
 

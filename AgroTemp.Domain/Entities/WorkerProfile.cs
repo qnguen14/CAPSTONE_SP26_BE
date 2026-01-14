@@ -44,7 +44,13 @@ public class WorkerProfile
     [Required]
     [Column("experience_level")]
     public int ExperienceLevelId { get; set; }
-    public virtual ExperienceLevel ExperienceLevel { get; set; }
+    
+    [NotMapped]
+    public ExperienceLevel ExperienceLevel 
+    { 
+        get => (ExperienceLevel)ExperienceLevelId;
+        set => ExperienceLevelId = (int)value;
+    }
 
     [Required]
     [Column("average_rating")]

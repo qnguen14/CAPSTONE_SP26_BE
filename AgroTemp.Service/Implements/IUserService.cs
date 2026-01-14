@@ -10,4 +10,12 @@ public interface IUserService
     Task<UserDTO> CreateUser(UserDTO userDto);
     Task<UserDTO> UpdateUser(string id, UserDTO userDto);
     Task<bool> DeleteUser(string id);
+    
+    // Farmer Profile
+    Task<FarmerProfileDTO> GetFarmerProfile(Guid userId);
+    Task<FarmerProfileDTO> UpdateFarmerProfile(Guid userId, UpdateFarmerProfileRequest request);
+    
+    // Worker Profile
+    Task<WorkerProfileDTO> GetWorkerProfile(Guid userId);
+    Task<WorkerProfileDTO> UpdateWorkerProfile(Guid userId, UpdateWorkerProfileRequest request);
 }
