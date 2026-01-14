@@ -52,4 +52,8 @@ public class User
     [Required]
     [Column("is_verified")]
     public bool IsVerified { get; set; }
+
+    // Navigation properties
+    public virtual WorkerProfile? WorkerProfile { get; set; }
+    public virtual FarmerProfile? FarmerProfile { get; set; }
 }

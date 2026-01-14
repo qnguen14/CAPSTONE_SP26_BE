@@ -13,6 +13,7 @@ public class ApiEndpointConstants
         public const string AuthEndpoint = ApiEndpoint + "/auth";
         public const string LoginEndpoint = ApiEndpoint + "/login";
         public const string RegisterEndpoint = ApiEndpoint + "/register";
+        public const string GoogleLoginEndpoint = ApiEndpoint + "/google-login";
         public const string SendResetCodeEndpoint = ApiEndpoint + "/reset";
         public const string VerifyResetCodeEndpoint = ApiEndpoint + "/verify/reset";
         public const string DisableAccountEndpoint = ApiEndpoint + "/disable";

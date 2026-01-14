@@ -20,9 +20,9 @@ public class UserController : Controller
         _userService = userService;
         _logger = logger;
     }
-    
+
     /// <summary>
-    /// Lấy tất cả người dùng
+    /// Fetch all users
     /// </summary>
     [HttpGet(ApiEndpointConstants.User.GetAllUsersEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<User>>), StatusCodes.Status200OK)]
