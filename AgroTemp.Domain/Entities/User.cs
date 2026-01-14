@@ -10,7 +10,7 @@ public enum UserRole
     Worker = 3
 }
 
-[Table("Users")]
+[Table("User")]
 public class User
 {
     [Key]
@@ -39,7 +39,13 @@ public class User
     [Required]
     [Column("role_id")]
     public int RoleId { get; set; }
-    public virtual UserRole Role { get; set; }
+    
+    [NotMapped]
+    public UserRole Role 
+    { 
+        get => (UserRole)RoleId;
+        set => RoleId = (int)value;
+    }
     
     [Required]
     [Column("created_at")]
