@@ -17,6 +17,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 Env.Load(); // Load environment variables from .env file
 
+// Fallback to secretkey if appsettings.json doesn't exist
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddUserSecrets<Program>(optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables()
+    .AddCommandLine(args);
+
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
