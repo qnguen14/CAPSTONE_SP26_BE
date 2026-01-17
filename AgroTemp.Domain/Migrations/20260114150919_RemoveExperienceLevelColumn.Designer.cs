@@ -3,6 +3,7 @@ using System;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260114150919_RemoveExperienceLevelColumn")]
+    partial class RemoveExperienceLevelColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -141,161 +144,6 @@ namespace AgroTemp.Domain.Migrations
                         .IsUnique();
 
                     b.ToTable("Farmer_Profile", "AgroTempV1");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.JobCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Job_Category", "AgroTempV1");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.JobPost", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("address");
-
-                    b.Property<string>("AgeRequirement")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("age_requirement");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<DateTime>("EndDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("end_date");
-
-                    b.Property<decimal>("EstimatedHours")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)")
-                        .HasColumnName("estimated_hours");
-
-                    b.Property<Guid>("FarmerProfileId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("farmer_profile_id");
-
-                    b.Property<string>("GenderPreference")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("gender_preference");
-
-                    b.Property<bool>("IsUrgent")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_urgent");
-
-                    b.Property<Guid>("JobCategoryId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("job_category_id");
-
-                    b.Property<decimal>("Latitude")
-                        .HasPrecision(10, 7)
-                        .HasColumnType("numeric(10,7)")
-                        .HasColumnName("latitude");
-
-                    b.Property<decimal>("Longitude")
-                        .HasPrecision(10, 7)
-                        .HasColumnType("numeric(10,7)")
-                        .HasColumnName("longitude");
-
-                    b.Property<int>("PaymentMethod")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PaymentMethodId")
-                        .HasColumnType("integer")
-                        .HasColumnName("payment_method");
-
-                    b.Property<DateTime>("PublishedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("published_at");
-
-                    b.Property<string>("RequiredSkills")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("required_skills");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("start_date");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("StatusId")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("title");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<decimal>("WageAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("wage_amount");
-
-                    b.Property<int>("WageType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("WageTypeId")
-                        .HasColumnType("integer")
-                        .HasColumnName("wage_type");
-
-                    b.Property<int>("WorkersAccepted")
-                        .HasColumnType("integer")
-                        .HasColumnName("workers_accepted");
-
-                    b.Property<int>("WorkersNeeded")
-                        .HasColumnType("integer")
-                        .HasColumnName("workers_needed");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FarmerProfileId");
-
-                    b.HasIndex("JobCategoryId");
-
-                    b.ToTable("Job_Post", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.User", b =>
@@ -441,25 +289,6 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AgroTemp.Domain.Entities.JobPost", b =>
-                {
-                    b.HasOne("AgroTemp.Domain.Entities.FarmerProfile", "FarmerProfile")
-                        .WithMany()
-                        .HasForeignKey("FarmerProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AgroTemp.Domain.Entities.JobCategory", "JobCategory")
-                        .WithMany("JobPosts")
-                        .HasForeignKey("JobCategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("FarmerProfile");
-
-                    b.Navigation("JobCategory");
-                });
-
             modelBuilder.Entity("AgroTemp.Domain.Entities.WorkerProfile", b =>
                 {
                     b.HasOne("AgroTemp.Domain.Entities.User", "User")
@@ -474,11 +303,6 @@ namespace AgroTemp.Domain.Migrations
             modelBuilder.Entity("AgroTemp.Domain.Entities.FarmerProfile", b =>
                 {
                     b.Navigation("Farms");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.JobCategory", b =>
-                {
-                    b.Navigation("JobPosts");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.User", b =>

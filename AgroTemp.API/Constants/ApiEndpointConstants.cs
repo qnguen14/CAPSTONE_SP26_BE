@@ -28,6 +28,19 @@ public class ApiEndpointConstants
         public const string UpdateProfileEndpoint = UserEndpoint + "/update";
         public const string GetAllUsersEndpoint = UserEndpoint;
     }
+    
+    public static class FarmerProfile
+    {
+        public const string FarmerProfileEndpoint = ApiEndpoint + "/farmer-profile";
+        public const string GetFarmerProfileEndpoint = FarmerProfileEndpoint + "/{userId}";
+        public const string UpdateFarmerProfileEndpoint = FarmerProfileEndpoint + "/{userId}";
+    }
+    
+    public static class WorkerProfile
+    {
+        public const string WorkerProfileEndpoint = ApiEndpoint + "/worker-profile";
+        public const string GetWorkerProfileEndpoint = WorkerProfileEndpoint + "/{userId}";
+        public const string UpdateWorkerProfileEndpoint = WorkerProfileEndpoint + "/{userId}";
 
     public static class Job
     {

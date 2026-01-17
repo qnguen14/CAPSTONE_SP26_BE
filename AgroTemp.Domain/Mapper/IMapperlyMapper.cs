@@ -10,6 +10,13 @@ public interface IMapperlyMapper
     // User
     UserDTO UserToUserDto(User user);
     List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
+    
+    // FarmerProfile
+    FarmerProfileDTO FarmerProfileToDto(FarmerProfile farmerProfile);
+    
+    // WorkerProfile
+    WorkerProfileDTO WorkerProfileToDto(WorkerProfile workerProfile);
+    
     // LoginResponse UserToLoginResponse(User user);
     // User RegisterRequestToUser(RegisterRequest resquest);
     // User RequestDTOToUser(UserRequestDTO request);
