@@ -1,10 +1,9 @@
 ﻿using AgroTemp.API.Constants;
-using AgroTemp.Domain.DTO.Job;
-using AgroTemp.Domain.DTO.JobCategory;
+using AgroTemp.Domain.DTO.Job.JobCategory;
+using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgroTemp.API.Controllers;

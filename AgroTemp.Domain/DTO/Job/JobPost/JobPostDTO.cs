@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AgroTemp.Domain.DTO.Job
+namespace AgroTemp.Domain.DTO.Job.JobPost
 {
     public class JobPostDTO
     {

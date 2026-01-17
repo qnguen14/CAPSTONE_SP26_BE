@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.DTO.JobCategory;
+﻿using AgroTemp.Domain.DTO.Job.JobCategory;
 using System;
 using System.Collections.Generic;
 using System.Linq;

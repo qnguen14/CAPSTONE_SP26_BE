@@ -1,5 +1,5 @@
 ﻿using AgroTemp.Domain.Context;
-using AgroTemp.Domain.DTO.Job;
+using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Interfaces;

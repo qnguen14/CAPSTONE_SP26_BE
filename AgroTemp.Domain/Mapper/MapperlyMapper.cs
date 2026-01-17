@@ -1,6 +1,6 @@
 ﻿using AgroTemp.Domain.DTO;
-using AgroTemp.Domain.DTO.Job;
-using AgroTemp.Domain.DTO.JobCategory;
+using AgroTemp.Domain.DTO.Job.JobCategory;
+using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
 using Riok.Mapperly.Abstractions;
 
