@@ -45,24 +45,107 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public Task<JobCategoryDTO> GetJobCategoryById(string id)
+        public async Task<JobCategoryDTO> GetJobCategoryById(string id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var guid = Guid.Parse(id);
+                var jobCategory = await _unitOfWork.GetRepository<JobCategory>()
+                    .FirstOrDefaultAsync(
+                        predicate: jc => jc.Id == guid,
+                        include: null);
+                if (jobCategory == null)
+                {
+                    return null;
+                }
+                var result = _mapper.JobCategoryToJobCategoryDto(jobCategory);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
-        public Task<JobCategoryDTO> CreateJobCategory(JobCategoryDTO jobCategoryDto)
+        public async Task<JobCategoryDTO> CreateJobCategory(CreateJobCategoryRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var jobCategory = new JobCategory
+                {
+                    Id = Guid.NewGuid(),
+                    Name = request.Name,
+                    Description = request.Description,
+                    IsActive = request.IsActive
+                };
+
+                await _unitOfWork.GetRepository<JobCategory>().InsertAsync(jobCategory);
+                await _unitOfWork.SaveChangesAsync();
+                var result = _mapper.JobCategoryToJobCategoryDto(jobCategory);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
-        public Task<JobCategoryDTO> UpdateJobCategory(string id, JobCategoryDTO jobCategoryDto)
+        public async Task<JobCategoryDTO> UpdateJobCategory(UpdateJobCategoryRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var existingJobCategory = await _unitOfWork.GetRepository<JobCategory>()
+                    .FirstOrDefaultAsync(
+                        predicate: jc => jc.Id == request.Id,
+                        include: null);
+
+                if (existingJobCategory == null)
+                {
+                    return null;
+                }
+
+                existingJobCategory.Name = request.Name;
+                existingJobCategory.Description = request.Description;
+                existingJobCategory.IsActive = request.IsActive;
+
+                _unitOfWork.GetRepository<JobCategory>().UpdateAsync(existingJobCategory);
+                await _unitOfWork.SaveChangesAsync();
+                var result = _mapper.JobCategoryToJobCategoryDto(existingJobCategory);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
-        public Task<bool> DeleteJobCategory(string id)
+        public async Task<bool> DeleteJobCategory(string id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var guid = Guid.Parse(id);
+
+                var existingJobCategory = await _unitOfWork.GetRepository<JobCategory>()
+                    .FirstOrDefaultAsync(
+                        predicate: jc => jc.Id == guid,
+                        include: null);
+
+                if (existingJobCategory == null)
+                {
+                    return false;
+                }
+
+                _unitOfWork.GetRepository<JobCategory>().DeleteAsync(existingJobCategory);
+                await _unitOfWork.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
     }
 }
