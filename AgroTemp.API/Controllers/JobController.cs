@@ -160,4 +160,88 @@ public class JobController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, ex);
         }
     }
+
+    [HttpGet(ApiEndpointConstants.Job.GetJobPostByIdEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobPostDTO>> GetJobPostById([FromQuery] string id)
+    {
+        try
+        {
+            var response = await _jobPostService.GetJobPostById(id);
+            if (response == null)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = "Job post not found",
+                    Data = null
+                });
+            }
+            var apiResponse = new ApiResponse<JobPostDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job post retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
+    [HttpPost(ApiEndpointConstants.Job.CreateJobPostEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobPostDTO>> CreateJobPost([FromBody] CreateJobPostRequest request)
+    {
+        try
+        {
+            var response = await _jobPostService.CreateJobPost(request);
+            var apiResponse = new ApiResponse<JobPostDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job post created successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
+    [HttpPut(ApiEndpointConstants.Job.UpdateJobPostEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobPostDTO>> UpdateJobPost([FromBody] UpdateJobPostRequest request)
+    {
+        try
+        {
+            var response = await _jobPostService.UpdateJobPost(request);
+            var apiResponse = new ApiResponse<JobPostDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job post updated successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
 }

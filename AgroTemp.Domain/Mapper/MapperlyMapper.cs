@@ -25,6 +25,7 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial JobCategoryDTO JobCategoryToJobCategoryDto(JobCategory jobCategory);
     public partial List<JobCategoryDTO> JobCategoriesToJobCategoryDtos(IEnumerable<JobCategory> jobCategories);
     public partial JobCategory CreateJobCategoryRequestToJobCategory(CreateJobCategoryRequest request);
+    public partial void UpdateJobCategoryRequestToJobCategory(UpdateJobCategoryRequest request, JobCategory jobCategory);
 
     // JobPost
     [MapProperty(nameof(JobPost.PaymentMethod), nameof(JobPostDTO.PaymentMethodId))]
@@ -33,4 +34,5 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial JobPostDTO JobPostToJobPostDto(JobPost jobPost);
     public partial List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
     public partial JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
+    public partial void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 }

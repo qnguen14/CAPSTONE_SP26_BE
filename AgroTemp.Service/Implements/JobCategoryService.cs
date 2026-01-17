@@ -71,13 +71,7 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
-                var jobCategory = new JobCategory
-                {
-                    Id = Guid.NewGuid(),
-                    Name = request.Name,
-                    Description = request.Description,
-                    IsActive = request.IsActive
-                };
+                var jobCategory = _mapper.CreateJobCategoryRequestToJobCategory(request);
 
                 await _unitOfWork.GetRepository<JobCategory>().InsertAsync(jobCategory);
                 await _unitOfWork.SaveChangesAsync();
@@ -105,10 +99,7 @@ namespace AgroTemp.Service.Implements
                     return null;
                 }
 
-                existingJobCategory.Name = request.Name;
-                existingJobCategory.Description = request.Description;
-                existingJobCategory.IsActive = request.IsActive;
-
+                _mapper.UpdateJobCategoryRequestToJobCategory(request, existingJobCategory);
                 _unitOfWork.GetRepository<JobCategory>().UpdateAsync(existingJobCategory);
                 await _unitOfWork.SaveChangesAsync();
                 var result = _mapper.JobCategoryToJobCategoryDto(existingJobCategory);

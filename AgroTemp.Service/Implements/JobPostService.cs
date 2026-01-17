@@ -50,24 +50,92 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public Task<JobPostDTO> GetJobPostById(string id)
+        public async Task<JobPostDTO> GetJobPostById(string id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var guid = Guid.Parse(id);
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == guid,
+                        include: null);
+                if (jobPost == null)
+                {
+                    return null;
+                }
+                var result = _mapper.JobPostToJobPostDto(jobPost);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
-        public Task<JobPostDTO> CreateJobPost(JobPostDTO jobPostDto)
+        public async Task<JobPostDTO> CreateJobPost(CreateJobPostRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
+
+                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
+                await _unitOfWork.SaveChangesAsync();
+                var result = _mapper.JobPostToJobPostDto(jobPost);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
-        public Task<JobPostDTO> UpdateJobPost(string id, JobPostDTO jobPostDto)
+        public async Task<JobPostDTO> UpdateJobPost(UpdateJobPostRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == request.Id);
+
+                if (existingJobPost == null)
+                {
+                    return null;
+                }
+
+                _mapper.UpdateJobPostRequestToJobPost(request, existingJobPost);
+                _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
+                await _unitOfWork.SaveChangesAsync();
+                var result = _mapper.JobPostToJobPostDto(existingJobPost);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
-        public Task<bool> DeleteJobPost(string id)
+        public async Task<bool> DeleteJobPost(string id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var guid = Guid.Parse(id);
+                var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == guid);
+                if (existingJobPost == null)
+                {
+                    return false;
+                }
+                _unitOfWork.GetRepository<JobPost>().DeleteAsync(existingJobPost);
+                await _unitOfWork.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
     }
 }

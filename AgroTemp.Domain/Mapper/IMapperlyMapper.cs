@@ -26,9 +26,11 @@ public interface IMapperlyMapper
     JobCategoryDTO JobCategoryToJobCategoryDto(JobCategory jobCategory);
     List<JobCategoryDTO> JobCategoriesToJobCategoryDtos(IEnumerable<JobCategory> jobCategories);
     JobCategory CreateJobCategoryRequestToJobCategory(CreateJobCategoryRequest request);
+    void UpdateJobCategoryRequestToJobCategory(UpdateJobCategoryRequest request, JobCategory jobCategory);
 
     // JobPost
     JobPostDTO JobPostToJobPostDto(JobPost jobPost);
     List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
     JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
+    void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 }
