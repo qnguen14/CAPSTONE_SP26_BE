@@ -1,0 +1,68 @@
+﻿using AgroTemp.Domain.Context;
+using AgroTemp.Domain.DTO.JobCategory;
+using AgroTemp.Domain.Entities;
+using AgroTemp.Domain.Mapper;
+using AgroTemp.Repository.Interfaces;
+using AgroTemp.Service.Base;
+using AgroTemp.Service.Interfaces;
+using Microsoft.AspNetCore.Http;
+
+namespace AgroTemp.Service.Implements
+{
+    public class JobCategoryService : BaseService<JobCategory>, IJobCategoryService
+    {
+        private readonly IMapperlyMapper _mapper;
+
+        public JobCategoryService(
+            IUnitOfWork<AgroTempDbContext> unitOfWork,
+            IHttpContextAccessor httpContextAccessor,
+            IMapperlyMapper mapper) : base(unitOfWork, httpContextAccessor, mapper)
+        {
+            _unitOfWork = unitOfWork;
+            _httpContextAccessor = httpContextAccessor;
+            _mapper = mapper;
+        }
+
+        public async Task<List<JobCategoryDTO>> GetAllJobCategories()
+        {
+            try
+            {
+                var jobCategories = await _unitOfWork.GetRepository<JobCategory>()
+                    .GetListAsync(
+                        predicate: null,
+                        include: null,
+                        orderBy: jc => jc.OrderBy(x => x.Name));
+                if (jobCategories == null || !jobCategories.Any())
+                {
+                    return null;
+                }
+                var result = _mapper.JobCategoriesToJobCategoryDtos(jobCategories);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public Task<JobCategoryDTO> GetJobCategoryById(string id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<JobCategoryDTO> CreateJobCategory(JobCategoryDTO jobCategoryDto)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<JobCategoryDTO> UpdateJobCategory(string id, JobCategoryDTO jobCategoryDto)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> DeleteJobCategory(string id)
+        {
+            throw new NotImplementedException();
+        }
+    }
+}

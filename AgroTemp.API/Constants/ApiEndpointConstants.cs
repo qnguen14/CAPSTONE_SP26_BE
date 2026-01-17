@@ -28,4 +28,24 @@ public class ApiEndpointConstants
         public const string UpdateProfileEndpoint = UserEndpoint + "/update";
         public const string GetAllUsersEndpoint = UserEndpoint;
     }
+
+    public static class Job
+    {
+        public const string JobEndpoint = ApiEndpoint + "/job";
+        public const string JobCategoryEndpoint = JobEndpoint + "/category";
+        public const string JobPostEndpoint = JobEndpoint + "/post";
+        public const string JobApplicationEndpoint = JobEndpoint + "/application";
+        
+        public const string GetAllJobCategoriesEndpoint = JobCategoryEndpoint;
+        public const string GetAllJobPostsEndpoint = JobPostEndpoint;
+        public const string GetAllJobApplicationsEndpoint = JobApplicationEndpoint;
+
+        public const string CreateJobCategoryEndpoint = JobCategoryEndpoint + "/create";
+        public const string CreateJobPostEndpoint = JobPostEndpoint + "/create";
+        public const string CreateJobApplicationEndpoint = JobApplicationEndpoint + "/create";
+
+        public const string UpdateJobCategoryEndpoint = JobCategoryEndpoint + "/update";
+        public const string UpdateJobPostEndpoint = JobPostEndpoint + "/update";
+        public const string UpdateJobApplicationEndpoint = JobApplicationEndpoint + "/update";
+    }
 }

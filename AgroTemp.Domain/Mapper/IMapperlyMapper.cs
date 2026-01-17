@@ -1,4 +1,6 @@
 ﻿using AgroTemp.Domain.DTO;
+using AgroTemp.Domain.DTO.Job;
+using AgroTemp.Domain.DTO.JobCategory;
 using AgroTemp.Domain.Entities;
 
 namespace AgroTemp.Domain.Mapper;
@@ -12,4 +14,12 @@ public interface IMapperlyMapper
     // User RegisterRequestToUser(RegisterRequest resquest);
     // User RequestDTOToUser(UserRequestDTO request);
     // User UpdateProfileToUser(UpdateProfileRequest request);
+
+    // JobCategory
+    JobCategoryDTO JobCategoryToJobCategoryDto(JobCategory jobCategory);
+    List<JobCategoryDTO> JobCategoriesToJobCategoryDtos(IEnumerable<JobCategory> jobCategories);
+
+    // JobPost
+    JobPostDTO JobPostToJobPostDto(JobPost jobPost);
+    List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);  
 }
