@@ -3,6 +3,7 @@ using System;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260117122151_AddJobCategoryAndJobPost")]
+    partial class AddJobCategoryAndJobPost
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -379,6 +382,9 @@ namespace AgroTemp.Domain.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<int>("ExperienceLevel")
+                        .HasColumnType("integer");
 
                     b.Property<int>("ExperienceLevelId")
                         .HasColumnType("integer")
