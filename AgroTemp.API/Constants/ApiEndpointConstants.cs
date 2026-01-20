@@ -24,9 +24,11 @@ public class ApiEndpointConstants
     public static class User
     {
         public const string UserEndpoint = ApiEndpoint + "/user";
-        public const string GetProfileEndpoint = UserEndpoint + "/profile";
-        public const string UpdateProfileEndpoint = UserEndpoint + "/update";
         public const string GetAllUsersEndpoint = UserEndpoint;
+        public const string GetUserByIdEndpoint = UserEndpoint + "/{id}";
+        public const string CreateUserEndpoint = UserEndpoint;
+        public const string UpdateUserEndpoint = UserEndpoint + "/{id}";
+        public const string DeleteUserEndpoint = UserEndpoint + "/{id}";
     }
 
     public static class FarmerProfile
