@@ -1,4 +1,5 @@
 ﻿using AgroTemp.Domain.DTO;
+using AgroTemp.Domain.DTO.Farm;  
 using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
@@ -15,7 +16,11 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
     
     public partial FarmerProfileDTO FarmerProfileToDto(FarmerProfile farmerProfile);
-    
+
+    //Farm
+    public partial FarmDTO FarmToDto(Farm farm);
+    public partial List<FarmDTO> FarmsToDto(IEnumerable<Farm> farms);
+
     public partial WorkerProfileDTO WorkerProfileToDto(WorkerProfile workerProfile);
     
     // Custom mapping for ExperienceLevel enum to string

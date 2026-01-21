@@ -1,4 +1,5 @@
 ﻿using AgroTemp.Domain.DTO;
+using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
@@ -13,7 +14,11 @@ public interface IMapperlyMapper
     
     // FarmerProfile
     FarmerProfileDTO FarmerProfileToDto(FarmerProfile farmerProfile);
-    
+
+    //Farm
+    FarmDTO FarmToDto(Farm farm);
+    List<FarmDTO> FarmsToDto(IEnumerable<Farm> farms);
+
     // WorkerProfile
     WorkerProfileDTO WorkerProfileToDto(WorkerProfile workerProfile);
     

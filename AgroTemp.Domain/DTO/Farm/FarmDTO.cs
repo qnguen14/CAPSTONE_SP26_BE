@@ -1,0 +1,21 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace AgroTemp.Domain.DTO.Farm
+{
+    public class FarmDTO
+    {
+        public Guid Id { get; set; }
+        public Guid FarmerProfileId { get; set; }
+        public string Address { get; set; }
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
+        public string LocationName { get; set; }
+        public bool IsPrimary { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+}
