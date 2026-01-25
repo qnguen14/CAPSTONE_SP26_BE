@@ -2,6 +2,7 @@
 using AgroTemp.Domain.DTO.Farm;  
 using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobPost;
+using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
 using Riok.Mapperly.Abstractions;
 
@@ -40,4 +41,8 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
     public partial JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
     public partial void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
+
+    // WorkerAttendance
+    public partial WorkerAttendanceDTO WorkerAttendanceToDto(Entities.WorkerAttendance workerAttendance);
+    public partial List<WorkerAttendanceDTO> WorkerAttendancesToDtos(IEnumerable<Entities.WorkerAttendance> workerAttendances);
 }

@@ -2,6 +2,7 @@
 using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobPost;
+using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
 
 namespace AgroTemp.Domain.Mapper;
@@ -38,4 +39,8 @@ public interface IMapperlyMapper
     List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
     JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
     void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
+
+    // WorkerAttendance
+    WorkerAttendanceDTO WorkerAttendanceToDto(Entities.WorkerAttendance workerAttendance);
+    List<WorkerAttendanceDTO> WorkerAttendancesToDtos(IEnumerable<Entities.WorkerAttendance> workerAttendances);
 }

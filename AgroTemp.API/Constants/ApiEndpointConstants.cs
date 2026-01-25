@@ -77,4 +77,19 @@ public class ApiEndpointConstants
         public const string UpdateJobPostEndpoint = JobPostEndpoint + "/update";
         public const string UpdateJobApplicationEndpoint = JobApplicationEndpoint + "/update";
     }
+
+    public static class WorkerAttendance
+    {
+        public const string WorkerAttendanceEndpoint = ApiEndpoint + "/attendance";
+        
+        // Worker endpoints
+        public const string CheckInEndpoint = WorkerAttendanceEndpoint + "/check-in";
+        public const string CheckOutEndpoint = WorkerAttendanceEndpoint + "/check-out";
+        public const string GetAttendanceByIdEndpoint = WorkerAttendanceEndpoint + "/{id}";
+        public const string GetWorkerAttendanceHistoryEndpoint = WorkerAttendanceEndpoint + "/worker/{workerProfileId}";
+        
+        // Farmer endpoints
+        public const string ApproveAttendanceEndpoint = WorkerAttendanceEndpoint + "/approve";
+        public const string GetFarmAttendanceRecordsEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}";
+    }
 }
