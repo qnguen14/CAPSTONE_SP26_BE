@@ -91,5 +91,6 @@ public class ApiEndpointConstants
         // Farmer endpoints
         public const string ApproveAttendanceEndpoint = WorkerAttendanceEndpoint + "/approve";
         public const string GetFarmAttendanceRecordsEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}";
+        public const string GetWorkerAttendanceByFarmerEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}/worker/{workerProfileId}";
     }
 }

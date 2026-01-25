@@ -249,5 +249,42 @@ namespace AgroTemp.Service.Implements
                 throw new Exception(ex.Message);
             }
         }
+
+        //For Farmer
+        public async Task<List<WorkerAttendanceDTO>> GetWorkerAttendanceByFarmer(Guid farmerProfileId, Guid workerProfileId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var farmerView = await _unitOfWork.GetRepository<JobApplication>()
+            .FirstOrDefaultAsync(
+                predicate: ja => ja.JobPost.FarmerProfileId == farmerProfileId &&
+                                ja.WorkerProfileId == workerProfileId &&
+                                ja.Status == ApplicationStatus.Accepted,
+                include: q => q.Include(ja => ja.JobPost));
+
+                if (farmerView == null)
+                {
+                    throw new Exception("This worker has no accepted applications on your farm");
+                }
+
+                var attendanceRecords = await _unitOfWork.GetRepository<WorkerAttendance>()
+                      .GetListAsync(
+                          predicate: wa => wa.JobApplication.JobPost.FarmerProfileId == farmerProfileId &&
+                                          wa.JobApplication.WorkerProfileId == workerProfileId &&
+                                          (!startDate.HasValue || wa.WorkDate >= startDate.Value.Date) &&
+                                          (!endDate.HasValue || wa.WorkDate <= endDate.Value.Date),
+                          orderBy: q => q.OrderByDescending(wa => wa.WorkDate).ThenByDescending(wa => wa.CheckInTime),
+                          include: q => q.Include(wa => wa.JobApplication)
+                                         .ThenInclude(ja => ja.JobPost)
+                                         .Include(wa => wa.JobApplication)
+                                         .ThenInclude(ja => ja.WorkerProfile));
+
+                return _mapper.WorkerAttendancesToDtos(attendanceRecords);
+            }
+             catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }           
+        }
     }
 }

@@ -16,6 +16,7 @@ namespace AgroTemp.Service.Interfaces
         Task<WorkerAttendanceDTO> GetAttendanceById(Guid attendanceId);
         Task<List<WorkerAttendanceDTO>> GetWorkerAttendanceHistory(Guid workerProfileId, DateTime? startDate = null, DateTime? endDate = null);
         Task<List<WorkerAttendanceDTO>> GetFarmAttendanceRecords(Guid farmerProfileId, Guid? jobPostId = null, DateTime? startDate = null, DateTime? endDate = null);
+        Task<List<WorkerAttendanceDTO>> GetWorkerAttendanceByFarmer(Guid farmerProfileId, Guid workerProfileId, DateTime? startDate = null, DateTime? endDate = null);
 
     }
 }

@@ -354,4 +354,72 @@ public class WorkerAttendanceController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
         }
     }
+
+    //View Check-in/out for farmer 
+    [HttpGet(ApiEndpointConstants.WorkerAttendance.GetWorkerAttendanceByFarmerEndpoint)]
+    [Authorize(Roles = "Farmer")]
+    [ProducesResponseType(typeof(ApiResponse<List<WorkerAttendanceDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<List<WorkerAttendanceDTO>>> GetWorkerAttendanceByFarmer(
+    [FromRoute] Guid farmerProfileId,
+    [FromRoute] Guid workerProfileId,
+    [FromQuery] DateTime? startDate = null,
+    [FromQuery] DateTime? endDate = null)
+    {
+        try
+        {
+            // Verify the authenticated user matches the farmerProfileId in the route
+            var farmerProfileIdClaim = User.FindFirst("FarmerProfileId")?.Value;
+
+            if (string.IsNullOrEmpty(farmerProfileIdClaim) || farmerProfileIdClaim != farmerProfileId.ToString())
+            {
+                var forbiddenResponse = new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status403Forbidden,
+                    Message = "You can only view attendance for your own farm",
+                    Data = null
+                };
+                return StatusCode(StatusCodes.Status403Forbidden, forbiddenResponse);
+            }
+
+            var response = await _workerAttendanceService.GetWorkerAttendanceByFarmer(
+                farmerProfileId,
+                workerProfileId,
+                startDate,
+                endDate);
+
+            var apiResponse = new ApiResponse<List<WorkerAttendanceDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Worker attendance records retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving worker {WorkerProfileId} attendance for farmer {FarmerProfileId}", workerProfileId, farmerProfileId);
+
+            if (ex.Message.Contains("no accepted applications"))
+            {
+                var notFoundResponse = new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = ex.Message,
+                    Data = null
+                };
+                return NotFound(notFoundResponse);
+            }
+
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            };
+            return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
+        }
+    }
 }
