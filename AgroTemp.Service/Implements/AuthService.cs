@@ -31,21 +31,38 @@ public class AuthService : BaseService<User>, IAuthService
 
     public async Task<LoginResponse> Login(LoginRequest request)
     {
-        // Find user by email
-        var users = await _unitOfWork.GetRepository<User>()
-            .GetListAsync(predicate: u => u.Email == request.Email && u.IsActive);
+        if (string.IsNullOrEmpty(request.Email) && string.IsNullOrEmpty(request.PhoneNumber))
+        {
+            throw new ArgumentException("Either email or phone number must be provided");
+        }
+
+        User? user = null;
+
+        // Find user by email or phone number
+        if (!string.IsNullOrEmpty(request.Email))
+        {
+            var usersByEmail = await _unitOfWork.GetRepository<User>()
+                .GetListAsync(predicate: u => u.Email == request.Email && u.IsActive);
+            user = usersByEmail.FirstOrDefault();
+        }
         
-        var user = users.FirstOrDefault();
+        // Fallback to phone number if email search didn't find a user
+        if (user == null && !string.IsNullOrEmpty(request.PhoneNumber))
+        {
+            var usersByPhone = await _unitOfWork.GetRepository<User>()
+                .GetListAsync(predicate: u => u.PhoneNumber == request.PhoneNumber && u.IsActive);
+            user = usersByPhone.FirstOrDefault();
+        }
 
         if (user == null)
         {
-            throw new UnauthorizedAccessException("Invalid email or password");
+            throw new UnauthorizedAccessException("Invalid email/phone or password");
         }
 
         // Verify password
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
-            throw new UnauthorizedAccessException("Invalid email or password");
+            throw new UnauthorizedAccessException("Invalid email/phone or password");
         }
 
         // Generate JWT token
