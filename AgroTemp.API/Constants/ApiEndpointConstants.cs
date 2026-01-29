@@ -24,9 +24,11 @@ public class ApiEndpointConstants
     public static class User
     {
         public const string UserEndpoint = ApiEndpoint + "/user";
-        public const string GetProfileEndpoint = UserEndpoint + "/profile";
-        public const string UpdateProfileEndpoint = UserEndpoint + "/update";
         public const string GetAllUsersEndpoint = UserEndpoint;
+        public const string GetUserByIdEndpoint = UserEndpoint + "/{id}";
+        public const string CreateUserEndpoint = UserEndpoint;
+        public const string UpdateUserEndpoint = UserEndpoint + "/{id}";
+        public const string DeleteUserEndpoint = UserEndpoint + "/{id}";
     }
 
     public static class FarmerProfile
@@ -34,6 +36,16 @@ public class ApiEndpointConstants
         public const string FarmerProfileEndpoint = ApiEndpoint + "/farmer-profile";
         public const string GetFarmerProfileEndpoint = FarmerProfileEndpoint + "/{userId}";
         public const string UpdateFarmerProfileEndpoint = FarmerProfileEndpoint + "/{userId}";
+    }
+
+    public static class Farm 
+    {
+        public const string FarmEndpoint = ApiEndpoint + "/farm";
+        public const string GetFarmsEndpoint = FarmEndpoint;
+        public const string GetFarmByIdEndpoint = FarmEndpoint + "/{id}";
+        public const string CreateFarmEndpoint = FarmEndpoint;
+        public const string UpdateFarmEndpoint = FarmEndpoint + "/{id}";
+        public const string DeleteFarmEndpoint = FarmEndpoint + "/{id}";
     }
 
     public static class WorkerProfile
@@ -64,5 +76,21 @@ public class ApiEndpointConstants
         public const string UpdateJobCategoryEndpoint = JobCategoryEndpoint + "/update";
         public const string UpdateJobPostEndpoint = JobPostEndpoint + "/update";
         public const string UpdateJobApplicationEndpoint = JobApplicationEndpoint + "/update";
+    }
+
+    public static class WorkerAttendance
+    {
+        public const string WorkerAttendanceEndpoint = ApiEndpoint + "/attendance";
+        
+        // Worker endpoints
+        public const string CheckInEndpoint = WorkerAttendanceEndpoint + "/check-in";
+        public const string CheckOutEndpoint = WorkerAttendanceEndpoint + "/check-out";
+        public const string GetAttendanceByIdEndpoint = WorkerAttendanceEndpoint + "/{id}";
+        public const string GetWorkerAttendanceHistoryEndpoint = WorkerAttendanceEndpoint + "/worker/{workerProfileId}";
+        
+        // Farmer endpoints
+        public const string ApproveAttendanceEndpoint = WorkerAttendanceEndpoint + "/approve";
+        public const string GetFarmAttendanceRecordsEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}";
+        public const string GetWorkerAttendanceByFarmerEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}/worker/{workerProfileId}";
     }
 }

@@ -17,6 +17,8 @@ public class AgroTempDbContext : DbContext
     public DbSet<Farm> Farms { get; set; }
     public DbSet<JobCategory> JobCategories { get; set; }
     public DbSet<JobPost> JobPosts { get; set; }
+    public DbSet<JobApplication> JobApplications { get; set; }
+    public DbSet<WorkerAttendance> WorkerAttendances { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -102,6 +104,37 @@ public class AgroTempDbContext : DbContext
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.WageAmount)
             .HasPrecision(18, 2); // e.g., currency amounts
+
+        // Configure JobPost-JobApplication one-to-many relationship
+        modelBuilder.Entity<JobPost>()
+            .HasMany<JobApplication>()
+            .WithOne(ja => ja.JobPost)
+            .HasForeignKey(ja => ja.JobPostId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure WorkerProfile-JobApplication one-to-many relationship
+        modelBuilder.Entity<WorkerProfile>()
+            .HasMany<JobApplication>()
+            .WithOne(ja => ja.WorkerProfile)
+            .HasForeignKey(ja => ja.WorkerProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure enum conversions for JobApplication
+        modelBuilder.Entity<JobApplication>()
+            .Property(ja => ja.StatusId)
+            .HasConversion<int>();
+
+        // Configure JobApplication-WorkerAttendance one-to-many relationship
+        modelBuilder.Entity<JobApplication>()
+            .HasMany(ja => ja.WorkerAttendances)
+            .WithOne(wa => wa.JobApplication)
+            .HasForeignKey(wa => wa.JobApplicationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure precision for WorkerAttendance decimal columns
+        modelBuilder.Entity<WorkerAttendance>()
+            .Property(wa => wa.TotalHoursWorked)
+            .HasPrecision(10, 2);
 
         base.OnModelCreating(modelBuilder);
     }

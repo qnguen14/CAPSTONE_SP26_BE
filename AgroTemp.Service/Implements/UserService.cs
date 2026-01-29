@@ -23,9 +23,24 @@ public class UserService : BaseService<User>, IUserService
         _mapper = mapper;
     }
 
-    public Task<UserDTO> GetUserByEmail(string email)
+    public async Task<UserDTO> GetUserByEmail(string email)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var user = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.Email == email);
+
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+
+            return _mapper.UserToUserDto(user);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
     }
 
     public async Task<List<UserDTO>> GetAllUsers()
@@ -52,24 +67,161 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
-    public Task<UserDTO> GetUserById(string id)
+    public async Task<UserDTO> GetUserById(Guid id)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var user = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.Id == id);
+
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+
+            return _mapper.UserToUserDto(user);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
     }
 
-    public Task<UserDTO> CreateUser(UserDTO userDto)
+    public async Task<UserDTO> CreateUser(CreateUserRequest request)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var existingEmail = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.Email == request.Email);
+
+            if (existingEmail != null)
+            {
+                throw new Exception("Email already exists");
+            }
+
+            var existingPhone = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.PhoneNumber == request.PhoneNumber);
+
+            if (existingPhone != null)
+            {
+                throw new Exception("Phone number already exists");
+            }
+
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = request.Email,
+                PhoneNumber = request.PhoneNumber,
+                Address = request.Address,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                RoleId = request.RoleId,
+                Role = (UserRole)request.RoleId,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = request.IsActive,
+                IsVerified = request.IsVerified
+            };
+
+            await _unitOfWork.GetRepository<User>().InsertAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _mapper.UserToUserDto(user);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
     }
 
-    public Task<UserDTO> UpdateUser(string id, UserDTO userDto)
+    public async Task<UserDTO> UpdateUser(Guid id, UpdateUserRequest request)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var user = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.Id == id);
+
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+
+            if (!string.IsNullOrEmpty(request.Email) && request.Email != user.Email)
+            {
+                var existingEmail = await _unitOfWork.GetRepository<User>()
+                    .FirstOrDefaultAsync(predicate: u => u.Email == request.Email && u.Id != id);
+
+                if (existingEmail != null)
+                {
+                    throw new Exception("Email already exists");
+                }
+                user.Email = request.Email;
+            }
+
+            if (!string.IsNullOrEmpty(request.PhoneNumber) && request.PhoneNumber != user.PhoneNumber)
+            {
+                var existingPhone = await _unitOfWork.GetRepository<User>()
+                    .FirstOrDefaultAsync(predicate: u => u.PhoneNumber == request.PhoneNumber && u.Id != id);
+
+                if (existingPhone != null)
+                {
+                    throw new Exception("Phone number already exists");
+                }
+                user.PhoneNumber = request.PhoneNumber;
+            }
+
+            if (!string.IsNullOrEmpty(request.Address))
+            {
+                user.Address = request.Address;
+            }
+
+            if (request.RoleId.HasValue)
+            {
+                user.RoleId = request.RoleId.Value;
+                user.Role = (UserRole)request.RoleId.Value;
+            }
+
+            if (request.IsActive.HasValue)
+            {
+                user.IsActive = request.IsActive.Value;
+            }
+
+            if (request.IsVerified.HasValue)
+            {
+                user.IsVerified = request.IsVerified.Value;
+            }
+
+            _unitOfWork.GetRepository<User>().UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _mapper.UserToUserDto(user);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
     }
 
-    public Task<bool> DeleteUser(string id)
+    public async Task<bool> DeleteUser(Guid id)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var user = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.Id == id);
+
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+
+            user.IsActive = false;
+            _unitOfWork.GetRepository<User>().UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
     }
 
     public async Task<FarmerProfileDTO> GetFarmerProfile(Guid userId)
