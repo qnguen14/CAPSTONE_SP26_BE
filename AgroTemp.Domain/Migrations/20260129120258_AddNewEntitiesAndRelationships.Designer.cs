@@ -3,6 +3,7 @@ using System;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260129120258_AddNewEntitiesAndRelationships")]
+    partial class AddNewEntitiesAndRelationships
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -534,52 +537,6 @@ namespace AgroTemp.Domain.Migrations
                     b.ToTable("Notification", "AgroTempV1");
                 });
 
-            modelBuilder.Entity("AgroTemp.Domain.Entities.Rating", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("JobPostId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("job_id");
-
-                    b.Property<Guid>("RateeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("ratee_id");
-
-                    b.Property<Guid>("RaterId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("rater_id");
-
-                    b.Property<int>("RatingScore")
-                        .HasColumnType("integer")
-                        .HasColumnName("rating_score");
-
-                    b.Property<string>("ReviewText")
-                        .HasColumnType("text")
-                        .HasColumnName("review_text");
-
-                    b.Property<int>("TypeId")
-                        .HasColumnType("integer")
-                        .HasColumnName("type");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("JobPostId");
-
-                    b.HasIndex("RateeId");
-
-                    b.HasIndex("RaterId");
-
-                    b.ToTable("Rating", "AgroTempV1");
-                });
-
             modelBuilder.Entity("AgroTemp.Domain.Entities.Skill", b =>
                 {
                     b.Property<Guid>("Id")
@@ -967,33 +924,6 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AgroTemp.Domain.Entities.Rating", b =>
-                {
-                    b.HasOne("AgroTemp.Domain.Entities.JobPost", "JobPost")
-                        .WithMany("Ratings")
-                        .HasForeignKey("JobPostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AgroTemp.Domain.Entities.User", "Ratee")
-                        .WithMany("ReceivedRatings")
-                        .HasForeignKey("RateeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AgroTemp.Domain.Entities.User", "Rater")
-                        .WithMany("GivenRatings")
-                        .HasForeignKey("RaterId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("JobPost");
-
-                    b.Navigation("Ratee");
-
-                    b.Navigation("Rater");
-                });
-
             modelBuilder.Entity("AgroTemp.Domain.Entities.WorkerAttendance", b =>
                 {
                     b.HasOne("AgroTemp.Domain.Entities.JobApplication", "JobApplication")
@@ -1057,8 +987,6 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("JobAssignments");
 
                     b.Navigation("JobSkillRequirements");
-
-                    b.Navigation("Ratings");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Skill", b =>
@@ -1072,13 +1000,9 @@ namespace AgroTemp.Domain.Migrations
                 {
                     b.Navigation("FarmerProfile");
 
-                    b.Navigation("GivenRatings");
-
                     b.Navigation("Notifications");
 
                     b.Navigation("ReceivedMessages");
-
-                    b.Navigation("ReceivedRatings");
 
                     b.Navigation("SentMessages");
 

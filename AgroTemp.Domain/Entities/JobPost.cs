@@ -42,6 +42,10 @@ public class JobPost
     public Guid FarmerProfileId { get; set; }
     public virtual FarmerProfile FarmerProfile { get; set; }
 
+    public virtual ICollection<JobSkillRequirement> JobSkillRequirements { get; set; } = new List<JobSkillRequirement>();
+    public virtual ICollection<JobAssignment> JobAssignments { get; set; } = new List<JobAssignment>();
+    public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+
     [Required]
     [ForeignKey(nameof(JobCategory))]
     [Column("job_category_id")]

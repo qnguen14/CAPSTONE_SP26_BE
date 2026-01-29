@@ -60,5 +60,6 @@ namespace AgroTemp.Domain.Entities
         public string? ResponseMessage { get; set; }
 
         public virtual ICollection<WorkerAttendance> WorkerAttendances { get; set; } = new List<WorkerAttendance>();
+        public virtual ICollection<JobAssignment> JobAssignments { get; set; } = new List<JobAssignment>();
     }
 }

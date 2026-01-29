@@ -64,6 +64,9 @@ public class WorkerProfile
     [Column("total_jobs_completed")]
     public int TotalJobsCompleted { get; set; }
 
+    public virtual ICollection<WorkerSkill> WorkerSkills { get; set; } = new List<WorkerSkill>();
+    public virtual ICollection<JobAssignment> JobAssignments { get; set; } = new List<JobAssignment>();
+
     [Required]
     [Column("avatar_url")]
     public string AvatarUrl { get; set; }

@@ -62,4 +62,11 @@ public class User
     // Navigation properties
     public virtual WorkerProfile? WorkerProfile { get; set; }
     public virtual FarmerProfile? FarmerProfile { get; set; }
+    
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public virtual ICollection<ChatMessage> SentMessages { get; set; } = new List<ChatMessage>();
+    public virtual ICollection<ChatMessage> ReceivedMessages { get; set; } = new List<ChatMessage>();
+    
+    public virtual ICollection<Rating> GivenRatings { get; set; } = new List<Rating>();
+    public virtual ICollection<Rating> ReceivedRatings { get; set; } = new List<Rating>();
 }
