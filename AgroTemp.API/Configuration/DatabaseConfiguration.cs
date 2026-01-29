@@ -7,14 +7,17 @@ namespace AgroTemp.API.Configuration
     {
         public static IServiceCollection ConfigureDatabase(this IServiceCollection services, IConfiguration configuration)
         {
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+                                   ?? configuration.GetConnectionString("DefaultConnection");
+
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new ArgumentException("Connection string 'DefaultConnection' is not configured.");
+                throw new ArgumentException("Database connection string is missing.");
             }
 
             services.AddDbContext<AgroTempDbContext>(options =>
                 options.UseNpgsql(connectionString));
+
             return services;
         }
     }
