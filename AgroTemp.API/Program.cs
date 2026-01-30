@@ -71,12 +71,13 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
     });
 }
 
-app.UseHttpsRedirection();
 // Configure forwarded headers for Heroku/Cloudflare
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
+
+app.UseHttpsRedirection();
 
 app.UseCors("AllowAll"); // Enable CORS
 
