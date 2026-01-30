@@ -7,6 +7,7 @@ using AgroTemp.Service.Implements;
 using AgroTemp.Service.Interfaces;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.Design;
+using Resend;
 
 namespace AgroTemp.API.Configuration
 {
@@ -35,6 +36,16 @@ namespace AgroTemp.API.Configuration
 
             // Custom Services
             //services.AddScoped<ICloudinaryService, CloudinaryService>();
+            
+            // Email Service
+            services.AddHttpClient(); // Resend uses HttpClient
+            services.AddTransient<IResend, ResendClient>();
+            services.AddOptions<ResendClientOptions>()
+                .Configure<IConfiguration>((options, config) =>
+                {
+                    options.ApiToken = config["Resend:ApiKey"]!;
+                });
+            services.AddScoped<IEmailService, ResendEmailService>();
 
             // Third-Party Services
             //RegisterThirdPartyServices(services, configuration);
