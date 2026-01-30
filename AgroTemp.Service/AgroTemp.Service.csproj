@@ -17,6 +17,7 @@
     <ItemGroup>
       <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
       <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
+      <PackageReference Include="Resend" Version="0.2.1" />
     </ItemGroup>
 
 </Project>
