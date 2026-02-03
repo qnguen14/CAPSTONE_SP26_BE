@@ -32,8 +32,7 @@ public class FarmController : Controller
     {
         try
         {
-            var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var farmerProfile = await _userService.GetFarmerProfile(currentUserId);
+            var farmerProfile = await _userService.GetFarmerProfile();
 
             var farms = await _farmService.GetFarmByFarmer(farmerProfile.Id);
 
@@ -108,8 +107,7 @@ public class FarmController : Controller
                 return BadRequest(apiResponse);
             }
 
-            var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var farmerProfile = await _userService.GetFarmerProfile(currentUserId);
+            var farmerProfile = await _userService.GetFarmerProfile();
 
             var farm = await _farmService.CreateFarm(farmerProfile.Id, request);
 
@@ -155,8 +153,7 @@ public class FarmController : Controller
                 return BadRequest(apiResponse);
             }
 
-            var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var farmerProfile = await _userService.GetFarmerProfile(currentUserId);
+            var farmerProfile = await _userService.GetFarmerProfile();
 
             var farm = await _farmService.UpdateFarm(id, farmerProfile.Id, request);
 
@@ -199,8 +196,7 @@ public class FarmController : Controller
     {
         try
         {
-            var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var farmerProfile = await _userService.GetFarmerProfile(currentUserId);
+            var farmerProfile = await _userService.GetFarmerProfile();
 
             var result = await _farmService.DeleteFarm(id, farmerProfile.Id);
 

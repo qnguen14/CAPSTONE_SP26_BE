@@ -224,10 +224,11 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
-    public async Task<FarmerProfileDTO> GetFarmerProfile(Guid userId)
+    public async Task<FarmerProfileDTO> GetFarmerProfile()
     {
         try
         {
+            var userId = GetCurrentUserId();
             var farmerProfile = await _unitOfWork.GetRepository<FarmerProfile>()
                 .FirstOrDefaultAsync(
                     predicate: fp => fp.UserId == userId,
@@ -246,10 +247,11 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
-    public async Task<FarmerProfileDTO> UpdateFarmerProfile(Guid userId, UpdateFarmerProfileRequest request)
+    public async Task<FarmerProfileDTO> UpdateFarmerProfile(UpdateFarmerProfileRequest request)
     {
         try
         {
+            var userId = GetCurrentUserId();
             var farmerProfile = await _unitOfWork.GetRepository<FarmerProfile>()
                 .FirstOrDefaultAsync(
                     predicate: fp => fp.UserId == userId,
@@ -257,7 +259,6 @@ public class UserService : BaseService<User>, IUserService
 
             if (farmerProfile == null)
             {
-                // Profile doesn't exist - create it (first-time setup)
                 farmerProfile = new FarmerProfile
                 {
                     Id = Guid.NewGuid(),
@@ -278,7 +279,6 @@ public class UserService : BaseService<User>, IUserService
             }
             else
             {
-                // Profile exists - update it
                 farmerProfile.OrganizationName = request.OrganizationName;
                 farmerProfile.ContactName = request.ContactName;
                 farmerProfile.ContactNumber = request.ContactNumber;
@@ -299,10 +299,11 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
-    public async Task<WorkerProfileDTO> GetWorkerProfile(Guid userId)
+    public async Task<WorkerProfileDTO> GetWorkerProfile()
     {
         try
         {
+            var userId = GetCurrentUserId();
             var workerProfile = await _unitOfWork.GetRepository<WorkerProfile>()
                 .FirstOrDefaultAsync(
                     predicate: wp => wp.UserId == userId,
@@ -321,10 +322,11 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
-    public async Task<WorkerProfileDTO> UpdateWorkerProfile(Guid userId, UpdateWorkerProfileRequest request)
+    public async Task<WorkerProfileDTO> UpdateWorkerProfile(UpdateWorkerProfileRequest request)
     {
         try
         {
+            var userId = GetCurrentUserId();
             var workerProfile = await _unitOfWork.GetRepository<WorkerProfile>()
                 .FirstOrDefaultAsync(
                     predicate: wp => wp.UserId == userId,
@@ -332,7 +334,6 @@ public class UserService : BaseService<User>, IUserService
 
             if (workerProfile == null)
             {
-                // Profile doesn't exist - create it (first-time setup)
                 workerProfile = new WorkerProfile
                 {
                     Id = Guid.NewGuid(),
