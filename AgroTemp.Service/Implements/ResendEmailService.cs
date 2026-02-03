@@ -1,4 +1,5 @@
 using AgroTemp.Service.Interfaces;
+using AgroTemp.Service.Templates;
 using Microsoft.Extensions.Configuration;
 using Resend;
 using System.Threading.Tasks;
@@ -18,12 +19,14 @@ namespace AgroTemp.Service.Implements
 
         public async Task SendEmailAsync(string to, string subject, string htmlMessage)
         {
+            var styledMessage = EmailTemplateBuilder.BuildBasicTemplate(subject, htmlMessage);
+
             var message = new EmailMessage
             {
                 From = _fromEmail,
                 To = { to },
                 Subject = subject,
-                HtmlBody = htmlMessage
+                HtmlBody = styledMessage
             };
 
             await _resend.EmailSendAsync(message);
