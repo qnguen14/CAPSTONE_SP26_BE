@@ -34,8 +34,8 @@ public class ApiEndpointConstants
     public static class FarmerProfile
     {
         public const string FarmerProfileEndpoint = ApiEndpoint + "/farmer-profile";
-        public const string GetFarmerProfileEndpoint = FarmerProfileEndpoint + "/{userId}";
-        public const string UpdateFarmerProfileEndpoint = FarmerProfileEndpoint + "/{userId}";
+        public const string GetFarmerProfileEndpoint = FarmerProfileEndpoint;
+        public const string UpdateFarmerProfileEndpoint = FarmerProfileEndpoint;
     }
 
     public static class Farm 
@@ -52,7 +52,7 @@ public class ApiEndpointConstants
     {
         public const string WorkerProfileEndpoint = ApiEndpoint + "/worker-profile";
         public const string GetWorkerProfileEndpoint = WorkerProfileEndpoint;
-        public const string UpdateWorkerProfileEndpoint = WorkerProfileEndpoint + "/{userId}";
+        public const string UpdateWorkerProfileEndpoint = WorkerProfileEndpoint;
     }
     public static class Job
     {

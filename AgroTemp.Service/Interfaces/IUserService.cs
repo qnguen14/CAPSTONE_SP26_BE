@@ -11,9 +11,9 @@ public interface IUserService
     Task<UserDTO> UpdateUser(Guid id, UpdateUserRequest request);
     Task<bool> DeleteUser(Guid id);
     
-    Task<FarmerProfileDTO> GetFarmerProfile(Guid userId);
-    Task<FarmerProfileDTO> UpdateFarmerProfile(Guid userId, UpdateFarmerProfileRequest request);
+    Task<FarmerProfileDTO> GetFarmerProfile();
+    Task<FarmerProfileDTO> UpdateFarmerProfile(UpdateFarmerProfileRequest request);
     
     Task<WorkerProfileDTO> GetWorkerProfile();
-    Task<WorkerProfileDTO> UpdateWorkerProfile(Guid userId, UpdateWorkerProfileRequest request);
+    Task<WorkerProfileDTO> UpdateWorkerProfile(UpdateWorkerProfileRequest request);
 }
