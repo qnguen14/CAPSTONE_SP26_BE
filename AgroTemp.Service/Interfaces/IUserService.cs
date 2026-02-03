@@ -14,6 +14,6 @@ public interface IUserService
     Task<FarmerProfileDTO> GetFarmerProfile(Guid userId);
     Task<FarmerProfileDTO> UpdateFarmerProfile(Guid userId, UpdateFarmerProfileRequest request);
     
-    Task<WorkerProfileDTO> GetWorkerProfile(Guid userId);
+    Task<WorkerProfileDTO> GetWorkerProfile();
     Task<WorkerProfileDTO> UpdateWorkerProfile(Guid userId, UpdateWorkerProfileRequest request);
 }

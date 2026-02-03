@@ -51,7 +51,7 @@ public class ApiEndpointConstants
     public static class WorkerProfile
     {
         public const string WorkerProfileEndpoint = ApiEndpoint + "/worker-profile";
-        public const string GetWorkerProfileEndpoint = WorkerProfileEndpoint + "/{userId}";
+        public const string GetWorkerProfileEndpoint = WorkerProfileEndpoint;
         public const string UpdateWorkerProfileEndpoint = WorkerProfileEndpoint + "/{userId}";
     }
     public static class Job

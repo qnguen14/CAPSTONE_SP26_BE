@@ -299,10 +299,11 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
-    public async Task<WorkerProfileDTO> GetWorkerProfile(Guid userId)
+    public async Task<WorkerProfileDTO> GetWorkerProfile()
     {
         try
         {
+            var userId = GetCurrentUserId();
             var workerProfile = await _unitOfWork.GetRepository<WorkerProfile>()
                 .FirstOrDefaultAsync(
                     predicate: wp => wp.UserId == userId,
