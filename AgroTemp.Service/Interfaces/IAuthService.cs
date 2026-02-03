@@ -8,4 +8,6 @@ public interface IAuthService
     Task<LoginResponse> Register(RegisterRequest request);
     Task<LoginResponse> GoogleLogin(GoogleLoginRequest request);
     Task<bool> VerifyEmail(VerifyEmailRequest request);
+    Task ForgotPassword(ForgotPasswordRequest request);
+    Task<bool> ResetPassword(ResetPasswordRequest request);
 }

@@ -282,4 +282,67 @@ public class AuthService : BaseService<User>, IAuthService
 
         return true;
     }
+
+    public async Task ForgotPassword(ForgotPasswordRequest request)
+    {
+        var user = (await _unitOfWork.GetRepository<User>()
+            .GetListAsync(predicate: u => u.Email == request.Email && u.IsActive)).FirstOrDefault();
+
+        if (user == null)
+        {
+            // Don't reveal if user exists or not for security
+            _logger.LogWarning("Password reset requested for non-existent email: {Email}", request.Email);
+            return; // Silently succeed
+        }
+
+        // Generate 6-digit OTP
+        user.PasswordResetToken = new Random().Next(100000, 999999).ToString();
+        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(15);
+
+        _unitOfWork.GetRepository<User>().UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Send password reset email
+        try
+        {
+            await _emailService.SendEmailAsync(user.Email, "AgroTemp Password Reset",
+                $"<div style=\"text-align: center;\"><h2>Password Reset Code</h2><h1>{user.PasswordResetToken}</h1><p>This code will expire in 15 minutes.</p><p>If you didn't request this, please ignore this email.</p></div>");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send password reset email to {Email}", user.Email);
+            throw;
+        }
+    }
+
+    public async Task<bool> ResetPassword(ResetPasswordRequest request)
+    {
+        var user = (await _unitOfWork.GetRepository<User>()
+            .GetListAsync(predicate: u => u.Email == request.Email)).FirstOrDefault();
+
+        if (user == null)
+        {
+            return false;
+        }
+
+        if (user.PasswordResetToken != request.Otp)
+        {
+            return false;
+        }
+
+        if (user.PasswordResetTokenExpiresAt < DateTime.UtcNow)
+        {
+            return false;
+        }
+
+        // Update password
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiresAt = null;
+
+        _unitOfWork.GetRepository<User>().UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        return true;
+    }
 }
