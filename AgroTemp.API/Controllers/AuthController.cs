@@ -152,4 +152,20 @@ public class AuthController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
         }
     }
+
+    /// <summary>
+    /// Verify Email
+    /// </summary>
+    [HttpPost("verify-email")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    {
+        var result = await _authService.VerifyEmail(request);
+        if (result)
+        {
+            return Ok(new { Message = "Email verified successfully" });
+        }
+        return BadRequest(new { Message = "Invalid email or OTP, or OTP has expired" });
+    }
 }

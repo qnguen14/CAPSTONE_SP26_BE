@@ -19,14 +19,20 @@ namespace AgroTemp.Service.Interfaces;
 public class AuthService : BaseService<User>, IAuthService
 {
     private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUnitOfWork<AgroTempDbContext> unitOfWork, 
         IHttpContextAccessor httpContextAccessor, 
         IMapperlyMapper mapper,
-        IConfiguration configuration) : base(unitOfWork, httpContextAccessor, mapper)
+        IConfiguration configuration,
+        IEmailService emailService,
+        ILogger<AuthService> logger) : base(unitOfWork, httpContextAccessor, mapper)
     {
         _configuration = configuration;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<LoginResponse> Login(LoginRequest request)
@@ -112,8 +118,29 @@ public class AuthService : BaseService<User>, IAuthService
             RoleId = request.RoleId,
             Role = (UserRole)request.RoleId,
             CreatedAt = DateTime.UtcNow,
-            IsActive = true
+            IsActive = true,
+            IsVerified = false,
+            VerificationToken = new Random().Next(100000, 999999).ToString(), // 6-digit OTP
+            VerificationTokenExpiresAt = DateTime.UtcNow.AddMinutes(15) // Short expiry for OTP
         };
+
+        // Send verification email
+        try 
+        {
+            await _emailService.SendEmailAsync(user.Email, "AgroTemp Verification Code",
+                $"<div style=\"text-align: center;\"><h2>Your Verification Code</h2><h1>{user.VerificationToken}</h1><p>This code will expire in 15 minutes.</p></div>");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send verification email to {Email}", user.Email);
+            // Optionally decide if we should rollback user creation or just return register response with warning?
+            // For now, we swallow exception here to let user register, but they won't get OTP.
+            // Better to rethrow or handle explicitly. 
+            // If email fails, user can't verify. 
+            // Let's rethrow 
+            throw;
+        }
+            
 
         await _unitOfWork.GetRepository<User>().InsertAsync(user);
         await _unitOfWork.SaveChangesAsync();
@@ -166,7 +193,8 @@ public class AuthService : BaseService<User>, IAuthService
                     RoleId = request.RoleId ?? 2, // Default to Farmer role if not specified
                     Role = (UserRole)(request.RoleId ?? 2),
                     CreatedAt = DateTime.UtcNow,
-                    IsActive = true
+                    IsActive = true,
+                    IsVerified = true // Google users are verified
                 };
 
                 await _unitOfWork.GetRepository<User>().InsertAsync(user);
@@ -216,5 +244,42 @@ public class AuthService : BaseService<User>, IAuthService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public async Task<bool> VerifyEmail(VerifyEmailRequest request)
+    {
+        // Find user by email first, as token (OTP) might not be unique across all users potentially (though unlikely with 6 digits)
+        // More importantly, security wise, we verify a specific user's claim.
+        var user = (await _unitOfWork.GetRepository<User>()
+            .GetListAsync(predicate: u => u.Email == request.Email)).FirstOrDefault();
+
+        if (user == null)
+        {
+            return false;
+        }
+
+        if (user.IsVerified)
+        {
+            return true; // Already verified
+        }
+
+        if (user.VerificationToken != request.Otp)
+        {
+            return false;
+        }
+
+        if (user.VerificationTokenExpiresAt < DateTime.UtcNow)
+        {
+            return false;
+        }
+
+        user.IsVerified = true;
+        user.VerificationToken = null;
+        user.VerificationTokenExpiresAt = null;
+
+        _unitOfWork.GetRepository<User>().UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        return true;
     }
 }

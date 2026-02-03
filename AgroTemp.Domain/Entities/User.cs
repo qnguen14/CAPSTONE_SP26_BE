@@ -59,6 +59,12 @@ public class User
     [Column("is_verified")]
     public bool IsVerified { get; set; }
 
+    [Column("verification_token")]
+    public string? VerificationToken { get; set; }
+
+    [Column("verification_token_expires_at")]
+    public DateTime? VerificationTokenExpiresAt { get; set; }
+
     // Navigation properties
     public virtual WorkerProfile? WorkerProfile { get; set; }
     public virtual FarmerProfile? FarmerProfile { get; set; }
