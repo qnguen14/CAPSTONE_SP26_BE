@@ -116,4 +116,14 @@ public class ApiEndpointConstants
         public const string DeleteResourceEndpoint = MediaDeleteEndpoint + "/resource";
         public const string DeleteResourcesEndpoint = MediaDeleteEndpoint + "/resources";
     }
+
+    public static class Chat
+    {
+        public const string ChatEndpoint = ApiEndpoint + "/chat";
+        public const string SendMessageEndpoint = ChatEndpoint + "/send";
+        public const string GetConversationEndpoint = ChatEndpoint + "/conversation/{otherUserId}";
+        public const string GetConversationsEndpoint = ChatEndpoint + "/conversations";
+        public const string MarkAsReadEndpoint = ChatEndpoint + "/read/{messageId}";
+        public const string GetUnreadCountEndpoint = ChatEndpoint + "/unread-count";
+    }
 }

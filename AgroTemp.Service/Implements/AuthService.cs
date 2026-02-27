@@ -71,6 +71,7 @@ public class AuthService : BaseService<User>, IAuthService
 
         return new LoginResponse
         {
+            UserId = user.Id,
             Token = token,
             ExpiresAt = expiresAt,
             Email = user.Email
@@ -124,6 +125,7 @@ public class AuthService : BaseService<User>, IAuthService
 
         return new LoginResponse
         {
+            UserId = user.Id,
             Token = token,
             ExpiresAt = expiresAt,
             Email = user.Email
@@ -183,6 +185,7 @@ public class AuthService : BaseService<User>, IAuthService
 
             return new LoginResponse
             {
+                UserId = user.Id,
                 Token = token,
                 ExpiresAt = expiresAt,
                 Email = user.Email

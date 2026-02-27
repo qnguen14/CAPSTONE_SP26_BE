@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
+using AgroTemp.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddServices(builder.Configuration);
 builder.Services.AddCorsConfiguration();
 builder.Services.AddSwaggerConfiguration();
+builder.Services.AddSignalR();
 builder.Services.AddJwtAuthenticationService(builder.Configuration);
 builder.Services.AddAuthorizationPolicies();
 DatabaseConfiguration.ConfigureDatabase(builder.Services, builder.Configuration);
@@ -83,6 +85,7 @@ app.UseCors("AllowAll"); // Enable CORS
 
 app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();
+app.MapHub<ChatHub>("/chatHub");
 
 app.MapControllers();
 
