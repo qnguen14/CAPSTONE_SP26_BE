@@ -26,6 +26,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<JobAssignment> JobAssignments { get; set; }
     public DbSet<Rating> Ratings { get; set; }
+    public DbSet<BlacklistedToken> BlacklistedTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
