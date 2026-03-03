@@ -137,5 +137,38 @@ namespace AgroTemp.Service.Implements
                 throw new Exception(ex.Message);
             }
         }
+
+        public async Task<JobPostDTO> UpdateJobPostStatus(string id, string status)
+        {
+            try
+            {
+                var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == Guid.Parse(id));
+                if (existingJobPost == null)
+                {
+                    return null;
+                }
+
+                if (Enum.TryParse(status, out JobPostStatus jobPostStatus))
+                {
+                    existingJobPost.StatusId = (int)jobPostStatus;
+                }
+                else
+                {
+                    throw new Exception("Invalid status value");
+                }
+
+                _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
+                await _unitOfWork.SaveChangesAsync();
+                var result = _mapper.JobPostToJobPostDto(existingJobPost);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
     }
 }
