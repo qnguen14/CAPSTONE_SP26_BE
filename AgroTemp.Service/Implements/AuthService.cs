@@ -156,17 +156,25 @@ public class AuthService : BaseService<User>, IAuthService
             if (user == null)
             {
                 // Create new user from Google account
+                var newUserId = Guid.NewGuid();
+                // Generate a unique 10-digit placeholder phone number from the user's Guid
+                // so multiple Google sign-ups never collide on a unique-phone constraint.
+                var uniquePhone = string.Concat(
+                    newUserId.ToString("N").Where(char.IsDigit).Take(10)
+                ).PadRight(10, '0');
+
                 user = new User
                 {
-                    Id = Guid.NewGuid(),
+                    Id = newUserId,
                     Email = payload.Email,
-                    PhoneNumber = "0000000000", // Default placeholder - user can update later
-                    Address = "Not specified", // Default placeholder
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), // Random password
+                    PhoneNumber = uniquePhone,   // Unique per user — update later via profile
+                    Address = "Not specified",   // Placeholder — user can update later
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
                     RoleId = request.RoleId ?? 2, // Default to Farmer role if not specified
                     Role = (UserRole)(request.RoleId ?? 2),
                     CreatedAt = DateTime.UtcNow,
-                    IsActive = true
+                    IsActive = true,
+                    IsVerified = true  // Google has already verified the email address
                 };
 
                 await _unitOfWork.GetRepository<User>().InsertAsync(user);
