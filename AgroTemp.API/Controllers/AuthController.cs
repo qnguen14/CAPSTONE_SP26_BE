@@ -152,4 +152,62 @@ public class AuthController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
         }
     }
+
+    /// <summary>
+    /// Verify Email
+    /// </summary>
+    [HttpPost("verify-email")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    {
+        var result = await _authService.VerifyEmail(request);
+        if (result)
+        {
+            return Ok(new { Message = "Email verified successfully" });
+        }
+        return BadRequest(new { Message = "Invalid email or OTP, or OTP has expired" });
+    }
+
+    /// <summary>
+    /// Forgot Password - Request password reset
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        try
+        {
+            await _authService.ForgotPassword(request);
+            return Ok(new { Message = "If the email exists, a password reset code has been sent" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during forgot password");
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while processing your request",
+                Data = null
+            };
+            return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
+        }
+    }
+
+    /// <summary>
+    /// Reset Password - Reset password with OTP
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var result = await _authService.ResetPassword(request);
+        if (result)
+        {
+            return Ok(new { Message = "Password reset successfully" });
+        }
+        return BadRequest(new { Message = "Invalid email or OTP, or OTP has expired" });
+    }
 }
