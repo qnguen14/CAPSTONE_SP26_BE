@@ -183,18 +183,25 @@ public class AuthService : BaseService<User>, IAuthService
             if (user == null)
             {
                 // Create new user from Google account
+                var newUserId = Guid.NewGuid();
+                // Generate a unique 10-digit placeholder phone number from the user's Guid
+                // so multiple Google sign-ups never collide on a unique-phone constraint.
+                var uniquePhone = string.Concat(
+                    newUserId.ToString("N").Where(char.IsDigit).Take(10)
+                ).PadRight(10, '0');
+
                 user = new User
                 {
-                    Id = Guid.NewGuid(),
+                    Id = newUserId,
                     Email = payload.Email,
-                    PhoneNumber = "0000000000", // Default placeholder - user can update later
-                    Address = "Not specified", // Default placeholder
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), // Random password
+                    PhoneNumber = uniquePhone,   // Unique per user — update later via profile
+                    Address = "Not specified",   // Placeholder — user can update later
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
                     RoleId = request.RoleId ?? 2, // Default to Farmer role if not specified
                     Role = (UserRole)(request.RoleId ?? 2),
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true,
-                    IsVerified = true // Google users are verified
+                    IsVerified = true  // Google has already verified the email address,
                 };
 
                 await _unitOfWork.GetRepository<User>().InsertAsync(user);
@@ -220,6 +227,39 @@ public class AuthService : BaseService<User>, IAuthService
         {
             throw new UnauthorizedAccessException("Invalid Google token");
         }
+    }
+
+    public async Task Logout(string token)
+    {
+        var handler = new JwtSecurityTokenHandler();
+
+        if(!handler.CanReadToken(token)){
+            throw new ArgumentException("Invalid token format");
+        }
+
+        var jwtToken = handler.ReadJwtToken(token);
+        var jti = jwtToken.Id;
+
+        if(string.IsNullOrEmpty(jti))
+        {
+            jti = Convert.ToBase64String(
+                System.Security.Cryptography.SHA256.HashData(
+                    System.Text.Encoding.UTF8.GetBytes(token)
+                )
+            );
+        }
+
+        var expiresAt = jwtToken.ValidTo == DateTime.MinValue ? DateTime.UtcNow.AddHours(24) : jwtToken.ValidTo;
+
+        var blacklistedToken = new BlacklistedToken
+        {
+            TokenId = jti,
+            ExpiresAt = expiresAt,
+            BlacklistedAt = DateTime.UtcNow
+        };
+
+        await _unitOfWork.GetRepository<BlacklistedToken>().InsertAsync(blacklistedToken);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     private string GenerateJwtToken(User user)

@@ -1,4 +1,5 @@
 using AgroTemp.API.Configuration;
+using AgroTemp.API.Middleware;
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Implements;
@@ -83,6 +84,7 @@ app.UseCors("AllowAll"); // Enable CORS
 
 app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();
+app.UseMiddleware<TokenBlacklistMiddleware>();
 
 app.MapControllers();
 
