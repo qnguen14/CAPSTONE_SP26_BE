@@ -1,0 +1,170 @@
+using AgroTemp.API.Constants;
+using AgroTemp.Domain.DTO.Notification;
+using AgroTemp.Domain.Metadata;
+using AgroTemp.Service.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace AgroTemp.API.Controllers;
+
+[ApiController]
+[Authorize]
+public class NotificationController : ControllerBase
+{
+    private readonly INotificationService _notificationService;
+    private readonly ILogger<NotificationController> _logger;
+
+    public NotificationController(
+        INotificationService notificationService,
+        ILogger<NotificationController> logger)
+    {
+        _notificationService = notificationService;
+        _logger = logger;
+    }
+
+    [HttpGet(ApiEndpointConstants.Notification.GetNotificationsEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<NotificationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetMyNotifications()
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var list = await _notificationService.GetByUserAsync(userId);
+
+            return Ok(new ApiResponse<IEnumerable<NotificationDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Notifications retrieved successfully",
+                Data = list
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving notifications");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Notification.GetUnreadNotificationsEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<NotificationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetUnreadNotifications()
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var list = await _notificationService.GetUnreadByUserAsync(userId);
+
+            return Ok(new ApiResponse<IEnumerable<NotificationDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Unread notifications retrieved successfully",
+                Data = list
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving unread notifications");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+
+    [HttpPatch(ApiEndpointConstants.Notification.MarkAsReadEndpoint)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> MarkAsRead([FromBody] MarkNotificationReadRequest request)
+    {
+        try
+        {
+            await _notificationService.MarkAsReadAsync(request.NotificationId);
+            return NoContent();
+        }
+        catch (Exception ex) when (ex.Message.Contains("not found"))
+        {
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking notification as read");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+
+    [HttpPatch(ApiEndpointConstants.Notification.MarkAllAsReadEndpoint)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> MarkAllAsRead()
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            await _notificationService.MarkAllAsReadAsync(userId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking all notifications as read");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+
+
+    [HttpDelete(ApiEndpointConstants.Notification.DeleteNotificationEndpoint)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Delete([FromRoute] Guid id)
+    {
+        try
+        {
+            await _notificationService.DeleteAsync(id);
+            return NoContent();
+        }
+        catch (Exception ex) when (ex.Message.Contains("not found"))
+        {
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting notification");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+}

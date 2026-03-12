@@ -1,4 +1,4 @@
-﻿namespace AgroTemp.API.Constants;
+namespace AgroTemp.API.Constants;
 
 public class ApiEndpointConstants
 {
@@ -92,6 +92,16 @@ public class ApiEndpointConstants
         public const string ApproveAttendanceEndpoint = WorkerAttendanceEndpoint + "/approve";
         public const string GetFarmAttendanceRecordsEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}";
         public const string GetWorkerAttendanceByFarmerEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}/worker/{workerProfileId}";
+    }
+
+    public static class Notification
+    {
+        public const string NotificationEndpoint = ApiEndpoint + "/notification";
+        public const string GetNotificationsEndpoint = NotificationEndpoint;
+        public const string GetUnreadNotificationsEndpoint = NotificationEndpoint + "/unread";
+        public const string MarkAsReadEndpoint = NotificationEndpoint + "/read";
+        public const string MarkAllAsReadEndpoint = NotificationEndpoint + "/read-all";
+        public const string DeleteNotificationEndpoint = NotificationEndpoint + "/{id}";
     }
 
     public static class Media

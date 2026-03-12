@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Context;
+using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Implements;
@@ -34,6 +34,7 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IJobPostService, JobPostService>();
             services.AddScoped<IFarmService, FarmService>();
             services.AddScoped<IWorkerAttendanceService, WorkerAttendanceService>();
+            services.AddScoped<INotificationService, NotificationService>();
 
             // Custom Services
             //services.AddScoped<ICloudinaryService, CloudinaryService>();
