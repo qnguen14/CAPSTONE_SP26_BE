@@ -30,7 +30,7 @@ public class FarmService : BaseService<Farm>, IFarmService
         {
             var farms = await _unitOfWork.GetRepository<Farm>()
                 .GetListAsync(
-                    predicate: f => f.FarmerProfileId == farmerProfileId,
+                    predicate: f => f.FarmerId == farmerProfileId,
                     orderBy: q => q.OrderByDescending(f => f.IsPrimary).ThenBy(f => f.CreatedAt));
 
             return _mapper.FarmsToDto(farms);
@@ -65,7 +65,7 @@ public class FarmService : BaseService<Farm>, IFarmService
     {
         try
         {
-            var farmerProfile = await _unitOfWork.GetRepository<FarmerProfile>()
+            var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
                 .FirstOrDefaultAsync(predicate: fp => fp.Id == farmerProfileId);
 
             if (farmerProfile == null)
@@ -76,7 +76,7 @@ public class FarmService : BaseService<Farm>, IFarmService
             if (request.isPrimary)
             {
                 var existingPrimaryFarms = await _unitOfWork.GetRepository<Farm>()
-                    .GetListAsync(predicate: f => f.FarmerProfileId == farmerProfileId && f.IsPrimary);
+                    .GetListAsync(predicate: f => f.FarmerId == farmerProfileId && f.IsPrimary);
 
                 foreach (var existingFarm in existingPrimaryFarms)
                 {
@@ -89,7 +89,7 @@ public class FarmService : BaseService<Farm>, IFarmService
             var farm = new Farm
             {
                 Id = Guid.NewGuid(),
-                FarmerProfileId = farmerProfileId,
+                FarmerId = farmerProfileId,
                 Address = request.Address,
                 Latitude = request.Latitude,
                 Longitude = request.Longitude,
@@ -122,7 +122,7 @@ public class FarmService : BaseService<Farm>, IFarmService
                 throw new Exception("Farm not found");
             }
 
-            if (farm.FarmerProfileId != farmerProfileId)
+            if (farm.FarmerId != farmerProfileId)
             {
                 throw new Exception("You can only update your own farms");
             }
@@ -130,7 +130,7 @@ public class FarmService : BaseService<Farm>, IFarmService
             if (request.IsPrimary.HasValue && request.IsPrimary.Value && !farm.IsPrimary)
             {
                 var existingPrimaryFarms = await _unitOfWork.GetRepository<Farm>()
-                    .GetListAsync(predicate: f => f.FarmerProfileId == farmerProfileId && f.IsPrimary && f.Id != id);
+                    .GetListAsync(predicate: f => f.FarmerId == farmerProfileId && f.IsPrimary && f.Id != id);
 
                 foreach (var existingFarm in existingPrimaryFarms)
                 {
@@ -190,7 +190,7 @@ public class FarmService : BaseService<Farm>, IFarmService
                 throw new Exception("Farm not found");
             }
 
-            if (farm.FarmerProfileId != farmerProfileId)
+            if (farm.FarmerId != farmerProfileId)
             {
                 throw new Exception("You can only delete your own farms");
             }

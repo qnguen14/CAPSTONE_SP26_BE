@@ -19,10 +19,10 @@ public class WorkerSkill
     public Guid Id { get; set; }
 
     [Required]
-    [ForeignKey(nameof(WorkerProfile))]
-    [Column("worker_profile_id")]
-    public Guid WorkerProfileId { get; set; }
-    public virtual WorkerProfile WorkerProfile { get; set; }
+    [ForeignKey(nameof(Worker))]
+    [Column("worker_id")]
+    public Guid WorkerId { get; set; }
+    public virtual Worker Worker { get; set; }
 
     [Required]
     [ForeignKey(nameof(Skill))]

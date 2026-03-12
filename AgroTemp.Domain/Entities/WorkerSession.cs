@@ -8,18 +8,18 @@ using System.Threading.Tasks;
 
 namespace AgroTemp.Domain.Entities
 {
-    [Table("Worker_Attendance")]
-    public class WorkerAttendance
+    [Table("Worker_Session")]
+    public class WorkerSession
     {
         [Key]
         [Column("id")]
         public Guid Id { get; set; }
 
         [Required]
-        [ForeignKey(nameof(JobApplication))]
-        [Column("job_application_id")]
-        public Guid JobApplicationId { get; set; }
-        public virtual JobApplication JobApplication { get; set; }
+        [ForeignKey(nameof(JobDetail))]
+        [Column("job_detail_id")]
+        public Guid JobDetailId { get; set; }
+        public virtual JobDetail JobDetail { get; set; }
 
         [Required]
         [Column("work_date")]

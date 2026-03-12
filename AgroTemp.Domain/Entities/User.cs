@@ -72,8 +72,8 @@ public class User
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
 
     // Navigation properties
-    public virtual WorkerProfile? WorkerProfile { get; set; }
-    public virtual FarmerProfile? FarmerProfile { get; set; }
+    public virtual Worker? Worker { get; set; }
+    public virtual Farmer? Farmer { get; set; }
     
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public virtual ICollection<ChatMessage> SentMessages { get; set; } = new List<ChatMessage>();

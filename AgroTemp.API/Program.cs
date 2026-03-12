@@ -67,7 +67,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
-    c.RoutePrefix = ""; // Swagger at root
+    c.RoutePrefix = "swagger"; // Swagger at /swagger
 });
 
 
