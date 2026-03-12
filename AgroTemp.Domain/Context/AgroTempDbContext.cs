@@ -12,8 +12,8 @@ public class AgroTempDbContext : DbContext
     public AgroTempDbContext(DbContextOptions<AgroTempDbContext> options) : base(options) { }
 
     public DbSet<User> Users { get; set; }
-    public DbSet<WorkerProfile> WorkerProfiles { get; set; }
-    public DbSet<FarmerProfile> FarmerProfiles { get; set; }
+    public DbSet<Worker> Workers { get; set; }
+    public DbSet<Farmer> Farmers { get; set; }
     public DbSet<Farm> Farms { get; set; }
     public DbSet<JobCategory> JobCategories { get; set; }
     public DbSet<JobPost> JobPosts { get; set; }
@@ -21,10 +21,10 @@ public class AgroTempDbContext : DbContext
     public DbSet<Skill> Skills { get; set; }
     public DbSet<JobSkillRequirement> JobSkillRequirements { get; set; }
     public DbSet<JobApplication> JobApplications { get; set; }
-    public DbSet<WorkerAttendance> WorkerAttendances { get; set; }
+    public DbSet<WorkerSession> WorkerSessions { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
-    public DbSet<JobAssignment> JobAssignments { get; set; }
+    public DbSet<JobDetail> JobAssignments { get; set; }
     public DbSet<Rating> Ratings { get; set; }
     public DbSet<BlacklistedToken> BlacklistedTokens { get; set; }
     public DbSet<Payment> Payments { get; set; }
@@ -36,18 +36,18 @@ public class AgroTempDbContext : DbContext
     {
         modelBuilder.HasDefaultSchema("AgroTempV1");
         
-        // Configure User-WorkerProfile one-to-one relationship
+        // Configure User-Worker one-to-one relationship
         modelBuilder.Entity<User>()
-            .HasOne(u => u.WorkerProfile)
+            .HasOne(u => u.Worker)
             .WithOne(wp => wp.User)
-            .HasForeignKey<WorkerProfile>(wp => wp.UserId)
+            .HasForeignKey<Worker>(wp => wp.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure User-FarmerProfile one-to-one relationship
+        // Configure User-Farmer one-to-one relationship
         modelBuilder.Entity<User>()
-            .HasOne(u => u.FarmerProfile)
+            .HasOne(u => u.Farmer)
             .WithOne(fp => fp.User)
-            .HasForeignKey<FarmerProfile>(fp => fp.UserId)
+            .HasForeignKey<Farmer>(fp => fp.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configure User-Notification one-to-many relationship
@@ -71,11 +71,11 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(m => m.RecipientId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Configure FarmerProfile-Farm one-to-many relationship
-        modelBuilder.Entity<FarmerProfile>()
-            .HasMany(fp => fp.Farms)
-            .WithOne(f => f.FarmerProfile)
-            .HasForeignKey(f => f.FarmerProfileId)
+        // Configure Farmer-Farm one-to-many relationship
+        modelBuilder.Entity<Farmer>()
+            .HasMany(f => f.Farms)
+            .WithOne(fp => fp.Farmer)
+            .HasForeignKey(fp => fp.FarmerId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configure JobCategory-JobPost one-to-many relationship
@@ -85,11 +85,11 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(jp => jp.JobCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Configure FarmerProfile-JobPost one-to-many relationship
-        modelBuilder.Entity<FarmerProfile>()
+        // Configure Farmer-JobPost one-to-many relationship
+        modelBuilder.Entity<Farmer>()
             .HasMany<JobPost>()
-            .WithOne(jp => jp.FarmerProfile)
-            .HasForeignKey(jp => jp.FarmerProfileId)
+            .WithOne(jp => jp.Farmer)
+            .HasForeignKey(jp => jp.FarmerId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configure enum conversions for JobPost
@@ -106,11 +106,11 @@ public class AgroTempDbContext : DbContext
             .HasConversion<int>();
 
         // Configure precision for decimal columns
-        modelBuilder.Entity<WorkerProfile>()
+        modelBuilder.Entity<Worker>()
             .Property(wp => wp.AverageRating)
             .HasPrecision(3, 2); // e.g., 5.00
 
-        modelBuilder.Entity<FarmerProfile>()
+        modelBuilder.Entity<Farmer>()
             .Property(fp => fp.AverageRating)
             .HasPrecision(3, 2); // e.g., 5.00
 
@@ -145,11 +145,11 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(ja => ja.JobPostId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure WorkerProfile-JobApplication one-to-many relationship
-        modelBuilder.Entity<WorkerProfile>()
+        // Configure Worker-JobApplication one-to-many relationship
+        modelBuilder.Entity<Worker>()
             .HasMany<JobApplication>()
-            .WithOne(ja => ja.WorkerProfile)
-            .HasForeignKey(ja => ja.WorkerProfileId)
+            .WithOne(ja => ja.Worker)
+            .HasForeignKey(ja => ja.WorkerId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configure enum conversions for JobApplication
@@ -157,23 +157,21 @@ public class AgroTempDbContext : DbContext
             .Property(ja => ja.StatusId)
             .HasConversion<int>();
 
-        // Configure JobApplication-WorkerAttendance one-to-many relationship
-        modelBuilder.Entity<JobApplication>()
-            .HasMany(ja => ja.WorkerAttendances)
-            .WithOne(wa => wa.JobApplication)
-            .HasForeignKey(wa => wa.JobApplicationId)
+        modelBuilder.Entity<JobDetail>()
+            .HasMany(ja => ja.WorkerSessions)
+            .WithOne(wa => wa.JobDetail)
+            .HasForeignKey(wa => wa.JobDetailId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure precision for WorkerAttendance decimal columns
-        modelBuilder.Entity<WorkerAttendance>()
-            .Property(wa => wa.TotalHoursWorked)
+        modelBuilder.Entity<WorkerSession>()
+            .Property(ws => ws.TotalHoursWorked)
             .HasPrecision(10, 2);
 
-        // Configure WorkerProfile-WorkerSkill one-to-many relationship
-        modelBuilder.Entity<WorkerProfile>()
+        // Configure Worker-WorkerSkill one-to-many relationship
+        modelBuilder.Entity<Worker>()
             .HasMany(wp => wp.WorkerSkills)
-            .WithOne(ws => ws.WorkerProfile)
-            .HasForeignKey(ws => ws.WorkerProfileId)
+            .WithOne(ws => ws.Worker)
+            .HasForeignKey(ws => ws.WorkerId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configure Skill-WorkerSkill one-to-many relationship
@@ -199,38 +197,38 @@ public class AgroTempDbContext : DbContext
 
         // Configure JobApplication-JobAssignment one-to-many relationship
         modelBuilder.Entity<JobApplication>()
-            .HasMany(ja => ja.JobAssignments)
+            .HasMany(ja => ja.JobDetails)
             .WithOne(ja => ja.JobApplication)
             .HasForeignKey(ja => ja.JobApplicationId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Configure JobPost-JobAssignment one-to-many relationship
         modelBuilder.Entity<JobPost>()
-            .HasMany(jp => jp.JobAssignments)
+            .HasMany(jp => jp.JobDetails)
             .WithOne(ja => ja.JobPost)
             .HasForeignKey(ja => ja.JobPostId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Configure WorkerProfile-JobAssignment one-to-many relationship
-        modelBuilder.Entity<WorkerProfile>()
-            .HasMany(wp => wp.JobAssignments)
-            .WithOne(ja => ja.WorkerProfile)
-            .HasForeignKey(ja => ja.WorkerProfileId)
+        // Configure Worker-JobDetail one-to-many relationship
+        modelBuilder.Entity<Worker>()
+            .HasMany(w => w.JobDetails)
+            .WithOne(jd => jd.Worker)
+            .HasForeignKey(jd => jd.WorkerId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Configure enum conversions for JobAssignment
-        modelBuilder.Entity<JobAssignment>()
-            .Property(ja => ja.StatusId)
+        modelBuilder.Entity<JobDetail>()
+            .Property(jd => jd.StatusId)
             .HasConversion<int>();
 
         // Configure precision for JobAssignment decimal columns
-        modelBuilder.Entity<JobAssignment>()
-            .Property(ja => ja.TotalHoursWorked)
+        modelBuilder.Entity<JobDetail>()
+            .Property(jd => jd.TotalHoursWorked)
             .HasPrecision(10, 2);
 
         // Configure JobAssignment TotalAmountDue precision
-        modelBuilder.Entity<JobAssignment>()
-            .Property(ja => ja.TotalAmountDue)
+        modelBuilder.Entity<JobDetail>()
+            .Property(jd => jd.TotalAmountDue)
             .HasPrecision(18, 2);
 
         // Configure User-Rating (Rater) one-to-many relationship

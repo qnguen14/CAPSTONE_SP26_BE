@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
 
-[Table("Farmer_Profile")]
-public class FarmerProfile
+[Table("Farmer")]
+public class Farmer
 {
     [Key]
     [Required]

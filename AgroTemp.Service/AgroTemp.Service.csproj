@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\AgroTemp.Repository\AgroTemp.Repository.csproj" />
+      <PackageReference Include="CloudinaryDotNet" Version="1.27.8" />
     </ItemGroup>
 
     <ItemGroup>

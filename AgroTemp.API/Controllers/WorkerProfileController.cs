@@ -4,7 +4,6 @@ using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Implements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace AgroTemp.API.Controllers;
 
@@ -29,25 +28,11 @@ public class WorkerProfileController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<WorkerProfileDTO>> GetWorkerProfile([FromRoute] Guid userId)
+    public async Task<ActionResult<WorkerProfileDTO>> GetWorkerProfile()
     {
         try
         {
-            // Verify the authenticated user matches the userId in the route
-            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
-            if (currentUserId == null || currentUserId != userId.ToString())
-            {
-                var forbiddenResponse = new ApiResponse<object>
-                {
-                    StatusCode = StatusCodes.Status403Forbidden,
-                    Message = "You can only access your own profile",
-                    Data = null
-                };
-                return StatusCode(StatusCodes.Status403Forbidden, forbiddenResponse);
-            }
-
-            var profile = await _userService.GetWorkerProfile(userId);
+            var profile = await _userService.GetWorkerProfile();
 
             var apiResponse = new ApiResponse<WorkerProfileDTO>
             {
@@ -59,7 +44,7 @@ public class WorkerProfileController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving worker profile for user {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving worker profile for user");
             
             var apiResponse = new ApiResponse<object>
             {
@@ -82,25 +67,10 @@ public class WorkerProfileController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<WorkerProfileDTO>> UpdateWorkerProfile(
-        [FromRoute] Guid userId, 
         [FromBody] UpdateWorkerProfileRequest request)
     {
         try
         {
-            // Verify the authenticated user matches the userId in the route
-            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
-            if (currentUserId == null || currentUserId != userId.ToString())
-            {
-                var forbiddenResponse = new ApiResponse<object>
-                {
-                    StatusCode = StatusCodes.Status403Forbidden,
-                    Message = "You can only update your own profile",
-                    Data = null
-                };
-                return StatusCode(StatusCodes.Status403Forbidden, forbiddenResponse);
-            }
-
             if (!ModelState.IsValid)
             {
                 var apiResponse = new ApiResponse<object>
@@ -112,7 +82,7 @@ public class WorkerProfileController : Controller
                 return BadRequest(apiResponse);
             }
 
-            var profile = await _userService.UpdateWorkerProfile(userId, request);
+            var profile = await _userService.UpdateWorkerProfile(request);
 
             var successResponse = new ApiResponse<WorkerProfileDTO>
             {
@@ -124,7 +94,7 @@ public class WorkerProfileController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating worker profile for user {UserId}", userId);
+            _logger.LogError(ex, "Error updating worker profile");
             
             var apiResponse = new ApiResponse<object>
             {

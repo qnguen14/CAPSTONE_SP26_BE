@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Context;
+using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
@@ -224,11 +224,12 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
-    public async Task<FarmerProfileDTO> GetFarmerProfile(Guid userId)
+    public async Task<FarmerProfileDTO> GetFarmerProfile()
     {
         try
         {
-            var farmerProfile = await _unitOfWork.GetRepository<FarmerProfile>()
+            var userId = GetCurrentUserId();
+            var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
                 .FirstOrDefaultAsync(
                     predicate: fp => fp.UserId == userId,
                     include: null);
@@ -238,7 +239,7 @@ public class UserService : BaseService<User>, IUserService
                 throw new Exception("Farmer profile not found");
             }
 
-            return _mapper.FarmerProfileToDto(farmerProfile);
+            return _mapper.FarmerToDto(farmerProfile);
         }
         catch (Exception ex)
         {
@@ -246,19 +247,19 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
-    public async Task<FarmerProfileDTO> UpdateFarmerProfile(Guid userId, UpdateFarmerProfileRequest request)
+    public async Task<FarmerProfileDTO> UpdateFarmerProfile(UpdateFarmerProfileRequest request)
     {
         try
         {
-            var farmerProfile = await _unitOfWork.GetRepository<FarmerProfile>()
+            var userId = GetCurrentUserId();
+            var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
                 .FirstOrDefaultAsync(
                     predicate: fp => fp.UserId == userId,
                     include: null);
 
             if (farmerProfile == null)
             {
-                // Profile doesn't exist - create it (first-time setup)
-                farmerProfile = new FarmerProfile
+                farmerProfile = new Farmer
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
@@ -274,11 +275,10 @@ public class UserService : BaseService<User>, IUserService
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                await _unitOfWork.GetRepository<FarmerProfile>().InsertAsync(farmerProfile);
+                await _unitOfWork.GetRepository<Farmer>().InsertAsync(farmerProfile);
             }
             else
             {
-                // Profile exists - update it
                 farmerProfile.OrganizationName = request.OrganizationName;
                 farmerProfile.ContactName = request.ContactName;
                 farmerProfile.ContactNumber = request.ContactNumber;
@@ -286,12 +286,12 @@ public class UserService : BaseService<User>, IUserService
                 farmerProfile.FarmType = request.FarmType;
                 farmerProfile.UpdatedAt = DateTime.UtcNow;
 
-                _unitOfWork.GetRepository<FarmerProfile>().UpdateAsync(farmerProfile);
+                _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmerProfile);
             }
 
             await _unitOfWork.SaveChangesAsync();
 
-            return _mapper.FarmerProfileToDto(farmerProfile);
+            return _mapper.FarmerToDto(farmerProfile);
         }
         catch (Exception ex)
         {
@@ -299,11 +299,12 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
-    public async Task<WorkerProfileDTO> GetWorkerProfile(Guid userId)
+    public async Task<WorkerProfileDTO> GetWorkerProfile()
     {
         try
         {
-            var workerProfile = await _unitOfWork.GetRepository<WorkerProfile>()
+            var userId = GetCurrentUserId();
+            var workerProfile = await _unitOfWork.GetRepository<Worker>()
                 .FirstOrDefaultAsync(
                     predicate: wp => wp.UserId == userId,
                     include: null);
@@ -313,7 +314,7 @@ public class UserService : BaseService<User>, IUserService
                 throw new Exception("Worker profile not found");
             }
 
-            return _mapper.WorkerProfileToDto(workerProfile);
+            return _mapper.WorkerToDto(workerProfile);
         }
         catch (Exception ex)
         {
@@ -321,19 +322,19 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
-    public async Task<WorkerProfileDTO> UpdateWorkerProfile(Guid userId, UpdateWorkerProfileRequest request)
+    public async Task<WorkerProfileDTO> UpdateWorkerProfile(UpdateWorkerProfileRequest request)
     {
         try
         {
-            var workerProfile = await _unitOfWork.GetRepository<WorkerProfile>()
+            var userId = GetCurrentUserId();
+            var workerProfile = await _unitOfWork.GetRepository<Worker>()
                 .FirstOrDefaultAsync(
                     predicate: wp => wp.UserId == userId,
                     include: null);
 
             if (workerProfile == null)
             {
-                // Profile doesn't exist - create it (first-time setup)
-                workerProfile = new WorkerProfile
+                workerProfile = new Worker
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
@@ -350,7 +351,7 @@ public class UserService : BaseService<User>, IUserService
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                await _unitOfWork.GetRepository<WorkerProfile>().InsertAsync(workerProfile);
+                await _unitOfWork.GetRepository<Worker>().InsertAsync(workerProfile);
             }
             else
             {
@@ -364,12 +365,12 @@ public class UserService : BaseService<User>, IUserService
                 workerProfile.AvatarUrl = request.AvatarUrl;
                 workerProfile.UpdatedAt = DateTime.UtcNow;
 
-                _unitOfWork.GetRepository<WorkerProfile>().UpdateAsync(workerProfile);
+                _unitOfWork.GetRepository<Worker>().UpdateAsync(workerProfile);
             }
 
             await _unitOfWork.SaveChangesAsync();
 
-            return _mapper.WorkerProfileToDto(workerProfile);
+            return _mapper.WorkerToDto(workerProfile);
         }
         catch (Exception ex)
         {

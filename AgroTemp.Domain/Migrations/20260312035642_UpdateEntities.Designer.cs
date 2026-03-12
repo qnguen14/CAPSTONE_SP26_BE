@@ -3,6 +3,7 @@ using System;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312035642_UpdateEntities")]
+    partial class UpdateEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,31 +25,6 @@ namespace AgroTemp.Domain.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.BlacklistedToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("BlacklistedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("blacklisted_at");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<string>("TokenId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("token_id");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("BlacklistedToken", "AgroTempV1");
-                });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.ChatMessage", b =>
                 {
@@ -559,37 +537,6 @@ namespace AgroTemp.Domain.Migrations
                     b.ToTable("Notification", "AgroTempV1");
                 });
 
-            modelBuilder.Entity("AgroTemp.Domain.Entities.Payment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("VnPayResponseCode")
-                        .HasColumnType("text");
-
-                    b.Property<string>("VnPayTxnRef")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Payments", "AgroTempV1");
-                });
-
             modelBuilder.Entity("AgroTemp.Domain.Entities.Rating", b =>
                 {
                     b.Property<Guid>("Id")
@@ -722,111 +669,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("role_id");
 
-                    b.HasKey("Id");
-
-                    b.ToTable("User", "AgroTempV1");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.Wallet", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Balance")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("Wallets", "AgroTempV1");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.WalletTransaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ReferenceId")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("WalletId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WalletId");
-
-                    b.ToTable("WalletTransactions", "AgroTempV1");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.WithdrawalRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AccountHolderName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("BankAccountNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("BankName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ProcessedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("WithdrawalRequests", "AgroTempV1");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.WorkerAttendance", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
                     b.Property<string>("VerificationToken")
                         .HasColumnType("text")
                         .HasColumnName("verification_token");
@@ -1144,17 +986,6 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AgroTemp.Domain.Entities.Payment", b =>
-                {
-                    b.HasOne("AgroTemp.Domain.Entities.User", "User")
-                        .WithMany("Payments")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("AgroTemp.Domain.Entities.Rating", b =>
                 {
                     b.HasOne("AgroTemp.Domain.Entities.JobPost", "JobPost")
@@ -1180,39 +1011,6 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("Ratee");
 
                     b.Navigation("Rater");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.Wallet", b =>
-                {
-                    b.HasOne("AgroTemp.Domain.Entities.User", "User")
-                        .WithOne("Wallet")
-                        .HasForeignKey("AgroTemp.Domain.Entities.Wallet", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.WalletTransaction", b =>
-                {
-                    b.HasOne("AgroTemp.Domain.Entities.Wallet", "Wallet")
-                        .WithMany("Transactions")
-                        .HasForeignKey("WalletId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Wallet");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.WithdrawalRequest", b =>
-                {
-                    b.HasOne("AgroTemp.Domain.Entities.User", "User")
-                        .WithMany("WithdrawalRequests")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Worker", b =>
@@ -1300,24 +1098,13 @@ namespace AgroTemp.Domain.Migrations
 
                     b.Navigation("Notifications");
 
-                    b.Navigation("Payments");
-
                     b.Navigation("ReceivedMessages");
 
                     b.Navigation("ReceivedRatings");
 
                     b.Navigation("SentMessages");
 
-                    b.Navigation("Wallet");
-
-                    b.Navigation("WithdrawalRequests");
-
-                    b.Navigation("WorkerProfile");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.Wallet", b =>
-                {
-                    b.Navigation("Transactions");
+                    b.Navigation("Worker");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Worker", b =>

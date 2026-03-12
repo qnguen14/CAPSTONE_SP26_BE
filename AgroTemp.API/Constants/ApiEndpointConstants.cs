@@ -34,8 +34,8 @@ public class ApiEndpointConstants
     public static class FarmerProfile
     {
         public const string FarmerProfileEndpoint = ApiEndpoint + "/farmer-profile";
-        public const string GetFarmerProfileEndpoint = FarmerProfileEndpoint + "/{userId}";
-        public const string UpdateFarmerProfileEndpoint = FarmerProfileEndpoint + "/{userId}";
+        public const string GetFarmerProfileEndpoint = FarmerProfileEndpoint;
+        public const string UpdateFarmerProfileEndpoint = FarmerProfileEndpoint;
     }
 
     public static class Farm 
@@ -51,8 +51,8 @@ public class ApiEndpointConstants
     public static class WorkerProfile
     {
         public const string WorkerProfileEndpoint = ApiEndpoint + "/worker-profile";
-        public const string GetWorkerProfileEndpoint = WorkerProfileEndpoint + "/{userId}";
-        public const string UpdateWorkerProfileEndpoint = WorkerProfileEndpoint + "/{userId}";
+        public const string GetWorkerProfileEndpoint = WorkerProfileEndpoint;
+        public const string UpdateWorkerProfileEndpoint = WorkerProfileEndpoint;
     }
     public static class Job
     {
@@ -92,5 +92,28 @@ public class ApiEndpointConstants
         public const string ApproveAttendanceEndpoint = WorkerAttendanceEndpoint + "/approve";
         public const string GetFarmAttendanceRecordsEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}";
         public const string GetWorkerAttendanceByFarmerEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}/worker/{workerProfileId}";
+    }
+
+    public static class Media
+    {
+        public const string MediaEndpoint = ApiEndpoint + "/media";
+        public const string MediaUploadEndpoint = MediaEndpoint + "/upload";
+        public const string MediaDeleteEndpoint = MediaEndpoint + "/delete";
+
+        // Image endpoints
+        public const string UploadImageEndpoint = MediaUploadEndpoint + "/image";
+        public const string UploadImagesEndpoint = MediaUploadEndpoint + "/images";
+
+        // Video endpoints
+        public const string UploadVideoEndpoint = MediaUploadEndpoint + "/video";
+        public const string UploadVideosEndpoint = MediaUploadEndpoint + "/videos";
+
+        // Raw file endpoints
+        public const string UploadRawFileEndpoint = MediaUploadEndpoint + "/raw-file";
+        public const string UploadRawFilesEndpoint = MediaUploadEndpoint + "/raw-files";
+
+        // Media deletion endpoints
+        public const string DeleteResourceEndpoint = MediaDeleteEndpoint + "/resource";
+        public const string DeleteResourcesEndpoint = MediaDeleteEndpoint + "/resources";
     }
 }

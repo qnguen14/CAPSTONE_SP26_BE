@@ -16,13 +16,13 @@ public partial class MapperlyMapper : IMapperlyMapper
     
     public partial List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
     
-    public partial FarmerProfileDTO FarmerProfileToDto(FarmerProfile farmerProfile);
+    public partial FarmerProfileDTO FarmerToDto(Farmer farmer);
 
     //Farm
     public partial FarmDTO FarmToDto(Farm farm);
     public partial List<FarmDTO> FarmsToDto(IEnumerable<Farm> farms);
 
-    public partial WorkerProfileDTO WorkerProfileToDto(WorkerProfile workerProfile);
+    public partial WorkerProfileDTO WorkerToDto(Worker worker);
     
     // Custom mapping for ExperienceLevel enum to string
     private string MapExperienceLevel(ExperienceLevel level) => level.ToString();
@@ -42,7 +42,7 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
     public partial void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 
-    // WorkerAttendance
-    public partial WorkerAttendanceDTO WorkerAttendanceToDto(Entities.WorkerAttendance workerAttendance);
-    public partial List<WorkerAttendanceDTO> WorkerAttendancesToDtos(IEnumerable<Entities.WorkerAttendance> workerAttendances);
+    // WorkerSession
+    public partial WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);
+    public partial List<WorkerAttendanceDTO> WorkerSessionsToDtos(IEnumerable<WorkerSession> workerSessions);
 }

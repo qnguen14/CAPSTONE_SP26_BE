@@ -8,6 +8,7 @@ using AgroTemp.Service.Interfaces;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.Design;
 using Resend;
+using AgroTemp.Service.Config.ApiModels;
 
 namespace AgroTemp.API.Configuration
 {
@@ -47,19 +48,22 @@ namespace AgroTemp.API.Configuration
                 });
             services.AddScoped<IEmailService, ResendEmailService>();
 
+            // Custom Services
+            services.AddScoped<ICloudinaryService, CloudinaryService>();
+
             // Third-Party Services
-            //RegisterThirdPartyServices(services, configuration);
+            RegisterThirdPartyServices(services, configuration);
 
             return services;
         }
 
-        //private static void RegisterThirdPartyServices(IServiceCollection services, IConfiguration configuration)
-        //{
-        //    services.Configure<CloudinarySetting>(options =>
-        //    {
-        //        options.CloudinaryUrl = configuration["Cloudinary:CloudinaryUrl"];
-        //    });
-        //    CloudinarySetting.Instance = services.BuildServiceProvider().GetService<IOptions<CloudinarySetting>>().Value;
-        //}
+        private static void RegisterThirdPartyServices(IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<CloudinarySetting>(options =>
+            {
+                options.CloudinaryUrl = configuration["Cloudinary:CloudinaryUrl"];
+            });
+            CloudinarySetting.Instance = services.BuildServiceProvider().GetService<IOptions<CloudinarySetting>>().Value;
+        }
     }
 }

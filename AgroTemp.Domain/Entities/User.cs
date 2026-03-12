@@ -59,9 +59,21 @@ public class User
     [Column("is_verified")]
     public bool IsVerified { get; set; }
 
+    [Column("verification_token")]
+    public string? VerificationToken { get; set; }
+
+    [Column("verification_token_expires_at")]
+    public DateTime? VerificationTokenExpiresAt { get; set; }
+
+    [Column("password_reset_token")]
+    public string? PasswordResetToken { get; set; }
+
+    [Column("password_reset_token_expires_at")]
+    public DateTime? PasswordResetTokenExpiresAt { get; set; }
+
     // Navigation properties
-    public virtual WorkerProfile? WorkerProfile { get; set; }
-    public virtual FarmerProfile? FarmerProfile { get; set; }
+    public virtual Worker? Worker { get; set; }
+    public virtual Farmer? Farmer { get; set; }
     
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public virtual ICollection<ChatMessage> SentMessages { get; set; } = new List<ChatMessage>();

@@ -13,15 +13,15 @@ public interface IMapperlyMapper
     UserDTO UserToUserDto(User user);
     List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
     
-    // FarmerProfile
-    FarmerProfileDTO FarmerProfileToDto(FarmerProfile farmerProfile);
+    // Farmer
+    FarmerProfileDTO FarmerToDto(Farmer farmer);
 
     //Farm
     FarmDTO FarmToDto(Farm farm);
     List<FarmDTO> FarmsToDto(IEnumerable<Farm> farms);
 
-    // WorkerProfile
-    WorkerProfileDTO WorkerProfileToDto(WorkerProfile workerProfile);
+    // Worker
+    WorkerProfileDTO WorkerToDto(Worker worker);
     
     // LoginResponse UserToLoginResponse(User user);
     // User RegisterRequestToUser(RegisterRequest resquest);
@@ -40,7 +40,7 @@ public interface IMapperlyMapper
     JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
     void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 
-    // WorkerAttendance
-    WorkerAttendanceDTO WorkerAttendanceToDto(Entities.WorkerAttendance workerAttendance);
-    List<WorkerAttendanceDTO> WorkerAttendancesToDtos(IEnumerable<Entities.WorkerAttendance> workerAttendances);
+    // WorkerSession
+    WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);
+    List<WorkerAttendanceDTO> WorkerSessionsToDtos(IEnumerable<WorkerSession> workerSessions);
 }
