@@ -156,7 +156,7 @@ public class AuthController : Controller
     /// <summary>
     /// Verify Email
     /// </summary>
-    [HttpPost("verify-email")]
+    [HttpPost(ApiEndpointConstants.Auth.VerifyResetCodeEndpoint)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
@@ -172,7 +172,7 @@ public class AuthController : Controller
     /// <summary>
     /// Forgot Password - Request password reset
     /// </summary>
-    [HttpPost("forgot-password")]
+    [HttpPost(ApiEndpointConstants.Auth.ForgetPasswordEndpoint)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
@@ -198,7 +198,7 @@ public class AuthController : Controller
     /// <summary>
     /// Reset Password - Reset password with OTP
     /// </summary>
-    [HttpPost("reset-password")]
+    [HttpPost(ApiEndpointConstants.Auth.ResetPasswordEndpoint)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)

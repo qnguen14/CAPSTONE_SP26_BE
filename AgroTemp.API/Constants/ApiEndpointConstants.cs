@@ -14,10 +14,11 @@ public class ApiEndpointConstants
         public const string LoginEndpoint = ApiEndpoint + "/login";
         public const string RegisterEndpoint = ApiEndpoint + "/register";
         public const string GoogleLoginEndpoint = ApiEndpoint + "/google-login";
-        public const string SendResetCodeEndpoint = ApiEndpoint + "/reset";
-        public const string VerifyResetCodeEndpoint = ApiEndpoint + "/verify/reset";
-        public const string DisableAccountEndpoint = ApiEndpoint + "/disable";
-        public const string VerifyDisableCodeEndpoint = ApiEndpoint + "/verify/disable";
+        public const string ResetPasswordEndpoint = ApiEndpoint + "/reset";
+        public const string ForgetPasswordEndpoint = ApiEndpoint + "/forget";
+        public const string VerifyResetCodeEndpoint = ApiEndpoint + "/verify";
+        // public const string DisableAccountEndpoint = ApiEndpoint + "/disable";
+        // public const string VerifyDisableCodeEndpoint = ApiEndpoint + "/verify/disable";
         public const string LogoutEndpoint = ApiEndpoint + "/logout";
     }
 
