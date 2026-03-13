@@ -76,6 +76,12 @@ public class ApiEndpointConstants
         public const string UpdateJobCategoryEndpoint = JobCategoryEndpoint + "/update";
         public const string UpdateJobPostEndpoint = JobPostEndpoint + "/update";
         public const string UpdateJobApplicationEndpoint = JobApplicationEndpoint + "/update";
+
+        public const string DeleteJobCategoryEndpoint = JobCategoryEndpoint + "/delete";
+        public const string DeleteJobPostEndpoint = JobPostEndpoint + "/delete";
+        public const string DeleteJobApplicationEndpoint = JobApplicationEndpoint + "/delete";
+
+        public const string UpdateJobPostStatusEndpoint = JobPostEndpoint + "/update-status";
     }
 
     public static class WorkerAttendance
