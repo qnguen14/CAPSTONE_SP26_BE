@@ -3,6 +3,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
 
+public enum NotificationType
+{
+    JobAcceptance = 1,
+    Reminder,
+    PaymentConfirmation,
+    NearbyJobOpening
+}
+
 [Table("Notification")]
 public class Notification
 {
@@ -17,10 +25,10 @@ public class Notification
     public Guid UserId { get; set; }
     public virtual User User { get; set; }
 
-    [Required]
+    public Guid? RelatedEntityId { get; set; }
+    [Required] 
     [Column("type")]
-    [StringLength(50)]
-    public string Type { get; set; }
+    public NotificationType Type { get; set; }
 
     [Required]
     [Column("title")]
