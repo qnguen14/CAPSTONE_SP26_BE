@@ -211,4 +211,48 @@ public class AuthController : Controller
         }
         return BadRequest(new { Message = "Invalid email or OTP, or OTP has expired" });
     }
+
+    [Authorize]
+    [HttpPost(ApiEndpointConstants.Auth.LogoutEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> Logout()
+    {
+        try{
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var token = authHeader!["Bearer".Length..].Trim();
+            await _authService.Logout(token);
+
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Logout successful",
+                Data = null
+            };
+            return Ok(apiResponse);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex.Message);
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            };
+            return BadRequest(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during logout");
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred during logout",
+                Data = null
+            };
+            return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
+        }
+    }
 }
