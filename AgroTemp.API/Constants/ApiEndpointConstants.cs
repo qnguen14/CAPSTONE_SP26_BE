@@ -16,7 +16,6 @@ public class ApiEndpointConstants
         public const string GoogleLoginEndpoint = ApiEndpoint + "/google-login";
         public const string ResetPasswordEndpoint = ApiEndpoint + "/reset";
         public const string ForgetPasswordEndpoint = ApiEndpoint + "/forget";
-        public const string VerifyResetCodeEndpoint = ApiEndpoint + "/verify";
         // public const string DisableAccountEndpoint = ApiEndpoint + "/disable";
         // public const string VerifyDisableCodeEndpoint = ApiEndpoint + "/verify/disable";
         public const string LogoutEndpoint = ApiEndpoint + "/logout";
