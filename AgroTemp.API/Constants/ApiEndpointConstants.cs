@@ -1,4 +1,4 @@
-﻿namespace AgroTemp.API.Constants;
+namespace AgroTemp.API.Constants;
 
 public class ApiEndpointConstants
 {
@@ -37,6 +37,7 @@ public class ApiEndpointConstants
         public const string FarmerProfileEndpoint = ApiEndpoint + "/farmer";
         public const string GetFarmerProfileEndpoint = FarmerProfileEndpoint;
         public const string UpdateFarmerProfileEndpoint = FarmerProfileEndpoint;
+        public const string UploadAvatarEndpoint = FarmerProfileEndpoint + "/upload-avatar";
     }
 
     public static class Farm 
@@ -54,6 +55,7 @@ public class ApiEndpointConstants
         public const string WorkerProfileEndpoint = ApiEndpoint + "/worker";
         public const string GetWorkerProfileEndpoint = WorkerProfileEndpoint;
         public const string UpdateWorkerProfileEndpoint = WorkerProfileEndpoint;
+        public const string UploadAvatarEndpoint = WorkerProfileEndpoint + "/upload-avatar";
     }
     public static class Job
     {

@@ -1,4 +1,5 @@
-﻿using AgroTemp.Domain.DTO;
+using AgroTemp.Domain.DTO;
+using Microsoft.AspNetCore.Http;
 
 namespace AgroTemp.Service.Implements;
 
@@ -16,4 +17,7 @@ public interface IUserService
     
     Task<WorkerProfileDTO> GetWorkerProfile();
     Task<WorkerProfileDTO> UpdateWorkerProfile(UpdateWorkerProfileRequest request);
+
+    Task<string> UploadFarmerAvatar(IFormFile file);
+    Task<string> UploadWorkerAvatar(IFormFile file);
 }

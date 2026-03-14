@@ -22,4 +22,7 @@ public class UpdateFarmerProfileRequest
     [Required]
     [StringLength(100)]
     public string FarmType { get; set; }
+
+    [Required]
+    public string AvatarUrl { get; set; }
 }

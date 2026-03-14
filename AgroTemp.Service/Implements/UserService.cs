@@ -13,14 +13,17 @@ namespace AgroTemp.Service.Interfaces;
 public class UserService : BaseService<User>, IUserService
 {
     private readonly IMapperlyMapper _mapper;
+    private readonly ICloudinaryService _cloudinaryService;
     public UserService(
         IUnitOfWork<AgroTempDbContext> unitOfWork, 
         IHttpContextAccessor httpContextAccessor, 
-        IMapperlyMapper mapper) : base(unitOfWork, httpContextAccessor, mapper)
+        IMapperlyMapper mapper,
+        ICloudinaryService cloudinaryService) : base(unitOfWork, httpContextAccessor, mapper)
     {
         _unitOfWork = unitOfWork;
         _httpContextAccessor = httpContextAccessor;
         _mapper = mapper;
+        _cloudinaryService = cloudinaryService;
     }
 
     public async Task<UserDTO> GetUserByEmail(string email)
@@ -271,6 +274,7 @@ public class UserService : BaseService<User>, IUserService
                     AverageRating = 0,
                     TotalJobsPosted = 0,
                     TotalJobsCompleted = 0,
+                    AvatarUrl = request.AvatarUrl,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -285,6 +289,7 @@ public class UserService : BaseService<User>, IUserService
                 farmerProfile.CooperativeAffiliation = request.CooperativeAffiliation;
                 farmerProfile.FarmType = request.FarmType;
                 farmerProfile.UpdatedAt = DateTime.UtcNow;
+                farmerProfile.AvatarUrl = request.AvatarUrl;
 
                 _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmerProfile);
             }
@@ -371,6 +376,80 @@ public class UserService : BaseService<User>, IUserService
             await _unitOfWork.SaveChangesAsync();
 
             return _mapper.WorkerToDto(workerProfile);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<string> UploadFarmerAvatar(IFormFile file)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
+                .FirstOrDefaultAsync(
+                    predicate: fp => fp.UserId == userId,
+                    include: null);
+
+            if (farmerProfile == null)
+            {
+                throw new Exception("Farmer profile not found");
+            }
+
+            var imageUrl = await _cloudinaryService.UploadImageAsync(file);
+            
+            // Delete old avatar if it exists
+            if (!string.IsNullOrEmpty(farmerProfile.AvatarUrl))
+            {
+                try { await _cloudinaryService.DeleteAsync(farmerProfile.AvatarUrl); } catch { }
+            }
+
+            farmerProfile.AvatarUrl = imageUrl;
+            farmerProfile.UpdatedAt = DateTime.UtcNow;
+
+            _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmerProfile);
+            await _unitOfWork.SaveChangesAsync();
+
+            return imageUrl;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<string> UploadWorkerAvatar(IFormFile file)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var workerProfile = await _unitOfWork.GetRepository<Worker>()
+                .FirstOrDefaultAsync(
+                    predicate: wp => wp.UserId == userId,
+                    include: null);
+
+            if (workerProfile == null)
+            {
+                throw new Exception("Worker profile not found");
+            }
+
+            var imageUrl = await _cloudinaryService.UploadImageAsync(file);
+
+            // Delete old avatar if it exists
+            if (!string.IsNullOrEmpty(workerProfile.AvatarUrl))
+            {
+                try { await _cloudinaryService.DeleteAsync(workerProfile.AvatarUrl); } catch { }
+            }
+
+            workerProfile.AvatarUrl = imageUrl;
+            workerProfile.UpdatedAt = DateTime.UtcNow;
+
+            _unitOfWork.GetRepository<Worker>().UpdateAsync(workerProfile);
+            await _unitOfWork.SaveChangesAsync();
+
+            return imageUrl;
         }
         catch (Exception ex)
         {
