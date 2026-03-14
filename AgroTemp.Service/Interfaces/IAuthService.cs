@@ -10,4 +10,5 @@ public interface IAuthService
     Task<bool> VerifyEmail(VerifyEmailRequest request);
     Task ForgotPassword(ForgotPasswordRequest request);
     Task<bool> ResetPassword(ResetPasswordRequest request);
+    Task Logout(string token);
 }
