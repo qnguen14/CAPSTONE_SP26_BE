@@ -97,6 +97,16 @@ public class ApiEndpointConstants
         public const string GetWorkerAttendanceByFarmerEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}/worker/{workerProfileId}";
     }
 
+    public static class Notification
+    {
+        public const string NotificationEndpoint = ApiEndpoint + "/notification";
+        public const string GetNotificationsEndpoint = NotificationEndpoint;
+        public const string GetUnreadNotificationsEndpoint = NotificationEndpoint + "/unread";
+        public const string MarkAsReadEndpoint = NotificationEndpoint + "/read";
+        public const string MarkAllAsReadEndpoint = NotificationEndpoint + "/read-all";
+        public const string DeleteNotificationEndpoint = NotificationEndpoint + "/{id}";
+    }
+
     public static class Media
     {
         public const string MediaEndpoint = ApiEndpoint + "/media";
