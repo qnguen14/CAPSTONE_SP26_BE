@@ -123,7 +123,6 @@ namespace AgroTemp.Service.Implements
                         JobPostId = jobApplication.JobPostId,
                         WorkerId = workerProfileId,
                         StatusId = (int)JobStatus.InProgress,
-                        StartedAt = DateTime.UtcNow,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };

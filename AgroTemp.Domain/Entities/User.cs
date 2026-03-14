@@ -81,4 +81,6 @@ public class User
     
     public virtual ICollection<Rating> GivenRatings { get; set; } = new List<Rating>();
     public virtual ICollection<Rating> ReceivedRatings { get; set; } = new List<Rating>();
+
+    public virtual Wallet? Wallet { get; set; }
 }

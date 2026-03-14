@@ -222,6 +222,39 @@ public class AuthService : BaseService<User>, IAuthService
         }
     }
 
+    public async Task Logout(string token)
+    {
+        var handler = new JwtSecurityTokenHandler();
+
+        if(!handler.CanReadToken(token)){
+            throw new ArgumentException("Invalid token format");
+        }
+
+        var jwtToken = handler.ReadJwtToken(token);
+        var jti = jwtToken.Id;
+
+        if(string.IsNullOrEmpty(jti))
+        {
+            jti = Convert.ToBase64String(
+                System.Security.Cryptography.SHA256.HashData(
+                    System.Text.Encoding.UTF8.GetBytes(token)
+                )
+            );
+        }
+
+        var expiresAt = jwtToken.ValidTo == DateTime.MinValue ? DateTime.UtcNow.AddHours(24) : jwtToken.ValidTo;
+
+        var blacklistedToken = new BlacklistedToken
+        {
+            TokenId = jti,
+            ExpiresAt = expiresAt,
+            BlacklistedAt = DateTime.UtcNow
+        };
+
+        await _unitOfWork.GetRepository<BlacklistedToken>().InsertAsync(blacklistedToken);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
     private string GenerateJwtToken(User user)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));

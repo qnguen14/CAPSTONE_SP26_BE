@@ -48,26 +48,29 @@ public class JobDetail
         set => StatusId = (int)value;
     }
 
-    [Column("confirmed_at")]
-    public DateTime? ConfirmedAt { get; set; }
+    [Column("worker_description")]
+    public string WorkerDescription { get; set; }
 
-    [Column("started_at")]
-    public DateTime? StartedAt { get; set; }
+    [Column("farmer_feedback")]
+    public string FarmerFeedback { get; set; }
+
+    // farmer final decision
+    [Column("farmer_approved_percent")]
+    public int? FarmerApprovedPercent { get; set; }
+
+    // payment
+    [Column("job_price", TypeName = "decimal(18,2)")]
+    public decimal JobPrice { get; set; }
+
+    [Column("worker_payment_amount", TypeName = "decimal(18,2)")]
+    public decimal? WorkerPaymentAmount { get; set; }
+
+    // refund farmer
+    [Column("refund_amount", TypeName = "decimal(18,2)")]
+    public decimal? RefundAmount { get; set; }
 
     [Column("completed_at")]
     public DateTime? CompletedAt { get; set; }
-
-    [Column("worker_checked_in")]
-    public bool WorkerCheckedIn { get; set; }
-
-    [Column("farmer_confirmed_attendance")]
-    public bool FarmerConfirmedAttendance { get; set; }
-
-    [Column("total_hours_worked")]
-    public decimal? TotalHoursWorked { get; set; }
-
-    [Column("total_amount_due")]
-    public decimal? TotalAmountDue { get; set; }
 
     [Required]
     [Column("created_at")]
@@ -78,5 +81,6 @@ public class JobDetail
     public DateTime UpdatedAt { get; set; }
 
     public virtual ICollection<WorkerSession> WorkerSessions { get; set; } = new List<WorkerSession>();
-
+    public ICollection<WalletTransaction> WalletTransactions { get; set; } = new List<WalletTransaction>();
+    public ICollection<JobAttachment> JobAttachments { get; set; } = new List<JobAttachment>();
 }
