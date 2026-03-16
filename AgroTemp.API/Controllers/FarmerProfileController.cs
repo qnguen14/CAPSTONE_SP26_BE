@@ -56,10 +56,6 @@ public class FarmerProfileController : Controller
         }
     }
 
-    /// <summary>
-    /// Update farmer profile - Creates profile on first update if it doesn't exist
-    /// Only the farmer who owns the profile can update it
-    /// </summary>
     [HttpPut(ApiEndpointConstants.FarmerProfile.UpdateFarmerProfileEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<FarmerProfileDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -103,6 +99,30 @@ public class FarmerProfileController : Controller
                 Data = null
             };
             return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
+        }
+    }
+
+    [HttpPost(ApiEndpointConstants.FarmerProfile.UploadAvatarEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<string>> UploadAvatar(IFormFile image)
+    {
+        try
+        {
+            if (image == null || image.Length == 0)
+            {
+                return BadRequest(ApiResponseBuilder.BuildResponse<object>(400, "Image file is required", null));
+            }
+
+            var imageUrl = await _userService.UploadFarmerAvatar(image);
+
+            return Ok(ApiResponseBuilder.BuildResponse(200, "Avatar uploaded successfully", imageUrl));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading farmer avatar");
+            return StatusCode(StatusCodes.Status500InternalServerError, ApiResponseBuilder.BuildResponse<object>(500, ex.Message, null));
         }
     }
 }

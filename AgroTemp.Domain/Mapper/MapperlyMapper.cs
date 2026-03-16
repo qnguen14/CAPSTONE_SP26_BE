@@ -3,6 +3,7 @@ using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobPost;
+using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
 using Riok.Mapperly.Abstractions;
@@ -48,6 +49,10 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplication> jobApplications);
     public partial JobApplication CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
     public partial void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplication jobApplication);
+    
+    // Notification
+    public partial NotificationDTO NotificationToDto(Notification notification);
+    public partial List<NotificationDTO> NotificationsToDto(IEnumerable<Notification> notifications);
 
     // WorkerSession
     public partial WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);

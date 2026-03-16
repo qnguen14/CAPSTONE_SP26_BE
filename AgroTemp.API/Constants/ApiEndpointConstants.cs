@@ -1,4 +1,4 @@
-﻿namespace AgroTemp.API.Constants;
+namespace AgroTemp.API.Constants;
 
 public class ApiEndpointConstants
 {
@@ -14,10 +14,10 @@ public class ApiEndpointConstants
         public const string LoginEndpoint = ApiEndpoint + "/login";
         public const string RegisterEndpoint = ApiEndpoint + "/register";
         public const string GoogleLoginEndpoint = ApiEndpoint + "/google-login";
-        public const string SendResetCodeEndpoint = ApiEndpoint + "/reset";
-        public const string VerifyResetCodeEndpoint = ApiEndpoint + "/verify/reset";
-        public const string DisableAccountEndpoint = ApiEndpoint + "/disable";
-        public const string VerifyDisableCodeEndpoint = ApiEndpoint + "/verify/disable";
+        public const string ResetPasswordEndpoint = ApiEndpoint + "/reset";
+        public const string ForgetPasswordEndpoint = ApiEndpoint + "/forget";
+        // public const string DisableAccountEndpoint = ApiEndpoint + "/disable";
+        // public const string VerifyDisableCodeEndpoint = ApiEndpoint + "/verify/disable";
         public const string LogoutEndpoint = ApiEndpoint + "/logout";
     }
 
@@ -33,9 +33,10 @@ public class ApiEndpointConstants
 
     public static class FarmerProfile
     {
-        public const string FarmerProfileEndpoint = ApiEndpoint + "/farmer-profile";
+        public const string FarmerProfileEndpoint = ApiEndpoint + "/farmer";
         public const string GetFarmerProfileEndpoint = FarmerProfileEndpoint;
         public const string UpdateFarmerProfileEndpoint = FarmerProfileEndpoint;
+        public const string UploadAvatarEndpoint = FarmerProfileEndpoint + "/upload-avatar";
     }
 
     public static class Farm 
@@ -50,9 +51,10 @@ public class ApiEndpointConstants
 
     public static class WorkerProfile
     {
-        public const string WorkerProfileEndpoint = ApiEndpoint + "/worker-profile";
+        public const string WorkerProfileEndpoint = ApiEndpoint + "/worker";
         public const string GetWorkerProfileEndpoint = WorkerProfileEndpoint;
         public const string UpdateWorkerProfileEndpoint = WorkerProfileEndpoint;
+        public const string UploadAvatarEndpoint = WorkerProfileEndpoint + "/upload-avatar";
     }
     public static class Job
     {
@@ -98,6 +100,16 @@ public class ApiEndpointConstants
         public const string ApproveAttendanceEndpoint = WorkerAttendanceEndpoint + "/approve";
         public const string GetFarmAttendanceRecordsEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}";
         public const string GetWorkerAttendanceByFarmerEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}/worker/{workerProfileId}";
+    }
+
+    public static class Notification
+    {
+        public const string NotificationEndpoint = ApiEndpoint + "/notification";
+        public const string GetNotificationsEndpoint = NotificationEndpoint;
+        public const string GetUnreadNotificationsEndpoint = NotificationEndpoint + "/unread";
+        public const string MarkAsReadEndpoint = NotificationEndpoint + "/read";
+        public const string MarkAllAsReadEndpoint = NotificationEndpoint + "/read-all";
+        public const string DeleteNotificationEndpoint = NotificationEndpoint + "/{id}";
     }
 
     public static class Media
