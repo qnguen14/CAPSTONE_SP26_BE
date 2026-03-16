@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Context;
+using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace AgroTemp.Service.Implements
 {
-    public class WorkerAttendanceService : BaseService<WorkerAttendance>, IWorkerAttendanceService
+    public class WorkerAttendanceService : BaseService<WorkerSession>, IWorkerAttendanceService
     {
         private readonly IMapperlyMapper _mapper;
 
@@ -34,11 +34,11 @@ namespace AgroTemp.Service.Implements
             try
             {
                 // Get attendance record with related data
-                var attendance = await _unitOfWork.GetRepository<WorkerAttendance>()
+                var attendance = await _unitOfWork.GetRepository<WorkerSession>()
                     .FirstOrDefaultAsync(
                         predicate: wa => wa.Id == request.AttendanceId,
-                        include: q => q.Include(wa => wa.JobApplication)
-                                       .ThenInclude(ja => ja.JobPost));
+                        include: q => q.Include(wa => wa.JobDetail)
+                                       .ThenInclude(jd => jd.JobPost));
 
                 if (attendance == null)
                 {
@@ -46,7 +46,7 @@ namespace AgroTemp.Service.Implements
                 }
 
                 // Verify the job post belongs to this farmer
-                if (attendance.JobApplication.JobPost.FarmerProfileId != farmerProfileId)
+                if (attendance.JobDetail.JobPost.FarmerId != farmerProfileId)
                 {
                     throw new Exception("You can only approve attendance for your own job posts");
                 }
@@ -75,10 +75,10 @@ namespace AgroTemp.Service.Implements
 
                 attendance.UpdatedAt = DateTime.UtcNow;
 
-                _unitOfWork.GetRepository<WorkerAttendance>().UpdateAsync(attendance);
+                _unitOfWork.GetRepository<WorkerSession>().UpdateAsync(attendance);
                 await _unitOfWork.SaveChangesAsync();
 
-                return _mapper.WorkerAttendanceToDto(attendance);
+                return _mapper.WorkerSessionToDto(attendance);
             }
             catch (Exception ex)
             {
@@ -92,7 +92,7 @@ namespace AgroTemp.Service.Implements
             {
                 var jobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
-                    predicate: j => j.Id == request.JobApplicationId && j.WorkerProfileId == workerProfileId,
+                    predicate: j => j.Id == request.JobApplicationId && j.WorkerId == workerProfileId,
                     include: q => q.Include(j => j.JobPost));
 
                 if(jobApplication == null)
@@ -106,9 +106,34 @@ namespace AgroTemp.Service.Implements
                 }
 
                 var workDate = request.CheckInTime.Date;
-                var existingCheckIn = await _unitOfWork.GetRepository<WorkerAttendance>()
+                
+                // Get or create job detail for this application
+                var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
+                    .FirstOrDefaultAsync(predicate: jd => 
+                        jd.JobApplicationId == request.JobApplicationId &&
+                        jd.WorkerId == workerProfileId);
+
+                if (jobDetail == null)
+                {
+                    // Create job detail if it doesn't exist
+                    jobDetail = new JobDetail
+                    {
+                        Id = Guid.NewGuid(),
+                        JobApplicationId = request.JobApplicationId,
+                        JobPostId = jobApplication.JobPostId,
+                        WorkerId = workerProfileId,
+                        StatusId = (int)JobStatus.InProgress,
+                        StartedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    await _unitOfWork.GetRepository<JobDetail>().InsertAsync(jobDetail);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                var existingCheckIn = await _unitOfWork.GetRepository<WorkerSession>()
                     .FirstOrDefaultAsync(predicate: w =>
-                    w.JobApplicationId == request.JobApplicationId &&
+                    w.JobDetailId == jobDetail.Id &&
                     w.WorkDate == workDate);
 
                 if(existingCheckIn != null)
@@ -116,10 +141,10 @@ namespace AgroTemp.Service.Implements
                     throw new Exception("Already check in for job accepted");
                 }
 
-                var attendance = new WorkerAttendance
+                var attendance = new WorkerSession
                 {
                     Id = Guid.NewGuid(),
-                    JobApplicationId = request.JobApplicationId,
+                    JobDetailId = jobDetail.Id,
                     WorkDate = workDate,
                     CheckInTime = request.CheckInTime,
                     CheckInNotes = request.CheckInNotes,
@@ -128,10 +153,10 @@ namespace AgroTemp.Service.Implements
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                await _unitOfWork.GetRepository<WorkerAttendance>().InsertAsync(attendance);
+                await _unitOfWork.GetRepository<WorkerSession>().InsertAsync(attendance);
                 await _unitOfWork.SaveChangesAsync();
 
-                return _mapper.WorkerAttendanceToDto(attendance);
+                return _mapper.WorkerSessionToDto(attendance);
 
             }
             catch (Exception ex)
@@ -144,17 +169,17 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
-                var attendance = await _unitOfWork.GetRepository<WorkerAttendance>()
+                var attendance = await _unitOfWork.GetRepository<WorkerSession>()
                     .FirstOrDefaultAsync(
                         predicate: wa => wa.Id == request.AttendanceId,
-                        include: q => q.Include(wa => wa.JobApplication));
+                        include: q => q.Include(wa => wa.JobDetail));
 
                 if (attendance == null)
                 {
                     throw new Exception("Attendance record not found");
                 }
 
-                if (attendance.JobApplication.WorkerProfileId != workerProfileId)
+                if (attendance.JobDetail.WorkerId != workerProfileId)
                 {
                     throw new Exception("This attendance record does not belong to you");
                 }
@@ -177,10 +202,10 @@ namespace AgroTemp.Service.Implements
 
                 attendance.UpdatedAt = DateTime.UtcNow;
 
-                _unitOfWork.GetRepository<WorkerAttendance>().UpdateAsync(attendance);
+                _unitOfWork.GetRepository<WorkerSession>().UpdateAsync(attendance);
                 await _unitOfWork.SaveChangesAsync();
 
-                return _mapper.WorkerAttendanceToDto(attendance);
+                return _mapper.WorkerSessionToDto(attendance);
             }
             catch (Exception ex)
             {
@@ -192,7 +217,7 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
-                var attendance = await _unitOfWork.GetRepository<WorkerAttendance>()
+                var attendance = await _unitOfWork.GetRepository<WorkerSession>()
                     .FirstOrDefaultAsync(predicate: w => w.Id == attendanceId);
 
                 if(attendance == null)
@@ -200,7 +225,7 @@ namespace AgroTemp.Service.Implements
                     throw new Exception("Attendance record not found");
                 }
 
-                return _mapper.WorkerAttendanceToDto(attendance);
+                return _mapper.WorkerSessionToDto(attendance);
             }
             catch(Exception ex)
             {
@@ -212,17 +237,17 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
-                var attendanceRecords = await _unitOfWork.GetRepository<WorkerAttendance>()
+                var attendanceRecords = await _unitOfWork.GetRepository<WorkerSession>()
                     .GetListAsync(
-                        predicate: wa => wa.JobApplication.JobPost.FarmerProfileId == farmerProfileId &&
-                                        (!jobPostId.HasValue || wa.JobApplication.JobPostId == jobPostId.Value) &&
+                        predicate: wa => wa.JobDetail.JobPost.FarmerId == farmerProfileId &&
+                                        (!jobPostId.HasValue || wa.JobDetail.JobPostId == jobPostId.Value) &&
                                         (!startDate.HasValue || wa.WorkDate >= startDate.Value.Date) &&
                                         (!endDate.HasValue || wa.WorkDate <= endDate.Value.Date),
                         orderBy: q => q.OrderByDescending(wa => wa.WorkDate).ThenByDescending(wa => wa.CheckInTime),
-                        include: q => q.Include(wa => wa.JobApplication)
-                                       .ThenInclude(ja => ja.JobPost));
+                        include: q => q.Include(wa => wa.JobDetail)
+                                       .ThenInclude(jd => jd.JobPost));
 
-                return _mapper.WorkerAttendancesToDtos(attendanceRecords);
+                return _mapper.WorkerSessionsToDtos(attendanceRecords);
             }
             catch (Exception ex)
             {
@@ -234,15 +259,15 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
-                var attendanceRecords = await _unitOfWork.GetRepository<WorkerAttendance>()
+                var attendanceRecords = await _unitOfWork.GetRepository<WorkerSession>()
                     .GetListAsync(
-                        predicate: wa => wa.JobApplication.WorkerProfileId == workerProfileId &&
+                        predicate: wa => wa.JobDetail.WorkerId == workerProfileId &&
                                         (!startDate.HasValue || wa.WorkDate >= startDate.Value.Date) &&
                                         (!endDate.HasValue || wa.WorkDate <= endDate.Value.Date),
                         orderBy: q => q.OrderByDescending(wa => wa.WorkDate).ThenByDescending(wa => wa.CheckInTime),
-                        include: q => q.Include(wa => wa.JobApplication));
+                        include: q => q.Include(wa => wa.JobDetail));
 
-                return _mapper.WorkerAttendancesToDtos(attendanceRecords);
+                return _mapper.WorkerSessionsToDtos(attendanceRecords);
             }
             catch (Exception ex)
             {
@@ -257,8 +282,8 @@ namespace AgroTemp.Service.Implements
             {
                 var farmerView = await _unitOfWork.GetRepository<JobApplication>()
             .FirstOrDefaultAsync(
-                predicate: ja => ja.JobPost.FarmerProfileId == farmerProfileId &&
-                                ja.WorkerProfileId == workerProfileId &&
+                predicate: ja => ja.JobPost.FarmerId == farmerProfileId &&
+                                ja.WorkerId == workerProfileId &&
                                 ja.Status == ApplicationStatus.Accepted,
                 include: q => q.Include(ja => ja.JobPost));
 
@@ -267,19 +292,19 @@ namespace AgroTemp.Service.Implements
                     throw new Exception("This worker has no accepted applications on your farm");
                 }
 
-                var attendanceRecords = await _unitOfWork.GetRepository<WorkerAttendance>()
+                var attendanceRecords = await _unitOfWork.GetRepository<WorkerSession>()
                       .GetListAsync(
-                          predicate: wa => wa.JobApplication.JobPost.FarmerProfileId == farmerProfileId &&
-                                          wa.JobApplication.WorkerProfileId == workerProfileId &&
+                          predicate: wa => wa.JobDetail.JobPost.FarmerId == farmerProfileId &&
+                                          wa.JobDetail.WorkerId == workerProfileId &&
                                           (!startDate.HasValue || wa.WorkDate >= startDate.Value.Date) &&
                                           (!endDate.HasValue || wa.WorkDate <= endDate.Value.Date),
                           orderBy: q => q.OrderByDescending(wa => wa.WorkDate).ThenByDescending(wa => wa.CheckInTime),
-                          include: q => q.Include(wa => wa.JobApplication)
-                                         .ThenInclude(ja => ja.JobPost)
-                                         .Include(wa => wa.JobApplication)
-                                         .ThenInclude(ja => ja.WorkerProfile));
+                          include: q => q.Include(wa => wa.JobDetail)
+                                         .ThenInclude(jd => jd.JobPost)
+                                         .Include(wa => wa.JobDetail)
+                                         .ThenInclude(jd => jd.Worker));
 
-                return _mapper.WorkerAttendancesToDtos(attendanceRecords);
+                return _mapper.WorkerSessionsToDtos(attendanceRecords);
             }
              catch (Exception ex)
             {
@@ -288,3 +313,4 @@ namespace AgroTemp.Service.Implements
         }
     }
 }
+

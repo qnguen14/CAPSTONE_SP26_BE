@@ -12,10 +12,10 @@ public class Farm
     public Guid Id { get; set; }
 
     [Required]
-    [ForeignKey(nameof(FarmerProfile))]
-    [Column("farmer_profile_id")]
-    public Guid FarmerProfileId { get; set; }
-    public virtual FarmerProfile FarmerProfile { get; set; }
+    [ForeignKey(nameof(Farmer))]
+    [Column("farmer_id")]
+    public Guid FarmerId { get; set; }
+    public virtual Farmer Farmer { get; set; }
 
     [Required]
     [Column("address")]

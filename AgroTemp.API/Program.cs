@@ -1,4 +1,5 @@
 using AgroTemp.API.Configuration;
+using AgroTemp.API.Middleware;
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Implements;
@@ -69,7 +70,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
-    c.RoutePrefix = ""; // Swagger at root
+    c.RoutePrefix = "swagger"; // Swagger at /swagger
 });
 
 
@@ -85,6 +86,7 @@ app.UseCors("AllowAll"); // Enable CORS
 
 app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();
+app.UseMiddleware<TokenBlacklistMiddleware>();
 app.MapHub<ChatHub>("/chatHub");
 
 app.MapControllers();

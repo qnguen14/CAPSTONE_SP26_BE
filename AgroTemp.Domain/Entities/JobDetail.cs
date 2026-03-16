@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
 
-public enum JobAssignmentStatus
+public enum JobStatus
 {
     InProgress = 1,
     Completed = 2,
@@ -11,8 +11,8 @@ public enum JobAssignmentStatus
     CancelledByWorker = 4
 }
 
-[Table("Job_Assignment")]
-public class JobAssignment
+[Table("Job_Detail")]
+public class JobDetail
 {
     [Key]
     [Required]
@@ -32,19 +32,19 @@ public class JobAssignment
     public virtual JobPost JobPost { get; set; }
 
     [Required]
-    [ForeignKey(nameof(WorkerProfile))]
-    [Column("worker_profile_id")]
-    public Guid WorkerProfileId { get; set; }
-    public virtual WorkerProfile WorkerProfile { get; set; }
+    [ForeignKey(nameof(Worker))]
+    [Column("worker_id")]
+    public Guid WorkerId { get; set; }
+    public virtual Worker Worker { get; set; }
 
     [Required]
     [Column("status")]
     public int StatusId { get; set; }
 
     [NotMapped]
-    public JobAssignmentStatus Status
+    public JobStatus Status
     {
-        get => (JobAssignmentStatus)StatusId;
+        get => (JobStatus)StatusId;
         set => StatusId = (int)value;
     }
 
@@ -76,4 +76,7 @@ public class JobAssignment
     [Required]
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; }
+
+    public virtual ICollection<WorkerSession> WorkerSessions { get; set; } = new List<WorkerSession>();
+
 }

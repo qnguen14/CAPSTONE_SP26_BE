@@ -30,10 +30,10 @@ namespace AgroTemp.Domain.Entities
         public virtual JobPost JobPost { get; set; }
 
         [Required]
-        [ForeignKey(nameof(WorkerProfile))]
-        [Column("worker_profile_id")]
-        public Guid WorkerProfileId { get; set; }   
-        public virtual WorkerProfile WorkerProfile { get; set; }
+        [ForeignKey(nameof(Worker))]
+        [Column("worker_id")]
+        public Guid WorkerId { get; set; }   
+        public virtual Worker Worker { get; set; }
 
         [Required]
         [Column("status")]
@@ -59,7 +59,6 @@ namespace AgroTemp.Domain.Entities
         [Column("response_message")]
         public string? ResponseMessage { get; set; }
 
-        public virtual ICollection<WorkerAttendance> WorkerAttendances { get; set; } = new List<WorkerAttendance>();
-        public virtual ICollection<JobAssignment> JobAssignments { get; set; } = new List<JobAssignment>();
+        public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
     }
 }

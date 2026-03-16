@@ -2,6 +2,7 @@ using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Auth;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Implements;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgroTemp.API.Controllers;
@@ -147,6 +148,93 @@ public class AuthController : Controller
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = "An error occurred during Google login",
+                Data = null
+            };
+            return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
+        }
+    }
+
+
+    /// <summary>
+    /// Forgot Password - Request password reset
+    /// </summary>
+    [HttpPost(ApiEndpointConstants.Auth.ForgetPasswordEndpoint)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        try
+        {
+            await _authService.ForgotPassword(request);
+            return Ok(new { Message = "If the email exists, a password reset code has been sent" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during forgot password");
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while processing your request",
+                Data = null
+            };
+            return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
+        }
+    }
+
+    /// <summary>
+    /// Reset Password - Reset password with OTP
+    /// </summary>
+    [HttpPost(ApiEndpointConstants.Auth.ResetPasswordEndpoint)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var result = await _authService.ResetPassword(request);
+        if (result)
+        {
+            return Ok(new { Message = "Password reset successfully" });
+        }
+        return BadRequest(new { Message = "Invalid email or OTP, or OTP has expired" });
+    }
+
+    [Authorize]
+    [HttpPost(ApiEndpointConstants.Auth.LogoutEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> Logout()
+    {
+        try{
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var token = authHeader!["Bearer".Length..].Trim();
+            await _authService.Logout(token);
+
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Logout successful",
+                Data = null
+            };
+            return Ok(apiResponse);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex.Message);
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            };
+            return BadRequest(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during logout");
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred during logout",
                 Data = null
             };
             return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);

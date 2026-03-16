@@ -10,8 +10,8 @@ public enum ExperienceLevel
     Experienced = 3
 }
 
-[Table("Worker_Profile")]
-public class WorkerProfile
+[Table("Worker")]
+public class Worker
 {
     [Key]
     [Required]
@@ -65,7 +65,7 @@ public class WorkerProfile
     public int TotalJobsCompleted { get; set; }
 
     public virtual ICollection<WorkerSkill> WorkerSkills { get; set; } = new List<WorkerSkill>();
-    public virtual ICollection<JobAssignment> JobAssignments { get; set; } = new List<JobAssignment>();
+    public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
 
     [Required]
     [Column("avatar_url")]

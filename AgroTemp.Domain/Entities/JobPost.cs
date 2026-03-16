@@ -37,13 +37,13 @@ public class JobPost
     public Guid Id { get; set; }
 
     [Required]
-    [ForeignKey(nameof(FarmerProfile))]
-    [Column("farmer_profile_id")]
-    public Guid FarmerProfileId { get; set; }
-    public virtual FarmerProfile FarmerProfile { get; set; }
+    [ForeignKey(nameof(Farmer))]
+    [Column("farmer_id")]
+    public Guid FarmerId { get; set; }
+    public virtual Farmer Farmer { get; set; }
 
     public virtual ICollection<JobSkillRequirement> JobSkillRequirements { get; set; } = new List<JobSkillRequirement>();
-    public virtual ICollection<JobAssignment> JobAssignments { get; set; } = new List<JobAssignment>();
+    public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
     public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 
     [Required]

@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
 
-[Table("Farmer_Profile")]
-public class FarmerProfile
+[Table("Farmer")]
+public class Farmer
 {
     [Key]
     [Required]
@@ -61,6 +61,9 @@ public class FarmerProfile
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; }
 
+    [Required]
+    [Column("avatar_url")]
+    public string AvatarUrl { get; set; }
     // Navigation property for farms owned by this farmer
     public virtual ICollection<Farm> Farms { get; set; } = new List<Farm>();
 }

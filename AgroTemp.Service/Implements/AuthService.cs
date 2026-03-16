@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Context;
+using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Auth;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
@@ -19,14 +19,20 @@ namespace AgroTemp.Service.Interfaces;
 public class AuthService : BaseService<User>, IAuthService
 {
     private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUnitOfWork<AgroTempDbContext> unitOfWork, 
         IHttpContextAccessor httpContextAccessor, 
         IMapperlyMapper mapper,
-        IConfiguration configuration) : base(unitOfWork, httpContextAccessor, mapper)
+        IConfiguration configuration,
+        IEmailService emailService,
+        ILogger<AuthService> logger) : base(unitOfWork, httpContextAccessor, mapper)
     {
         _configuration = configuration;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<LoginResponse> Login(LoginRequest request)
@@ -113,8 +119,10 @@ public class AuthService : BaseService<User>, IAuthService
             RoleId = request.RoleId,
             Role = (UserRole)request.RoleId,
             CreatedAt = DateTime.UtcNow,
-            IsActive = true
+            IsActive = true,
+            IsVerified = true,
         };
+            
 
         await _unitOfWork.GetRepository<User>().InsertAsync(user);
         await _unitOfWork.SaveChangesAsync();
@@ -158,17 +166,25 @@ public class AuthService : BaseService<User>, IAuthService
             if (user == null)
             {
                 // Create new user from Google account
+                var newUserId = Guid.NewGuid();
+                // Generate a unique 10-digit placeholder phone number from the user's Guid
+                // so multiple Google sign-ups never collide on a unique-phone constraint.
+                var uniquePhone = string.Concat(
+                    newUserId.ToString("N").Where(char.IsDigit).Take(10)
+                ).PadRight(10, '0');
+
                 user = new User
                 {
-                    Id = Guid.NewGuid(),
+                    Id = newUserId,
                     Email = payload.Email,
-                    PhoneNumber = "0000000000", // Default placeholder - user can update later
-                    Address = "Not specified", // Default placeholder
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), // Random password
+                    PhoneNumber = uniquePhone,   // Unique per user — update later via profile
+                    Address = "Not specified",   // Placeholder — user can update later
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
                     RoleId = request.RoleId ?? 2, // Default to Farmer role if not specified
                     Role = (UserRole)(request.RoleId ?? 2),
                     CreatedAt = DateTime.UtcNow,
-                    IsActive = true
+                    IsActive = true,
+                    IsVerified = true  // Google has already verified the email address,
                 };
 
                 await _unitOfWork.GetRepository<User>().InsertAsync(user);
@@ -197,6 +213,39 @@ public class AuthService : BaseService<User>, IAuthService
         }
     }
 
+    public async Task Logout(string token)
+    {
+        var handler = new JwtSecurityTokenHandler();
+
+        if(!handler.CanReadToken(token)){
+            throw new ArgumentException("Invalid token format");
+        }
+
+        var jwtToken = handler.ReadJwtToken(token);
+        var jti = jwtToken.Id;
+
+        if(string.IsNullOrEmpty(jti))
+        {
+            jti = Convert.ToBase64String(
+                System.Security.Cryptography.SHA256.HashData(
+                    System.Text.Encoding.UTF8.GetBytes(token)
+                )
+            );
+        }
+
+        var expiresAt = jwtToken.ValidTo == DateTime.MinValue ? DateTime.UtcNow.AddHours(24) : jwtToken.ValidTo;
+
+        var blacklistedToken = new BlacklistedToken
+        {
+            TokenId = jti,
+            ExpiresAt = expiresAt,
+            BlacklistedAt = DateTime.UtcNow
+        };
+
+        await _unitOfWork.GetRepository<BlacklistedToken>().InsertAsync(blacklistedToken);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
     private string GenerateJwtToken(User user)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
@@ -219,5 +268,69 @@ public class AuthService : BaseService<User>, IAuthService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+
+    public async Task ForgotPassword(ForgotPasswordRequest request)
+    {
+        var user = (await _unitOfWork.GetRepository<User>()
+            .GetListAsync(predicate: u => u.Email == request.Email && u.IsActive)).FirstOrDefault();
+
+        if (user == null)
+        {
+            // Don't reveal if user exists or not for security
+            _logger.LogWarning("Password reset requested for non-existent email: {Email}", request.Email);
+            return; // Silently succeed
+        }
+
+        // Generate 6-digit OTP
+        user.PasswordResetToken = new Random().Next(100000, 999999).ToString();
+        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(15);
+
+        _unitOfWork.GetRepository<User>().UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Send password reset email
+        try
+        {
+            await _emailService.SendEmailAsync(user.Email, "AgroTemp Password Reset",
+                $"<div style=\"text-align: center;\"><h2>Password Reset Code</h2><h1>{user.PasswordResetToken}</h1><p>This code will expire in 15 minutes.</p><p>If you didn't request this, please ignore this email.</p></div>");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send password reset email to {Email}", user.Email);
+            throw;
+        }
+    }
+
+    public async Task<bool> ResetPassword(ResetPasswordRequest request)
+    {
+        var user = (await _unitOfWork.GetRepository<User>()
+            .GetListAsync(predicate: u => u.Email == request.Email)).FirstOrDefault();
+
+        if (user == null)
+        {
+            return false;
+        }
+
+        if (user.PasswordResetToken != request.Otp)
+        {
+            return false;
+        }
+
+        if (user.PasswordResetTokenExpiresAt < DateTime.UtcNow)
+        {
+            return false;
+        }
+
+        // Update password
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiresAt = null;
+
+        _unitOfWork.GetRepository<User>().UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        return true;
     }
 }
