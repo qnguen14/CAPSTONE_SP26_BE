@@ -32,11 +32,9 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IJobCategoryService, JobCategoryService>();
             services.AddScoped<IJobPostService, JobPostService>();
+            services.AddScoped<IJobApplicationService, JobApplicationService>();
             services.AddScoped<IFarmService, FarmService>();
             services.AddScoped<IWorkerAttendanceService, WorkerAttendanceService>();
-
-            // Custom Services
-            //services.AddScoped<ICloudinaryService, CloudinaryService>();
             
             // Email Service
             services.AddHttpClient(); // Resend uses HttpClient
