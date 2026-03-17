@@ -10,12 +10,11 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
     {
         public Guid Id { get; set; }
         public Guid FarmerProfileId { get; set; }
+        public Guid FarmId { get; set; }
         public Guid JobCategoryId { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
         public string Address { get; set; }
-        public decimal Latitude { get; set; }
-        public decimal Longitude { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public decimal EstimatedHours { get; set; }
@@ -26,7 +25,6 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public int PaymentMethodId { get; set; }
         public string RequiredSkills { get; set; }
         public string GenderPreference { get; set; }
-        public string AgeRequirement { get; set; }
         public DateTime PublishedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
