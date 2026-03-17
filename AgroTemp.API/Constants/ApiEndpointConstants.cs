@@ -67,23 +67,22 @@ public class ApiEndpointConstants
         public const string GetAllJobPostsEndpoint = JobPostEndpoint;
         public const string GetAllJobApplicationsEndpoint = JobApplicationEndpoint;
 
-        public const string GetJobCategoryByIdEndpoint = JobCategoryEndpoint + "/{Id}";
-        public const string GetJobPostByIdEndpoint = JobPostEndpoint + "/{Id}";
-        public const string GetJobApplicationByIdEndpoint = JobApplicationEndpoint + "/{Id}";
+        public const string GetJobCategoryByIdEndpoint = JobCategoryEndpoint + "/{id}";
+        public const string GetJobPostByIdEndpoint = JobPostEndpoint + "/{id}";
+        public const string GetJobApplicationByIdEndpoint = JobApplicationEndpoint + "/{id}";
 
-        public const string CreateJobCategoryEndpoint = JobCategoryEndpoint + "/create";
-        public const string CreateJobPostEndpoint = JobPostEndpoint + "/create";
-        public const string CreateJobApplicationEndpoint = JobApplicationEndpoint + "/create";
+        public const string CreateJobCategoryEndpoint = JobCategoryEndpoint;
+        public const string CreateJobPostEndpoint = JobPostEndpoint;
+        public const string CreateJobApplicationEndpoint = JobApplicationEndpoint;
 
-        public const string UpdateJobCategoryEndpoint = JobCategoryEndpoint + "/update";
-        public const string UpdateJobPostEndpoint = JobPostEndpoint + "/update";
-        public const string UpdateJobApplicationEndpoint = JobApplicationEndpoint + "/update";
+        public const string UpdateJobCategoryEndpoint = JobCategoryEndpoint + "/{id}";
+        public const string UpdateJobPostEndpoint = JobPostEndpoint + "/{id}";
+        public const string UpdateJobApplicationEndpoint = JobApplicationEndpoint + "/{id}";
 
-        public const string DeleteJobCategoryEndpoint = JobCategoryEndpoint + "/delete";
-        public const string DeleteJobPostEndpoint = JobPostEndpoint + "/delete";
-        public const string DeleteJobApplicationEndpoint = JobApplicationEndpoint + "/delete";
-
-        public const string UpdateJobPostStatusEndpoint = JobPostEndpoint + "/update-status";
+        public const string DeleteJobCategoryEndpoint = JobCategoryEndpoint + "/{id}";
+        public const string DeleteJobPostEndpoint = JobPostEndpoint + "/{id}";
+        public const string DeleteJobApplicationEndpoint = JobApplicationEndpoint + "/{id}";
+        public const string UpdateJobPostStatusEndpoint = JobPostEndpoint + "/update-status" + "/{id}";
     }
 
     public static class WorkerAttendance
