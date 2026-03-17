@@ -5,8 +5,8 @@ namespace AgroTemp.Domain.Entities;
 
 public enum WageType
 {
-    Hourly = 1,
-    Daily = 2,
+    Daily = 1,
+    PerPlot = 2,
     PerJob = 3
 }
 
