@@ -1,6 +1,7 @@
 using AgroTemp.Domain.DTO;
 using AgroTemp.Domain.DTO.Auth;
 using AgroTemp.Domain.DTO.Farm;
+using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.DTO.Notification;
@@ -42,6 +43,12 @@ public interface IMapperlyMapper
     JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
     void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 
+    // JobApplication
+    JobApplicationDTO JobApplicationToJobApplicationDto(JobApplication jobApplication);
+    List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplication> jobApplications);
+    JobApplication CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
+    void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplication jobApplication);
+    
     // Notification
     NotificationDTO NotificationToDto(Notification notification);
     List<NotificationDTO> NotificationsToDto(IEnumerable<Notification> notifications);
