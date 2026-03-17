@@ -17,6 +17,7 @@ public partial class MapperlyMapper : IMapperlyMapper
     
     public partial List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
     
+    [MapProperty("User.Email", nameof(FarmerProfileDTO.Email))]
     public partial FarmerProfileDTO FarmerToDto(Farmer farmer);
 
     //Farm

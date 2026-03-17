@@ -6,6 +6,7 @@ using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Implements;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace AgroTemp.Service.Interfaces;
@@ -235,7 +236,7 @@ public class UserService : BaseService<User>, IUserService
             var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
                 .FirstOrDefaultAsync(
                     predicate: fp => fp.UserId == userId,
-                    include: null);
+                    include: fp => fp.Include(x => x.User));
 
             if (farmerProfile == null)
             {
@@ -258,7 +259,7 @@ public class UserService : BaseService<User>, IUserService
             var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
                 .FirstOrDefaultAsync(
                     predicate: fp => fp.UserId == userId,
-                    include: null);
+                    include: fp => fp.Include(x => x.User));
 
             if (farmerProfile == null)
             {
@@ -296,7 +297,12 @@ public class UserService : BaseService<User>, IUserService
 
             await _unitOfWork.SaveChangesAsync();
 
-            return _mapper.FarmerToDto(farmerProfile);
+            var farmerProfileWithUser = await _unitOfWork.GetRepository<Farmer>()
+                .FirstOrDefaultAsync(
+                    predicate: fp => fp.Id == farmerProfile.Id,
+                    include: fp => fp.Include(x => x.User));
+
+            return _mapper.FarmerToDto(farmerProfileWithUser ?? farmerProfile);
         }
         catch (Exception ex)
         {
