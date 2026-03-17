@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Entities;
+using AgroTemp.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgroTemp.Domain.Context;
@@ -31,6 +31,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
+    public DbSet<DisputeReport> DisputeReports { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -285,6 +286,38 @@ public class AgroTempDbContext : DbContext
             .WithOne(wr => wr.User)
             .HasForeignKey(wr => wr.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure DisputeReport relationships
+        modelBuilder.Entity<DisputeReport>(entity =>
+        {
+            // ResolvedBy (Admin User who resolved)
+            entity.HasOne(d => d.ResolvedBy)
+                .WithMany()
+                .HasForeignKey(d => d.ResolvedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Farmer profile involved
+            entity.HasOne(d => d.Farmer)
+                .WithMany()
+                .HasForeignKey(d => d.FarmerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Worker profile involved
+            entity.HasOne(d => d.Worker)
+                .WithMany()
+                .HasForeignKey(d => d.WorkerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // JobPost the dispute is about
+            entity.HasOne(d => d.JobPost)
+                .WithMany()
+                .HasForeignKey(d => d.JobPostId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Enum conversions
+            entity.Property(d => d.StatusId).HasConversion<int>();
+            entity.Property(d => d.DisputeTypeId).HasConversion<int>();
+        });
 
         base.OnModelCreating(modelBuilder);
     }
