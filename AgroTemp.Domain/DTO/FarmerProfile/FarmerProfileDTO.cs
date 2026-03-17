@@ -4,6 +4,7 @@ public class FarmerProfileDTO
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
+    public string Email { get; set; }
     public string OrganizationName { get; set; }
     public string ContactName { get; set; }
     public string ContactNumber { get; set; }
