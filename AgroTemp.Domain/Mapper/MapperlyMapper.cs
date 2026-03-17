@@ -1,4 +1,5 @@
 ﻿using AgroTemp.Domain.DTO;
+using AgroTemp.Domain.DTO.Auth;
 using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;

@@ -60,7 +60,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobCategoryDTO>> GetJobCategoryById([FromQuery] string id)
+    public async Task<ActionResult<JobCategoryDTO>> GetJobCategoryById([FromRoute] string id)
     {
         try
         {
@@ -119,7 +119,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobCategoryDTO>> UpdateJobCategory([FromBody] UpdateJobCategoryRequest request)
+    public async Task<ActionResult<JobCategoryDTO>> UpdateJobCategory([FromRoute] UpdateJobCategoryRequest request)
     {
         try
         {
@@ -144,7 +144,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> DeleteJobCategory([FromQuery] string id)
+    public async Task<ActionResult> DeleteJobCategory([FromRoute] string id)
     {
         try
         {
@@ -203,7 +203,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobPostDTO>> GetJobPostById([FromQuery] string id)
+    public async Task<ActionResult<JobPostDTO>> GetJobPostById([FromRoute] string id)
     {
         try
         {
@@ -262,7 +262,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobPostDTO>> UpdateJobPost([FromBody] UpdateJobPostRequest request)
+    public async Task<ActionResult<JobPostDTO>> UpdateJobPost([FromRoute] UpdateJobPostRequest request)
     {
         try
         {
@@ -287,7 +287,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> DeleteJobPost([FromQuery] string id)
+    public async Task<ActionResult> DeleteJobPost([FromRoute] string id)
     {
         try
         {
@@ -320,7 +320,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobPostDTO>> UpdateJobPostStatus([FromQuery] string id, [FromQuery] string status)
+    public async Task<ActionResult<JobPostDTO>> UpdateJobPostStatus([FromRoute] string id, [FromQuery] string status)
     {
         try
         {
@@ -379,7 +379,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobApplicationDTO>> GetJobApplicationById([FromQuery] string id)
+    public async Task<ActionResult<JobApplicationDTO>> GetJobApplicationById([FromRoute] string id)
     {
         try
         {
@@ -438,7 +438,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobApplicationDTO>> UpdateJobApplication([FromBody] UpdateJobApplicationRequest request)
+    public async Task<ActionResult<JobApplicationDTO>> UpdateJobApplication([FromRoute] UpdateJobApplicationRequest request)
     {
         try
         {
@@ -463,7 +463,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> DeleteJobApplication([FromQuery] string id)
+    public async Task<ActionResult> DeleteJobApplication([FromRoute] string id)
     {
         try
         {
