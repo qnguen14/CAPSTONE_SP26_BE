@@ -26,9 +26,14 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial List<FarmDTO> FarmsToDto(IEnumerable<Farm> farms);
 
     public partial WorkerProfileDTO WorkerToDto(Worker worker);
+
+    [MapProperty(nameof(User.Role), nameof(LoginResponse.Role))]
+    public partial LoginResponse UserToLoginResponse(User user);
     
     // Custom mapping for ExperienceLevel enum to string
     private string MapExperienceLevel(ExperienceLevel level) => level.ToString();
+
+    private string MapUserRole(UserRole role) => role.ToString();
 
     // JobCategory
     public partial JobCategoryDTO JobCategoryToJobCategoryDto(JobCategory jobCategory);

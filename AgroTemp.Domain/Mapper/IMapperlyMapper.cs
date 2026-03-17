@@ -1,4 +1,5 @@
 using AgroTemp.Domain.DTO;
+using AgroTemp.Domain.DTO.Auth;
 using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
@@ -25,7 +26,7 @@ public interface IMapperlyMapper
     // Worker
     WorkerProfileDTO WorkerToDto(Worker worker);
     
-    // LoginResponse UserToLoginResponse(User user);
+    LoginResponse UserToLoginResponse(User user);
     // User RegisterRequestToUser(RegisterRequest resquest);
     // User RequestDTOToUser(UserRequestDTO request);
     // User UpdateProfileToUser(UpdateProfileRequest request);
