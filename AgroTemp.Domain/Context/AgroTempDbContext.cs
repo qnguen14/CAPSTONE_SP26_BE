@@ -33,6 +33,10 @@ public class AgroTempDbContext : DbContext
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
     public DbSet<DisputeReport> DisputeReports { get; set; }
     public DbSet<DeviceToken> DeviceTokens { get; set; }
+    public DbSet<PayOSOrder> PayOSOrders { get; set; }
+    public DbSet<PayOSOrderItem> PayOSOrderItems { get; set; }
+    public DbSet<PayOSTransaction> PayOSTransactions { get; set; }
+    public DbSet<PayOSInvoice> PayOSInvoices { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -278,6 +282,34 @@ public class AgroTempDbContext : DbContext
             .WithOne(wr => wr.User)
             .HasForeignKey(wr => wr.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure PayOSOrder-Items one-to-many relationship
+        modelBuilder.Entity<PayOSOrder>()
+            .HasMany(o => o.Items)
+            .WithOne(i => i.Order)
+            .HasForeignKey(i => i.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure PayOSOrder-Transactions one-to-many relationship
+        modelBuilder.Entity<PayOSOrder>()
+            .HasMany(o => o.Transactions)
+            .WithOne(t => t.Order)
+            .HasForeignKey(t => t.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure PayOSOrder-Invoices one-to-many relationship
+        modelBuilder.Entity<PayOSOrder>()
+            .HasMany(o => o.Invoices)
+            .WithOne(i => i.Order)
+            .HasForeignKey(i => i.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasIndex(o => o.OrderCode)
+            .IsUnique();
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasIndex(o => o.PaymentLinkId);
 
         base.OnModelCreating(modelBuilder);
     }
