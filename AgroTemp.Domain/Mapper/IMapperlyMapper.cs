@@ -1,5 +1,7 @@
 using AgroTemp.Domain.DTO;
+using AgroTemp.Domain.DTO.Auth;
 using AgroTemp.Domain.DTO.Farm;
+using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.DTO.Notification;
@@ -24,7 +26,7 @@ public interface IMapperlyMapper
     // Worker
     WorkerProfileDTO WorkerToDto(Worker worker);
     
-    // LoginResponse UserToLoginResponse(User user);
+    LoginResponse UserToLoginResponse(User user);
     // User RegisterRequestToUser(RegisterRequest resquest);
     // User RequestDTOToUser(UserRequestDTO request);
     // User UpdateProfileToUser(UpdateProfileRequest request);
@@ -38,9 +40,17 @@ public interface IMapperlyMapper
     // JobPost
     JobPostDTO JobPostToJobPostDto(JobPost jobPost);
     List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
+    JobSkillRequirementSummaryDTO JobSkillRequirementToSummaryDto(JobSkillRequirement jobSkillRequirement);
+    List<JobSkillRequirementSummaryDTO> JobSkillRequirementsToSummaryDtos(IEnumerable<JobSkillRequirement> jobSkillRequirements);
     JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
     void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 
+    // JobApplication
+    JobApplicationDTO JobApplicationToJobApplicationDto(JobApplication jobApplication);
+    List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplication> jobApplications);
+    JobApplication CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
+    void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplication jobApplication);
+    
     // Notification
     NotificationDTO NotificationToDto(Notification notification);
     List<NotificationDTO> NotificationsToDto(IEnumerable<Notification> notifications);

@@ -79,7 +79,8 @@ public class AuthService : BaseService<User>, IAuthService
         {
             Token = token,
             ExpiresAt = expiresAt,
-            Email = user.Email
+            Email = user.Email,
+            Role = user.Role.ToString()
         };
     }
 
@@ -134,7 +135,8 @@ public class AuthService : BaseService<User>, IAuthService
         {
             Token = token,
             ExpiresAt = expiresAt,
-            Email = user.Email
+            Email = user.Email,
+            Role = user.Role.ToString()
         };
     }
 
@@ -201,7 +203,8 @@ public class AuthService : BaseService<User>, IAuthService
             {
                 Token = token,
                 ExpiresAt = expiresAt,
-                Email = user.Email
+                Email = user.Email,
+                Role = user.Role.ToString()
             };
         }
         catch (InvalidJwtException)
