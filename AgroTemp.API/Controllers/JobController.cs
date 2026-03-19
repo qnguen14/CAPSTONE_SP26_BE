@@ -1,6 +1,7 @@
 ﻿using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
+using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Metadata;
@@ -16,18 +17,23 @@ public class JobController : ControllerBase
     private readonly IJobCategoryService _jobCategoryService;
     private readonly IJobPostService _jobPostService;
     private readonly IJobApplicationService _jobApplicationService;
+    private readonly IJobDetailService _jobDetailService;
 
     public JobController(
         ILogger<JobController> logger,
         IJobCategoryService jobCategoryService,
         IJobPostService jobPostService,
-        IJobApplicationService jobApplicationService)
+        IJobApplicationService jobApplicationService,
+        IJobDetailService jobDetailService)
     {
         _logger = logger;
         _jobCategoryService = jobCategoryService;
         _jobPostService = jobPostService;
         _jobApplicationService = jobApplicationService;
+        _jobDetailService = jobDetailService;
     }
+
+    //Job Category Endpoints
 
     [HttpGet(ApiEndpointConstants.Job.GetAllJobCategoriesEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobCategory>>), StatusCodes.Status200OK)]
@@ -171,6 +177,8 @@ public class JobController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, ex);
         }
     }
+
+    // Job Post Endpoints
 
     [HttpGet(ApiEndpointConstants.Job.GetAllJobPostsEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPost>>), StatusCodes.Status200OK)]
@@ -349,6 +357,8 @@ public class JobController : ControllerBase
         }
     }
 
+    // Job Application Endpoints
+
     [HttpGet(ApiEndpointConstants.Job.GetAllJobApplicationsEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobApplication>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -409,7 +419,7 @@ public class JobController : ControllerBase
     }
 
     [HttpPost(ApiEndpointConstants.Job.CreateJobApplicationEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<JobApplicationDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
@@ -483,6 +493,185 @@ public class JobController : ControllerBase
                 Message = "Job application deleted successfully",
                 Data = null
             });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
+    // Job Detail Endpoints
+
+    [HttpGet(ApiEndpointConstants.Job.GetAllJobDetailsEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobDetailDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobDetailDTO>>> GetAllJobDetails()
+    {
+        try
+        {
+            var response = await _jobDetailService.GetAllJobDetails();
+
+            var apiResponse = new ApiResponse<IEnumerable<JobDetailDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job details retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Job.GetJobDetailByIdEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<JobDetailDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobDetailDTO>> GetJobDetailById([FromRoute] string id)
+    {
+        try
+        {
+            var response = await _jobDetailService.GetJobDetailById(id);
+            if (response == null)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = "Job detail not found",
+                    Data = null
+                });
+            }
+            var apiResponse = new ApiResponse<JobDetailDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job detail retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
+    [HttpPost(ApiEndpointConstants.Job.CreateJobDetailEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<JobDetailDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobDetailDTO>> CreateJobDetail([FromBody] CreateJobDetailRequest request)
+    {
+        try
+        {
+            var response = await _jobDetailService.CreateJobDetail(request);
+            var apiResponse = new ApiResponse<JobDetailDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job detail created successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
+    [HttpPut(ApiEndpointConstants.Job.UpdateJobDetailEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<JobDetailDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobDetailDTO>> UpdateJobDetail([FromRoute] UpdateJobDetailRequest request)
+    {
+        try
+        {
+            var response = await _jobDetailService.UpdateJobDetail(request);
+            var apiResponse = new ApiResponse<JobDetailDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job detail updated successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
+    [HttpDelete(ApiEndpointConstants.Job.DeleteJobDetailEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> DeleteJobDetail([FromRoute] string id)
+    {
+        try
+        {
+            var result = await _jobDetailService.DeleteJobDetail(id);
+            if (!result)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = "Job detail not found",
+                    Data = null
+                });
+            }
+            return Ok(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job detail deleted successfully",
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
+    [HttpPut(ApiEndpointConstants.Job.UpdateJobDetailStatusEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<JobDetailDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobDetailDTO>> UpdateJobDetailStatus([FromRoute] string id, [FromQuery] string status)
+    {
+        try
+        {
+            var response = await _jobDetailService.UpdateJobDetailStatus(id, status);
+            if (response == null)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = "Job detail not found",
+                    Data = null
+                });
+            }
+            var apiResponse = new ApiResponse<JobDetailDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job detail status updated successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
         }
         catch (Exception ex)
         {

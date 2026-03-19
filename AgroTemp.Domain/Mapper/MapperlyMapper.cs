@@ -3,6 +3,7 @@ using AgroTemp.Domain.DTO.Auth;
 using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
+using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.DTO.WorkerAttendance;
@@ -81,6 +82,12 @@ public partial class MapperlyMapper : IMapperlyMapper
     // Notification
     public partial NotificationDTO NotificationToDto(Notification notification);
     public partial List<NotificationDTO> NotificationsToDto(IEnumerable<Notification> notifications);
+
+    // JobDetail
+    public partial JobDetailDTO JobDetailToJobDetailDto(JobDetail jobDetail);
+    public partial List<JobDetailDTO> JobDetailsToJobDetailDtos(IEnumerable<JobDetail> jobDetails);
+    public partial JobDetail CreateJobDetailRequestToJobDetail(CreateJobDetailRequest request);
+    public partial void UpdateJobDetailRequestToJobDetail(UpdateJobDetailRequest request, JobDetail jobDetail);
 
     // WorkerSession
     public partial WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);
