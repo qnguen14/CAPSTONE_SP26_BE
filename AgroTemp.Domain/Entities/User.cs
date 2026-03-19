@@ -86,4 +86,6 @@ public class User
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     public virtual ICollection<WithdrawalRequest> WithdrawalRequests { get; set; } = new List<WithdrawalRequest>();
+
+    public virtual ICollection<DeviceToken> DeviceTokens { get; set; } = new List<DeviceToken>();
 }

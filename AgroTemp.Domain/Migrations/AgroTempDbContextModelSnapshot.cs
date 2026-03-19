@@ -89,6 +89,52 @@ namespace AgroTemp.Domain.Migrations
                     b.ToTable("Chat_Message", "AgroTempV1");
                 });
 
+            modelBuilder.Entity("AgroTemp.Domain.Entities.DeviceToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DeviceName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("device_name");
+
+                    b.Property<string>("ExpoPushToken")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("expo_push_token");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTime>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_used_at");
+
+                    b.Property<int>("Platform")
+                        .HasColumnType("integer")
+                        .HasColumnName("platform");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "ExpoPushToken")
+                        .IsUnique();
+
+                    b.ToTable("DeviceToken", "AgroTempV1");
+                });
+
             modelBuilder.Entity("AgroTemp.Domain.Entities.Farm", b =>
                 {
                     b.Property<Guid>("Id")
@@ -364,11 +410,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("text")
                         .HasColumnName("address");
 
-                    b.Property<string>("AgeRequirement")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("age_requirement");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -387,6 +428,10 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("estimated_hours");
 
+                    b.Property<Guid>("FarmId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("farm_id");
+
                     b.Property<Guid>("FarmerId")
                         .HasColumnType("uuid")
                         .HasColumnName("farmer_id");
@@ -403,16 +448,6 @@ namespace AgroTemp.Domain.Migrations
                     b.Property<Guid>("JobCategoryId")
                         .HasColumnType("uuid")
                         .HasColumnName("job_category_id");
-
-                    b.Property<decimal>("Latitude")
-                        .HasPrecision(10, 7)
-                        .HasColumnType("numeric(10,7)")
-                        .HasColumnName("latitude");
-
-                    b.Property<decimal>("Longitude")
-                        .HasPrecision(10, 7)
-                        .HasColumnType("numeric(10,7)")
-                        .HasColumnName("longitude");
 
                     b.Property<int>("PaymentMethod")
                         .HasColumnType("integer");
@@ -472,6 +507,8 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("workers_needed");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FarmId");
 
                     b.HasIndex("FarmerId");
 
@@ -1027,6 +1064,38 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("Sender");
                 });
 
+            modelBuilder.Entity("AgroTemp.Domain.Entities.DisputeReport", b =>
+                {
+                    b.HasOne("AgroTemp.Domain.Entities.Farmer", "Farmer")
+                        .WithMany()
+                        .HasForeignKey("FarmerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AgroTemp.Domain.Entities.JobPost", "JobPost")
+                        .WithMany()
+                        .HasForeignKey("JobPostId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AgroTemp.Domain.Entities.User", "ResolvedBy")
+                        .WithMany()
+                        .HasForeignKey("ResolvedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AgroTemp.Domain.Entities.Worker", "Worker")
+                        .WithMany()
+                        .HasForeignKey("WorkerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Farmer");
+
+                    b.Navigation("JobPost");
+
+                    b.Navigation("ResolvedBy");
+
+                    b.Navigation("Worker");
+                });
+
             modelBuilder.Entity("AgroTemp.Domain.Entities.Farm", b =>
                 {
                     b.HasOne("AgroTemp.Domain.Entities.Farmer", "Farmer")
@@ -1097,6 +1166,12 @@ namespace AgroTemp.Domain.Migrations
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobPost", b =>
                 {
+                    b.HasOne("AgroTemp.Domain.Entities.Farm", "Farm")
+                        .WithMany()
+                        .HasForeignKey("FarmId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("AgroTemp.Domain.Entities.Farmer", "Farmer")
                         .WithMany()
                         .HasForeignKey("FarmerId")
@@ -1108,6 +1183,8 @@ namespace AgroTemp.Domain.Migrations
                         .HasForeignKey("JobCategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Farm");
 
                     b.Navigation("Farmer");
 
@@ -1294,6 +1371,8 @@ namespace AgroTemp.Domain.Migrations
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.User", b =>
                 {
+                    b.Navigation("DeviceTokens");
+
                     b.Navigation("Farmer");
 
                     b.Navigation("GivenRatings");
