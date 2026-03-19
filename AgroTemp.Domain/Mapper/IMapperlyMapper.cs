@@ -6,6 +6,7 @@ using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.DTO.Notification;
+using AgroTemp.Domain.DTO.Skill;
 using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
 
@@ -61,6 +62,12 @@ public interface IMapperlyMapper
     // Notification
     NotificationDTO NotificationToDto(Notification notification);
     List<NotificationDTO> NotificationsToDto(IEnumerable<Notification> notifications);
+
+    // Skill
+    SkillResponse SkillToSkillResponse(Skill skill);
+    List<SkillResponse> SkillsToSkillResponses(IEnumerable<Skill> skills);
+    Skill CreateSkillRequestToSkill(CreateSkillRequest request);
+    void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
 
     // WorkerSession
     WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);
