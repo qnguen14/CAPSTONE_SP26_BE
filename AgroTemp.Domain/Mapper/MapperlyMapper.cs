@@ -100,6 +100,7 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial void UpdateJobDetailRequestToJobDetail(UpdateJobDetailRequest request, JobDetail jobDetail);
 
     // WorkerSession
+    [MapProperty(nameof(WorkerSession.JobDetail.JobApplicationId), nameof(WorkerAttendanceDTO.JobApplicationId))]
     public partial WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);
     public partial List<WorkerAttendanceDTO> WorkerSessionsToDtos(IEnumerable<WorkerSession> workerSessions);
 }
