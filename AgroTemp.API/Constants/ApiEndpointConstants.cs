@@ -16,8 +16,6 @@ public class ApiEndpointConstants
         public const string GoogleLoginEndpoint = ApiEndpoint + "/google-login";
         public const string ResetPasswordEndpoint = ApiEndpoint + "/reset";
         public const string ForgetPasswordEndpoint = ApiEndpoint + "/forget";
-        // public const string DisableAccountEndpoint = ApiEndpoint + "/disable";
-        // public const string VerifyDisableCodeEndpoint = ApiEndpoint + "/verify/disable";
         public const string LogoutEndpoint = ApiEndpoint + "/logout";
     }
 
@@ -39,7 +37,7 @@ public class ApiEndpointConstants
         public const string UploadAvatarEndpoint = FarmerProfileEndpoint + "/upload-avatar";
     }
 
-    public static class Farm 
+    public static class Farm
     {
         public const string FarmEndpoint = ApiEndpoint + "/farm";
         public const string GetFarmsEndpoint = FarmEndpoint;
@@ -88,7 +86,7 @@ public class ApiEndpointConstants
         public const string DeleteJobPostEndpoint = JobPostEndpoint + "/{id}";
         public const string DeleteJobApplicationEndpoint = JobApplicationEndpoint + "/{id}";
         public const string DeleteJobDetailEndpoint = JobDetailEndpoint + "/{id}";
-        
+
         public const string UpdateJobPostStatusEndpoint = JobPostEndpoint + "/update-status" + "/{id}";
         public const string UpdateJobDetailStatusEndpoint = JobDetailEndpoint + "/update-status" + "/{id}";
     }
@@ -96,13 +94,13 @@ public class ApiEndpointConstants
     public static class WorkerAttendance
     {
         public const string WorkerAttendanceEndpoint = ApiEndpoint + "/attendance";
-        
+
         // Worker endpoints
         public const string CheckInEndpoint = WorkerAttendanceEndpoint + "/check-in";
         public const string CheckOutEndpoint = WorkerAttendanceEndpoint + "/check-out";
         public const string GetAttendanceByIdEndpoint = WorkerAttendanceEndpoint + "/{id}";
         public const string GetWorkerAttendanceHistoryEndpoint = WorkerAttendanceEndpoint + "/worker/{workerProfileId}";
-        
+
         // Farmer endpoints
         public const string ApproveAttendanceEndpoint = WorkerAttendanceEndpoint + "/approve";
         public const string GetFarmAttendanceRecordsEndpoint = WorkerAttendanceEndpoint + "/farm/{farmerProfileId}";
@@ -135,7 +133,8 @@ public class ApiEndpointConstants
         public const string DownloadOrderInvoiceEndpoint = OrderEndpoint + "/{orderId}/invoices/{invoiceId}/download";
 
         public const string VerifyWebhookEndpoint = WebhookEndpoint + "/payos";
-        
+    }
+
     public static class Skill
     {
         public const string SkillEndpoint = ApiEndpoint + "/skills";
