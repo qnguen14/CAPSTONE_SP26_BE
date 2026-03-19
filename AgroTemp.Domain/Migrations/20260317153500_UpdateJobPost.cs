@@ -26,13 +26,36 @@ namespace AgroTemp.Domain.Migrations
                 schema: "AgroTempV1",
                 table: "Job_Post");
 
+            // Add farm_id column as nullable first
             migrationBuilder.AddColumn<Guid>(
                 name: "farm_id",
                 schema: "AgroTempV1",
                 table: "Job_Post",
                 type: "uuid",
+                nullable: true);
+
+            // Populate farm_id with the first farm for each farmer
+            migrationBuilder.Sql(@"
+                UPDATE ""AgroTempV1"".""Job_Post"" jp
+                SET farm_id = (
+                    SELECT f.id 
+                    FROM ""AgroTempV1"".""Farm"" f
+                    WHERE f.farmer_id = jp.farmer_id
+                    LIMIT 1
+                )
+                WHERE jp.farm_id IS NULL;
+            ");
+
+            // Make farm_id not nullable
+            migrationBuilder.AlterColumn<Guid>(
+                name: "farm_id",
+                schema: "AgroTempV1",
+                table: "Job_Post",
+                type: "uuid",
                 nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+                oldClrType: typeof(Guid),
+                oldType: "uuid",
+                oldNullable: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Job_Post_farm_id",
