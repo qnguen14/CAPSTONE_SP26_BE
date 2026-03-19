@@ -10,6 +10,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
     {
         public Guid Id { get; set; }
         public Guid FarmerProfileId { get; set; }
+        public List<JobSkillRequirementSummaryDTO> JobSkillRequirements { get; set; } = new();
         public Guid FarmId { get; set; }
         public Guid JobCategoryId { get; set; }
         public string Title { get; set; }
@@ -29,6 +30,6 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public bool IsUrgent { get; set; }
-        public int StatusId { get; set; }
+        public string Status { get; set; }
     }
 }
