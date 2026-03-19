@@ -318,11 +318,21 @@ public class UserService : BaseService<User>, IUserService
             var workerProfile = await _unitOfWork.GetRepository<Worker>()
                 .FirstOrDefaultAsync(
                     predicate: wp => wp.UserId == userId,
-                    include: null);
+                    include: query => query
+                        .Include(w => w.User)
+                        // .Include(w => w.WorkerSkills)
+                        //     .ThenInclude(ws => ws.Skill)
+                            );
 
             if (workerProfile == null)
             {
                 throw new Exception("Worker profile not found");
+            }
+
+            // DEBUG: Check if User is loaded
+            if (workerProfile.User == null)
+            {
+                throw new Exception($"User not loaded! WorkerId: {workerProfile.Id}, UserId: {workerProfile.UserId}");
             }
 
             return _mapper.WorkerToDto(workerProfile);
@@ -341,7 +351,7 @@ public class UserService : BaseService<User>, IUserService
             var workerProfile = await _unitOfWork.GetRepository<Worker>()
                 .FirstOrDefaultAsync(
                     predicate: wp => wp.UserId == userId,
-                    include: null);
+                    include: query => query.Include(w => w.User));
 
             if (workerProfile == null)
             {
@@ -363,6 +373,16 @@ public class UserService : BaseService<User>, IUserService
                 };
 
                 await _unitOfWork.GetRepository<Worker>().InsertAsync(workerProfile);
+                await _unitOfWork.SaveChangesAsync();
+
+                workerProfile = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(
+                        predicate: wp => wp.Id == workerProfile.Id,
+                        include: query => query
+                            .Include(w => w.User)
+                            // .Include(w => w.WorkerSkills)
+                            //     .ThenInclude(ws => ws.Skill)
+                                );
             }
             else
             {
@@ -377,9 +397,8 @@ public class UserService : BaseService<User>, IUserService
                 workerProfile.UpdatedAt = DateTime.UtcNow;
 
                 _unitOfWork.GetRepository<Worker>().UpdateAsync(workerProfile);
+                await _unitOfWork.SaveChangesAsync();
             }
-
-            await _unitOfWork.SaveChangesAsync();
 
             return _mapper.WorkerToDto(workerProfile);
         }
