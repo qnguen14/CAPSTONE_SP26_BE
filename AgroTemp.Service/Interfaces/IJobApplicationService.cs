@@ -7,7 +7,7 @@ namespace AgroTemp.Service.Interfaces
         Task<List<JobApplicationDTO>> GetAllJobApplications();
         Task<JobApplicationDTO> GetJobApplicationById(string id);
         Task<JobApplicationDTO> CreateJobApplication(CreateJobApplicationRequest request);
-        Task<JobApplicationDTO> UpdateJobApplication(UpdateJobApplicationRequest request);
+        Task<JobApplicationDTO> UpdateJobApplication(Guid id, UpdateJobApplicationRequest request);
         Task<bool> DeleteJobApplication(string id);
     }
 }
