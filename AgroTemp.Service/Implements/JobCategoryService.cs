@@ -85,13 +85,13 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<JobCategoryDTO> UpdateJobCategory(UpdateJobCategoryRequest request)
+        public async Task<JobCategoryDTO> UpdateJobCategory(Guid id, UpdateJobCategoryRequest request)
         {
             try
             {
                 var existingJobCategory = await _unitOfWork.GetRepository<JobCategory>()
                     .FirstOrDefaultAsync(
-                        predicate: jc => jc.Id == request.Id,
+                        predicate: jc => jc.Id == id,
                         include: null);
 
                 if (existingJobCategory == null)

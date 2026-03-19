@@ -140,11 +140,11 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobCategoryDTO>> UpdateJobCategory([FromRoute] UpdateJobCategoryRequest request)
+    public async Task<ActionResult<JobCategoryDTO>> UpdateJobCategory([FromRoute] Guid id, [FromBody] UpdateJobCategoryRequest request)
     {
         try
         {
-            var response = await _jobCategoryService.UpdateJobCategory(request);
+            var response = await _jobCategoryService.UpdateJobCategory(id, request);
             var apiResponse = new ApiResponse<JobCategoryDTO>
             {
                 StatusCode = StatusCodes.Status200OK,

@@ -12,7 +12,7 @@ namespace AgroTemp.Service.Interfaces
         Task<List<JobCategoryDTO>> GetAllJobCategories();
         Task<JobCategoryDTO> GetJobCategoryById(string id);
         Task<JobCategoryDTO> CreateJobCategory(CreateJobCategoryRequest request);
-        Task<JobCategoryDTO> UpdateJobCategory(UpdateJobCategoryRequest request);
+        Task<JobCategoryDTO> UpdateJobCategory(Guid id, UpdateJobCategoryRequest request);
         Task<bool> DeleteJobCategory(string id);
     }
 }
