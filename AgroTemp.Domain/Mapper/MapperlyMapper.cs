@@ -35,7 +35,7 @@ public partial class MapperlyMapper : IMapperlyMapper
             Id = worker.Id,
             UserId = worker.UserId,
             FullName = worker.FullName,
-            AgeRange = worker.AgeRange,
+            Age = worker.AgeRange,
             PrimaryLocation = worker.PrimaryLocation,
             TravelRadiusKmPreference = worker.TravelRadiusKmPreference,
             ExperienceLevelId = worker.ExperienceLevelId,

@@ -12,7 +12,7 @@ namespace AgroTemp.Domain.DTO.Job.JobApplication
         
         public Guid JobPostId { get; set; }
         
-        public Guid WorkerId { get; set; }
+        public WorkerProfileDTO? Worker { get; set; }
         
         public int StatusId { get; set; }
         

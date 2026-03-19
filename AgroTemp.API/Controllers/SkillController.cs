@@ -2,11 +2,13 @@ using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Skill;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgroTemp.API.Controllers;
 
 [ApiController]
+[Authorize]
 public class SkillController : ControllerBase
 {
     private readonly ILogger<SkillController> _logger;
@@ -82,6 +84,7 @@ public class SkillController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<SkillResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<SkillResponse>> CreateSkill([FromBody] CreateSkillRequest request)
     {
         try
@@ -119,6 +122,7 @@ public class SkillController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<SkillResponse>> UpdateSkill([FromRoute] Guid id, [FromBody] UpdateSkillRequest request)
     {
         try
@@ -133,17 +137,8 @@ public class SkillController : ControllerBase
                 });
             }
 
-            if (id != request.Id)
-            {
-                return BadRequest(new ApiResponse<object>
-                {
-                    StatusCode = StatusCodes.Status400BadRequest,
-                    Message = "Route id and payload id do not match",
-                    Data = null
-                });
-            }
 
-            var response = await _skillService.UpdateSkill(request);
+            var response = await _skillService.UpdateSkill(id, request);
             if (response == null)
             {
                 return NotFound(new ApiResponse<object>
@@ -165,7 +160,7 @@ public class SkillController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating skill {SkillId}", id);
+            _logger.LogError(ex, "Error updating skill {id}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, ex);
         }
     }
@@ -174,6 +169,7 @@ public class SkillController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> DeleteSkill([FromRoute] Guid id)
     {
         try

@@ -6,6 +6,7 @@ using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace AgroTemp.Service.Implements
 {
@@ -28,7 +29,7 @@ namespace AgroTemp.Service.Implements
                 var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
                     .GetListAsync(
                         predicate: null,
-                        include: null,
+                        include: ja => ja.Include(j => j.Worker),
                         orderBy: ja => ja.OrderBy(x => x.AppliedAt));
 
                 if (jobApplications == null || !jobApplications.Any())
@@ -53,7 +54,7 @@ namespace AgroTemp.Service.Implements
                 var jobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == guid,
-                        include: null);
+                        include: ja => ja.Include(j => j.Worker));
 
                 if (jobApplication == null)
                 {
@@ -73,9 +74,19 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
+                var userId = GetCurrentUserId();
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate:w => w.UserId == userId);
+
+                if (worker == null)
+                {
+                    throw new Exception("Worker profile not found for the current user.");
+                }
+
                 var jobApplication = _mapper.CreateJobApplicationRequestToJobApplication(request);
 
                 // set defaults
+                jobApplication.WorkerId = worker.Id;
                 jobApplication.Id = Guid.NewGuid();
                 jobApplication.AppliedAt = DateTime.UtcNow;
                 jobApplication.StatusId = (int)ApplicationStatus.Pending;
@@ -98,7 +109,8 @@ namespace AgroTemp.Service.Implements
             {
                 var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
-                        predicate: ja => ja.Id == request.Id);
+                        predicate: ja => ja.Id == request.Id,
+                        include: ja => ja.Include(j => j.Worker));
 
                 if (existingJobApplication == null)
                 {
@@ -125,7 +137,8 @@ namespace AgroTemp.Service.Implements
                 var guid = Guid.Parse(id);
                 var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
-                        predicate: ja => ja.Id == guid);
+                        predicate: ja => ja.Id == guid,
+                        include: ja => ja.Include(j => j.Worker));
 
                 if (existingJobApplication == null)
                 {

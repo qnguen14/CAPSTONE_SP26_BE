@@ -7,7 +7,7 @@ namespace AgroTemp.Service.Interfaces
         Task<List<SkillResponse>> GetAllSkills();
         Task<SkillResponse> GetSkillById(Guid id);
         Task<SkillResponse> CreateSkill(CreateSkillRequest request);
-        Task<SkillResponse> UpdateSkill(UpdateSkillRequest request);
+        Task<SkillResponse> UpdateSkill(Guid id, UpdateSkillRequest request);
         Task<bool> DeleteSkill(Guid id);
     }
 }

@@ -86,13 +86,13 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<SkillResponse> UpdateSkill(UpdateSkillRequest request)
+        public async Task<SkillResponse> UpdateSkill(Guid id, UpdateSkillRequest request)
         {
             try
             {
                 var existingSkill = await _unitOfWork.GetRepository<Skill>()
                     .FirstOrDefaultAsync(
-                        predicate: s => s.Id == request.Id,
+                        predicate: s => s.Id == id,
                         include: null);
 
                 if (existingSkill == null)
