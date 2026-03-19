@@ -159,13 +159,13 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<JobPostDTO> UpdateJobPost(UpdateJobPostRequest request)
+        public async Task<JobPostDTO> UpdateJobPost(Guid id,UpdateJobPostRequest request)
         {
             try
             {
                 var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
-                        predicate: jp => jp.Id == request.Id);
+                        predicate: jp => jp.Id == id);
 
                 if (existingJobPost == null)
                 {

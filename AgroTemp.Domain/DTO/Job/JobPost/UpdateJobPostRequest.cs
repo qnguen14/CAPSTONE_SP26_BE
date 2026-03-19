@@ -8,7 +8,6 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
 {
     public class UpdateJobPostRequest
     {
-        public Guid Id { get; set; }
         public Guid FarmerProfileId { get; set; }
         public Guid FarmId { get; set; }
         public Guid JobCategoryId { get; set; }

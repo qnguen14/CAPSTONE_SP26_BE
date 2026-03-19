@@ -12,7 +12,7 @@ namespace AgroTemp.Service.Interfaces
         Task<List<JobPostDTO>> GetAllJobPosts();
         Task<JobPostDTO> GetJobPostById(string id);
         Task<JobPostDTO> CreateJobPost(CreateJobPostRequest request);
-        Task<JobPostDTO> UpdateJobPost(UpdateJobPostRequest request);
+        Task<JobPostDTO> UpdateJobPost(Guid id, UpdateJobPostRequest request);
         Task<bool> DeleteJobPost(string id);
         Task<JobPostDTO> UpdateJobPostStatus(string id, string status);
     }
