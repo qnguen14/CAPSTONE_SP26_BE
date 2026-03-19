@@ -8,7 +8,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
 {
     public class CreateJobPostRequest
     {
-    public Guid FarmerProfileId { get; set; }
+    public List<Guid> JobSkillRequirementIds { get; set; } = new();
     public Guid FarmId { get; set; }
     public Guid JobCategoryId { get; set; }
     public string Title { get; set; }
@@ -22,7 +22,6 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
     public int WageTypeId { get; set; }
     public decimal WageAmount { get; set; }
     public int PaymentMethodId { get; set; }
-    public string RequiredSkills { get; set; }
     public string GenderPreference { get; set; }
     public DateTime PublishedAt { get; set; }
     public DateTime CreatedAt { get; set; }

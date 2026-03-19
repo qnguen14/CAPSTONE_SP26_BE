@@ -58,6 +58,13 @@ public partial class MapperlyMapper : IMapperlyMapper
 
     private string MapUserRole(UserRole role) => role.ToString();
 
+    private string MapStatusId(int statusId)
+    {
+        return Enum.IsDefined(typeof(JobPostStatus), statusId)
+            ? ((JobPostStatus)statusId).ToString()
+            : "Unknown";
+    }
+
     // JobCategory
     public partial JobCategoryDTO JobCategoryToJobCategoryDto(JobCategory jobCategory);
     public partial List<JobCategoryDTO> JobCategoriesToJobCategoryDtos(IEnumerable<JobCategory> jobCategories);
@@ -65,11 +72,14 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial void UpdateJobCategoryRequestToJobCategory(UpdateJobCategoryRequest request, JobCategory jobCategory);
 
     // JobPost
-    [MapProperty(nameof(JobPost.PaymentMethod), nameof(JobPostDTO.PaymentMethodId))]
-    [MapProperty(nameof(JobPost.Status), nameof(JobPostDTO.StatusId))]
-    [MapProperty(nameof(JobPost.WageType), nameof(JobPostDTO.WageTypeId))]
+    [MapProperty(nameof(JobPost.FarmerId), nameof(JobPostDTO.FarmerProfileId))]
+    [MapProperty(nameof(JobPost.StatusId), nameof(JobPostDTO.Status), Use = nameof(MapStatusId))]
     public partial JobPostDTO JobPostToJobPostDto(JobPost jobPost);
     public partial List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
+    [MapProperty(nameof(JobSkillRequirement.SkillId), nameof(JobSkillRequirementSummaryDTO.Id))]
+    [MapProperty("Skill.Name", nameof(JobSkillRequirementSummaryDTO.Name))]
+    public partial JobSkillRequirementSummaryDTO JobSkillRequirementToSummaryDto(JobSkillRequirement jobSkillRequirement);
+    public partial List<JobSkillRequirementSummaryDTO> JobSkillRequirementsToSummaryDtos(IEnumerable<JobSkillRequirement> jobSkillRequirements);
     public partial JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
     public partial void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 

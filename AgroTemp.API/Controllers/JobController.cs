@@ -181,7 +181,7 @@ public class JobController : ControllerBase
     // Job Post Endpoints
 
     [HttpGet(ApiEndpointConstants.Job.GetAllJobPostsEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPost>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
@@ -258,10 +258,35 @@ public class JobController : ControllerBase
             };
             return Ok(apiResponse);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized create job post attempt");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid create job post request");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex.Message);
-            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+            _logger.LogError(ex, "Error creating job post");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while creating job post",
+                Data = null
+            });
         }
     }
 
@@ -360,7 +385,7 @@ public class JobController : ControllerBase
     // Job Application Endpoints
 
     [HttpGet(ApiEndpointConstants.Job.GetAllJobApplicationsEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobApplication>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobApplicationDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
