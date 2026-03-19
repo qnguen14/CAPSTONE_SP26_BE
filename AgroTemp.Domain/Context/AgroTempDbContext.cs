@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Entities;
+using AgroTemp.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgroTemp.Domain.Context;
@@ -31,6 +31,8 @@ public class AgroTempDbContext : DbContext
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
+    public DbSet<DisputeReport> DisputeReports { get; set; }
+    public DbSet<DeviceToken> DeviceTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -108,35 +110,27 @@ public class AgroTempDbContext : DbContext
         // Configure precision for decimal columns
         modelBuilder.Entity<Worker>()
             .Property(wp => wp.AverageRating)
-            .HasPrecision(3, 2); // e.g., 5.00
+            .HasPrecision(3, 2);
 
         modelBuilder.Entity<Farmer>()
             .Property(fp => fp.AverageRating)
-            .HasPrecision(3, 2); // e.g., 5.00
+            .HasPrecision(3, 2);
 
         modelBuilder.Entity<Farm>()
             .Property(f => f.Latitude)
-            .HasPrecision(10, 7); // e.g., -90.0000000 to 90.0000000
+            .HasPrecision(10, 7);
 
         modelBuilder.Entity<Farm>()
             .Property(f => f.Longitude)
-            .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
-
-        modelBuilder.Entity<JobPost>()
-            .Property(jp => jp.Latitude)
-            .HasPrecision(10, 7); // e.g., -90.0000000 to 90.0000000
-
-        modelBuilder.Entity<JobPost>()
-            .Property(jp => jp.Longitude)
-            .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
+            .HasPrecision(10, 7);
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.EstimatedHours)
-            .HasPrecision(10, 2); // e.g., 12345678.90
+            .HasPrecision(10, 2);
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.WageAmount)
-            .HasPrecision(18, 2); // e.g., currency amounts
+            .HasPrecision(18, 2);
 
         // Configure JobPost-JobApplication one-to-many relationship
         modelBuilder.Entity<JobPost>()
@@ -264,7 +258,6 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey<Wallet>(w => w.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure Wallet-WalletTransaction one-to-many relationship
         // Configure Wallet-WalletTransaction one-to-many relationship
         modelBuilder.Entity<Wallet>()
             .HasMany(w => w.Transactions)

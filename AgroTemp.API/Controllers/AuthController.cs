@@ -154,21 +154,6 @@ public class AuthController : Controller
         }
     }
 
-    /// <summary>
-    /// Verify Email
-    /// </summary>
-    [HttpPost(ApiEndpointConstants.Auth.VerifyResetCodeEndpoint)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
-    {
-        var result = await _authService.VerifyEmail(request);
-        if (result)
-        {
-            return Ok(new { Message = "Email verified successfully" });
-        }
-        return BadRequest(new { Message = "Invalid email or OTP, or OTP has expired" });
-    }
 
     /// <summary>
     /// Forgot Password - Request password reset

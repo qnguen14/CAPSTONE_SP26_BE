@@ -16,7 +16,6 @@ public class ApiEndpointConstants
         public const string GoogleLoginEndpoint = ApiEndpoint + "/google-login";
         public const string ResetPasswordEndpoint = ApiEndpoint + "/reset";
         public const string ForgetPasswordEndpoint = ApiEndpoint + "/forget";
-        public const string VerifyResetCodeEndpoint = ApiEndpoint + "/verify";
         // public const string DisableAccountEndpoint = ApiEndpoint + "/disable";
         // public const string VerifyDisableCodeEndpoint = ApiEndpoint + "/verify/disable";
         public const string LogoutEndpoint = ApiEndpoint + "/logout";
@@ -63,28 +62,35 @@ public class ApiEndpointConstants
         public const string JobCategoryEndpoint = JobEndpoint + "/category";
         public const string JobPostEndpoint = JobEndpoint + "/post";
         public const string JobApplicationEndpoint = JobEndpoint + "/application";
+        public const string JobDetailEndpoint = JobEndpoint + "/detail";
 
         public const string GetAllJobCategoriesEndpoint = JobCategoryEndpoint;
         public const string GetAllJobPostsEndpoint = JobPostEndpoint;
         public const string GetAllJobApplicationsEndpoint = JobApplicationEndpoint;
+        public const string GetAllJobDetailsEndpoint = JobDetailEndpoint;
 
-        public const string GetJobCategoryByIdEndpoint = JobCategoryEndpoint + "/{Id}";
-        public const string GetJobPostByIdEndpoint = JobPostEndpoint + "/{Id}";
-        public const string GetJobApplicationsByPostIdEndpoint = JobApplicationEndpoint + "/{Id}";
+        public const string GetJobCategoryByIdEndpoint = JobCategoryEndpoint + "/{id}";
+        public const string GetJobPostByIdEndpoint = JobPostEndpoint + "/{id}";
+        public const string GetJobApplicationByIdEndpoint = JobApplicationEndpoint + "/{id}";
+        public const string GetJobDetailByIdEndpoint = JobDetailEndpoint + "/{id}";
 
-        public const string CreateJobCategoryEndpoint = JobCategoryEndpoint + "/create";
-        public const string CreateJobPostEndpoint = JobPostEndpoint + "/create";
-        public const string CreateJobApplicationEndpoint = JobApplicationEndpoint + "/create";
+        public const string CreateJobCategoryEndpoint = JobCategoryEndpoint;
+        public const string CreateJobPostEndpoint = JobPostEndpoint;
+        public const string CreateJobApplicationEndpoint = JobApplicationEndpoint;
+        public const string CreateJobDetailEndpoint = JobDetailEndpoint;
 
-        public const string UpdateJobCategoryEndpoint = JobCategoryEndpoint + "/update";
-        public const string UpdateJobPostEndpoint = JobPostEndpoint + "/update";
-        public const string UpdateJobApplicationEndpoint = JobApplicationEndpoint + "/update";
+        public const string UpdateJobCategoryEndpoint = JobCategoryEndpoint + "/{id}";
+        public const string UpdateJobPostEndpoint = JobPostEndpoint + "/{id}";
+        public const string UpdateJobApplicationEndpoint = JobApplicationEndpoint + "/{id}";
+        public const string UpdateJobDetailEndpoint = JobDetailEndpoint + "/{id}";
 
-        public const string DeleteJobCategoryEndpoint = JobCategoryEndpoint + "/delete";
-        public const string DeleteJobPostEndpoint = JobPostEndpoint + "/delete";
-        public const string DeleteJobApplicationEndpoint = JobApplicationEndpoint + "/delete";
-
-        public const string UpdateJobPostStatusEndpoint = JobPostEndpoint + "/update-status";
+        public const string DeleteJobCategoryEndpoint = JobCategoryEndpoint + "/{id}";
+        public const string DeleteJobPostEndpoint = JobPostEndpoint + "/{id}";
+        public const string DeleteJobApplicationEndpoint = JobApplicationEndpoint + "/{id}";
+        public const string DeleteJobDetailEndpoint = JobDetailEndpoint + "/{id}";
+        
+        public const string UpdateJobPostStatusEndpoint = JobPostEndpoint + "/update-status" + "/{id}";
+        public const string UpdateJobDetailStatusEndpoint = JobDetailEndpoint + "/update-status" + "/{id}";
     }
 
     public static class WorkerAttendance
@@ -111,6 +117,9 @@ public class ApiEndpointConstants
         public const string MarkAsReadEndpoint = NotificationEndpoint + "/read";
         public const string MarkAllAsReadEndpoint = NotificationEndpoint + "/read-all";
         public const string DeleteNotificationEndpoint = NotificationEndpoint + "/{id}";
+
+        public const string RegisterTokenEndpoint = NotificationEndpoint + "/register-token";
+        public const string UnregisterTokenEndpoint = NotificationEndpoint + "/unregister-token";
     }
 
     public static class Skill

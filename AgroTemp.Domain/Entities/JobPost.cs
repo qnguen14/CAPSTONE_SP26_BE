@@ -5,8 +5,8 @@ namespace AgroTemp.Domain.Entities;
 
 public enum WageType
 {
-    Hourly = 1,
-    Daily = 2,
+    Daily = 1,
+    PerPlot = 2,
     PerJob = 3
 }
 
@@ -42,6 +42,12 @@ public class JobPost
     public Guid FarmerId { get; set; }
     public virtual Farmer Farmer { get; set; }
 
+    [Required]
+    [ForeignKey(nameof(Farm))]
+    [Column("farm_id")]
+    public Guid FarmId { get; set; }
+    public virtual Farm Farm { get; set; }
+
     public virtual ICollection<JobSkillRequirement> JobSkillRequirements { get; set; } = new List<JobSkillRequirement>();
     public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
     public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
@@ -64,14 +70,6 @@ public class JobPost
     [Required]
     [Column("address")]
     public string Address { get; set; }
-
-    [Required]
-    [Column("latitude")]
-    public decimal Latitude { get; set; }
-
-    [Required]
-    [Column("longitude")]
-    public decimal Longitude { get; set; }
 
     [Required]
     [Column("start_date")]
@@ -114,10 +112,6 @@ public class JobPost
     [Required]
     [Column("gender_preference")]
     public string GenderPreference { get; set; }
-
-    [Required]
-    [Column("age_requirement")]
-    public string AgeRequirement { get; set; }
 
     [Required]
     [Column("published_at")]
