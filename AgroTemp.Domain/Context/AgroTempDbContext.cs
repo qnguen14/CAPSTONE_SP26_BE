@@ -125,14 +125,6 @@ public class AgroTempDbContext : DbContext
             .HasPrecision(10, 7);
 
         modelBuilder.Entity<JobPost>()
-            .Property(jp => jp.Latitude)
-            .HasPrecision(10, 7); // e.g., -90.0000000 to 90.0000000
-
-        modelBuilder.Entity<JobPost>()
-            .Property(jp => jp.Longitude)
-            .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
-
-        modelBuilder.Entity<JobPost>()
             .Property(jp => jp.EstimatedHours)
             .HasPrecision(10, 2);
 
