@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using System.ComponentModel.Design;
 using Resend;
 using AgroTemp.Service.Config.ApiModels;
+using PayOS;
 
 namespace AgroTemp.API.Configuration
 {
@@ -38,6 +39,13 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IWorkerAttendanceService, WorkerAttendanceService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IExpoPushService, ExpoPushService>();
+            services.AddSingleton<PayOSClient>(_ => new PayOSClient(new PayOSOptions
+            {
+                ClientId = configuration["PayOS:ClientId"] ?? string.Empty,
+                ApiKey = configuration["PayOS:ApiKey"] ?? string.Empty,
+                ChecksumKey = configuration["PayOS:ChecksumKey"] ?? string.Empty
+            }));
+            services.AddScoped<IPayOSService, PayOSService>();
             services.AddScoped<ISkillService, SkillService>();
 
             // Custom Services

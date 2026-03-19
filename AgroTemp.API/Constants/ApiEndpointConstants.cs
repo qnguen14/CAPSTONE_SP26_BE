@@ -122,6 +122,20 @@ public class ApiEndpointConstants
         public const string UnregisterTokenEndpoint = NotificationEndpoint + "/unregister-token";
     }
 
+    public static class Payment
+    {
+        public const string PaymentEndpoint = ApiEndpoint + "/payment";
+        public const string OrderEndpoint = PaymentEndpoint + "/order";
+        public const string WebhookEndpoint = PaymentEndpoint + "/webhook";
+
+        public const string GetOrderEndpoint = OrderEndpoint + "/{id}";
+        public const string CreateOrderEndpoint = OrderEndpoint;
+        public const string CancelOrderEndpoint = OrderEndpoint + "/{orderId}/cancel";
+        public const string GetOrderInvoicesEndpoint = OrderEndpoint + "/{orderId}/invoices";
+        public const string DownloadOrderInvoiceEndpoint = OrderEndpoint + "/{orderId}/invoices/{invoiceId}/download";
+
+        public const string VerifyWebhookEndpoint = WebhookEndpoint + "/payos";
+        
     public static class Skill
     {
         public const string SkillEndpoint = ApiEndpoint + "/skills";
