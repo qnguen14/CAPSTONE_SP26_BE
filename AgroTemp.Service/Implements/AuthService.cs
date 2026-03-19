@@ -72,7 +72,7 @@ public class AuthService : BaseService<User>, IAuthService
         }
 
         // Generate JWT token
-        var token = GenerateJwtToken(user);
+        var token = await GenerateJwtToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
 
         return new LoginResponse
@@ -128,7 +128,7 @@ public class AuthService : BaseService<User>, IAuthService
         await _unitOfWork.SaveChangesAsync();
 
         // Generate JWT token
-        var token = GenerateJwtToken(user);
+        var token = await GenerateJwtToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
 
         return new LoginResponse
@@ -196,7 +196,7 @@ public class AuthService : BaseService<User>, IAuthService
             }
 
             // Generate JWT token
-            var token = GenerateJwtToken(user);
+            var token = await GenerateJwtToken(user);
             var expiresAt = DateTime.UtcNow.AddHours(24);
 
             return new LoginResponse
@@ -246,12 +246,12 @@ public class AuthService : BaseService<User>, IAuthService
         await _unitOfWork.SaveChangesAsync();
     }
 
-    private string GenerateJwtToken(User user)
+    private async Task<string> GenerateJwtToken(User user)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claimsList = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
@@ -259,10 +259,32 @@ public class AuthService : BaseService<User>, IAuthService
             new Claim("RoleId", user.RoleId.ToString())
         };
 
+        // Add FarmerProfileId or WorkerProfileId based on role
+        if (user.Role == UserRole.Farmer)
+        {
+            var farmer = await _unitOfWork.GetRepository<Farmer>()
+                .FirstOrDefaultAsync(predicate: f => f.UserId == user.Id);
+            
+            if (farmer != null)
+            {
+                claimsList.Add(new Claim("FarmerProfileId", farmer.Id.ToString()));
+            }
+        }
+        else if (user.Role == UserRole.Worker)
+        {
+            var worker = await _unitOfWork.GetRepository<Worker>()
+                .FirstOrDefaultAsync(predicate: w => w.UserId == user.Id);
+            
+            if (worker != null)
+            {
+                claimsList.Add(new Claim("WorkerProfileId", worker.Id.ToString()));
+            }
+        }
+
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
-            claims: claims,
+            claims: claimsList,
             expires: DateTime.UtcNow.AddHours(24),
             signingCredentials: credentials
         );

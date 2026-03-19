@@ -38,6 +38,7 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IWorkerAttendanceService, WorkerAttendanceService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IExpoPushService, ExpoPushService>();
+            services.AddScoped<ISkillService, SkillService>();
 
             // Custom Services
             //services.AddScoped<ICloudinaryService, CloudinaryService>();
