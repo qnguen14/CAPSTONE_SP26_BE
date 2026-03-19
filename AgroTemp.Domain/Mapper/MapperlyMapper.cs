@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.DTO;
+using AgroTemp.Domain.DTO;
 using AgroTemp.Domain.DTO.Auth;
 using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.DTO.Job.JobApplication;
@@ -26,7 +26,28 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial FarmDTO FarmToDto(Farm farm);
     public partial List<FarmDTO> FarmsToDto(IEnumerable<Farm> farms);
 
-    public partial WorkerProfileDTO WorkerToDto(Worker worker);
+    public WorkerProfileDTO WorkerToDto(Worker worker)
+    {
+        return new WorkerProfileDTO
+        {
+            Id = worker.Id,
+            UserId = worker.UserId,
+            FullName = worker.FullName,
+            AgeRange = worker.AgeRange,
+            PrimaryLocation = worker.PrimaryLocation,
+            TravelRadiusKmPreference = worker.TravelRadiusKmPreference,
+            ExperienceLevelId = worker.ExperienceLevelId,
+            ExperienceLevel = MapExperienceLevel((ExperienceLevel)worker.ExperienceLevelId),
+            AverageRating = worker.AverageRating,
+            AvailabilitySchedule = worker.AvailabilitySchedule,
+            TotalJobsCompleted = worker.TotalJobsCompleted,
+            AvatarUrl = worker.AvatarUrl,
+            CreatedAt = worker.CreatedAt,
+            UpdatedAt = worker.UpdatedAt,
+            Email = worker.User?.Email ?? string.Empty,
+            PhoneNumber = worker.User?.PhoneNumber ?? string.Empty,
+        };
+    }
 
     [MapProperty(nameof(User.Role), nameof(LoginResponse.Role))]
     public partial LoginResponse UserToLoginResponse(User user);
