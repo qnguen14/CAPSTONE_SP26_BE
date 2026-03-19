@@ -37,6 +37,7 @@ namespace AgroTemp.Service.Implements
                     .GetListAsync(
                         predicate: null,
                         include: q => q
+                            .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill),
                         orderBy: jp => jp.OrderBy(x => x.Title));
@@ -62,6 +63,7 @@ namespace AgroTemp.Service.Implements
                     .FirstOrDefaultAsync(
                         predicate: jp => jp.Id == guid,
                         include: q => q
+                            .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill));
                 if (jobPost == null)

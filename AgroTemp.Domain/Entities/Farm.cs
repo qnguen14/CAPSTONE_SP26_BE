@@ -30,6 +30,11 @@ public class Farm
     public decimal Longitude { get; set; }
 
     [Required]
+    [Column("farm_type")]
+    [StringLength(100)]
+    public string FarmType { get; set; }
+
+    [Required]
     [Column("location_name")]
     [StringLength(256)]
     public string LocationName { get; set; }
