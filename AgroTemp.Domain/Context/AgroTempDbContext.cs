@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Entities;
+using AgroTemp.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgroTemp.Domain.Context;
@@ -109,35 +109,35 @@ public class AgroTempDbContext : DbContext
         // Configure precision for decimal columns
         modelBuilder.Entity<Worker>()
             .Property(wp => wp.AverageRating)
-            .HasPrecision(3, 2); // e.g., 5.00
+            .HasPrecision(3, 2);
 
         modelBuilder.Entity<Farmer>()
             .Property(fp => fp.AverageRating)
-            .HasPrecision(3, 2); // e.g., 5.00
+            .HasPrecision(3, 2);
 
         modelBuilder.Entity<Farm>()
             .Property(f => f.Latitude)
-            .HasPrecision(10, 7); // e.g., -90.0000000 to 90.0000000
+            .HasPrecision(10, 7);
 
         modelBuilder.Entity<Farm>()
             .Property(f => f.Longitude)
-            .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
+            .HasPrecision(10, 7);
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.Latitude)
-            .HasPrecision(10, 7); // e.g., -90.0000000 to 90.0000000
+            .HasPrecision(10, 7);
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.Longitude)
-            .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
+            .HasPrecision(10, 7);
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.EstimatedHours)
-            .HasPrecision(10, 2); // e.g., 12345678.90
+            .HasPrecision(10, 2);
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.WageAmount)
-            .HasPrecision(18, 2); // e.g., currency amounts
+            .HasPrecision(18, 2);
 
         // Configure JobPost-JobApplication one-to-many relationship
         modelBuilder.Entity<JobPost>()
@@ -266,7 +266,6 @@ public class AgroTempDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configure Wallet-WalletTransaction one-to-many relationship
-        // Configure Wallet-WalletTransaction one-to-many relationship
         modelBuilder.Entity<Wallet>()
             .HasMany(w => w.Transactions)
             .WithOne(t => t.Wallet)
@@ -287,31 +286,27 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(wr => wr.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure DisputeReport relationships
-        modelBuilder.Entity<DisputeReport>(entity =>
+        // Configure User-DeviceToken one-to-many relationship
+        modelBuilder.Entity<User>()
+            .HasMany(u => u.DeviceTokens)
+            .WithOne(dt => dt.User)
+            .HasForeignKey(dt => dt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure DeviceToken
+        modelBuilder.Entity<DeviceToken>(entity =>
         {
-            entity.HasOne(d => d.Farmer)
-                .WithMany()
-                .HasForeignKey(d => d.FarmerId)
-                .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(dt => dt.ExpoPushToken)
+                .HasMaxLength(500);
 
-            entity.HasOne(d => d.Worker)
-                .WithMany()
-                .HasForeignKey(d => d.WorkerId)
-                .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(dt => dt.DeviceName)
+                .HasMaxLength(256);
 
-            entity.HasOne(d => d.JobPost)
-                .WithMany()
-                .HasForeignKey(d => d.JobPostId)
-                .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(dt => dt.Platform)
+                .HasConversion<int>();
 
-            entity.HasOne(d => d.ResolvedBy)
-                .WithMany()
-                .HasForeignKey(d => d.ResolvedById)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.Property(d => d.StatusId).HasConversion<int>();
-            entity.Property(d => d.DisputeTypeId).HasConversion<int>();
+            entity.HasIndex(dt => new { dt.UserId, dt.ExpoPushToken })
+                .IsUnique();
         });
 
         base.OnModelCreating(modelBuilder);

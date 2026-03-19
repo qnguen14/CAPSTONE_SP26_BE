@@ -167,4 +167,65 @@ public class NotificationController : ControllerBase
             });
         }
     }
+
+    [HttpPost(ApiEndpointConstants.Notification.RegisterTokenEndpoint)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RegisterDeviceToken([FromBody] RegisterDeviceTokenRequest request)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            
+            await _notificationService.RegisterDeviceTokenAsync(
+                userId, 
+                request.Token, 
+                request.DeviceName);
+
+            return Ok(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Device token registered successfully",
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error registering device token");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+
+    [HttpPost(ApiEndpointConstants.Notification.UnregisterTokenEndpoint)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> UnregisterDeviceToken([FromBody] RegisterDeviceTokenRequest request)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            await _notificationService.UnregisterDeviceTokenAsync(userId, request.Token);
+
+            return Ok(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Device token unregistered successfully",
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error unregistering device token");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
 }

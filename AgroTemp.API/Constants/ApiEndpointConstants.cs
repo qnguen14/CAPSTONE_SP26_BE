@@ -102,6 +102,9 @@ public class ApiEndpointConstants
         public const string MarkAsReadEndpoint = NotificationEndpoint + "/read";
         public const string MarkAllAsReadEndpoint = NotificationEndpoint + "/read-all";
         public const string DeleteNotificationEndpoint = NotificationEndpoint + "/{id}";
+
+        public const string RegisterTokenEndpoint = NotificationEndpoint + "/register-token";
+        public const string UnregisterTokenEndpoint = NotificationEndpoint + "/unregister-token";
     }
 
     public static class Media
