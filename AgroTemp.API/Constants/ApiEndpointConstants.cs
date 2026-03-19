@@ -113,6 +113,16 @@ public class ApiEndpointConstants
         public const string DeleteNotificationEndpoint = NotificationEndpoint + "/{id}";
     }
 
+    public static class Skill
+    {
+        public const string SkillEndpoint = ApiEndpoint + "/skills";
+        public const string GetAllSkillsEndpoint = SkillEndpoint;
+        public const string GetSkillByIdEndpoint = SkillEndpoint + "/{id}";
+        public const string CreateSkillEndpoint = SkillEndpoint;
+        public const string UpdateSkillEndpoint = SkillEndpoint + "/{id}";
+        public const string DeleteSkillEndpoint = SkillEndpoint + "/{id}";
+    }
+
     public static class Media
     {
         public const string MediaEndpoint = ApiEndpoint + "/media";
