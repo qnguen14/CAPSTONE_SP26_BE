@@ -6,6 +6,7 @@ using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.DTO.Notification;
+using AgroTemp.Domain.DTO.Skill;
 using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
 using Riok.Mapperly.Abstractions;
@@ -98,6 +99,12 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial List<JobDetailDTO> JobDetailsToJobDetailDtos(IEnumerable<JobDetail> jobDetails);
     public partial JobDetail CreateJobDetailRequestToJobDetail(CreateJobDetailRequest request);
     public partial void UpdateJobDetailRequestToJobDetail(UpdateJobDetailRequest request, JobDetail jobDetail);
+
+    // Skill
+    public partial SkillResponse SkillToSkillResponse(Skill skill);
+    public partial List<SkillResponse> SkillsToSkillResponses(IEnumerable<Skill> skills);
+    public partial Skill CreateSkillRequestToSkill(CreateSkillRequest request);
+    public partial void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
 
     // WorkerSession
     [MapProperty(nameof(WorkerSession.JobDetail.JobApplicationId), nameof(WorkerAttendanceDTO.JobApplicationId))]
