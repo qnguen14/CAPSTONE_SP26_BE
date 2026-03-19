@@ -73,6 +73,12 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(m => m.RecipientId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<User>()
+            .HasMany(u => u.DeviceTokens)
+            .WithOne(dt => dt.User)
+            .HasForeignKey(dt => dt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // Configure Farmer-Farm one-to-many relationship
         modelBuilder.Entity<Farmer>()
             .HasMany(f => f.Farms)

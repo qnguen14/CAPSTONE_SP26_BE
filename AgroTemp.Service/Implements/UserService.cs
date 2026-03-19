@@ -267,11 +267,8 @@ public class UserService : BaseService<User>, IUserService
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
-                    OrganizationName = request.OrganizationName,
                     ContactName = request.ContactName,
                     ContactNumber = request.ContactNumber,
-                    CooperativeAffiliation = request.CooperativeAffiliation,
-                    FarmType = request.FarmType,
                     AverageRating = 0,
                     TotalJobsPosted = 0,
                     TotalJobsCompleted = 0,
@@ -284,11 +281,8 @@ public class UserService : BaseService<User>, IUserService
             }
             else
             {
-                farmerProfile.OrganizationName = request.OrganizationName;
                 farmerProfile.ContactName = request.ContactName;
                 farmerProfile.ContactNumber = request.ContactNumber;
-                farmerProfile.CooperativeAffiliation = request.CooperativeAffiliation;
-                farmerProfile.FarmType = request.FarmType;
                 farmerProfile.UpdatedAt = DateTime.UtcNow;
                 farmerProfile.AvatarUrl = request.AvatarUrl;
 

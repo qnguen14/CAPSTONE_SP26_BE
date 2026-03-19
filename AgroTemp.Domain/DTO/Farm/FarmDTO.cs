@@ -14,6 +14,7 @@ namespace AgroTemp.Domain.DTO.Farm
         public decimal Latitude { get; set; }
         public decimal Longitude { get; set; }
         public string LocationName { get; set; }
+        public string FarmType { get; set; }
         public bool IsPrimary { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
