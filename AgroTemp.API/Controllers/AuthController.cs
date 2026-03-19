@@ -154,26 +154,11 @@ public class AuthController : Controller
         }
     }
 
-    /// <summary>
-    /// Verify Email
-    /// </summary>
-    [HttpPost("verify-email")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
-    {
-        var result = await _authService.VerifyEmail(request);
-        if (result)
-        {
-            return Ok(new { Message = "Email verified successfully" });
-        }
-        return BadRequest(new { Message = "Invalid email or OTP, or OTP has expired" });
-    }
 
     /// <summary>
     /// Forgot Password - Request password reset
     /// </summary>
-    [HttpPost("forgot-password")]
+    [HttpPost(ApiEndpointConstants.Auth.ForgetPasswordEndpoint)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
@@ -199,7 +184,7 @@ public class AuthController : Controller
     /// <summary>
     /// Reset Password - Reset password with OTP
     /// </summary>
-    [HttpPost("reset-password")]
+    [HttpPost(ApiEndpointConstants.Auth.ResetPasswordEndpoint)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
@@ -210,5 +195,49 @@ public class AuthController : Controller
             return Ok(new { Message = "Password reset successfully" });
         }
         return BadRequest(new { Message = "Invalid email or OTP, or OTP has expired" });
+    }
+
+    [Authorize]
+    [HttpPost(ApiEndpointConstants.Auth.LogoutEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> Logout()
+    {
+        try{
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var token = authHeader!["Bearer".Length..].Trim();
+            await _authService.Logout(token);
+
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Logout successful",
+                Data = null
+            };
+            return Ok(apiResponse);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex.Message);
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            };
+            return BadRequest(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during logout");
+            var apiResponse = new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred during logout",
+                Data = null
+            };
+            return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
+        }
     }
 }

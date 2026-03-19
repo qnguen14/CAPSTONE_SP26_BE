@@ -105,4 +105,31 @@ public class WorkerProfileController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
         }
     }
+
+    /// <summary>
+    /// Upload worker avatar
+    /// </summary>
+    [HttpPost(ApiEndpointConstants.WorkerProfile.UploadAvatarEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<string>> UploadAvatar(IFormFile image)
+    {
+        try
+        {
+            if (image == null || image.Length == 0)
+            {
+                return BadRequest(ApiResponseBuilder.BuildResponse<object>(400, "Image file is required", null));
+            }
+
+            var imageUrl = await _userService.UploadWorkerAvatar(image);
+
+            return Ok(ApiResponseBuilder.BuildResponse(200, "Avatar uploaded successfully", imageUrl));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading worker avatar");
+            return StatusCode(StatusCodes.Status500InternalServerError, ApiResponseBuilder.BuildResponse<object>(500, ex.Message, null));
+        }
+    }
 }

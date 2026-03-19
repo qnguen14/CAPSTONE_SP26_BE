@@ -31,6 +31,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
+    public DbSet<DisputeReport> DisputeReports { get; set; }
     public DbSet<DeviceToken> DeviceTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -125,11 +126,11 @@ public class AgroTempDbContext : DbContext
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.Latitude)
-            .HasPrecision(10, 7);
+            .HasPrecision(10, 7); // e.g., -90.0000000 to 90.0000000
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.Longitude)
-            .HasPrecision(10, 7);
+            .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.EstimatedHours)
@@ -285,29 +286,6 @@ public class AgroTempDbContext : DbContext
             .WithOne(wr => wr.User)
             .HasForeignKey(wr => wr.UserId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // Configure User-DeviceToken one-to-many relationship
-        modelBuilder.Entity<User>()
-            .HasMany(u => u.DeviceTokens)
-            .WithOne(dt => dt.User)
-            .HasForeignKey(dt => dt.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Configure DeviceToken
-        modelBuilder.Entity<DeviceToken>(entity =>
-        {
-            entity.Property(dt => dt.ExpoPushToken)
-                .HasMaxLength(500);
-
-            entity.Property(dt => dt.DeviceName)
-                .HasMaxLength(256);
-
-            entity.Property(dt => dt.Platform)
-                .HasConversion<int>();
-
-            entity.HasIndex(dt => new { dt.UserId, dt.ExpoPushToken })
-                .IsUnique();
-        });
 
         base.OnModelCreating(modelBuilder);
     }

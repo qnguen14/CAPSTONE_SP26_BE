@@ -14,10 +14,10 @@ public class ApiEndpointConstants
         public const string LoginEndpoint = ApiEndpoint + "/login";
         public const string RegisterEndpoint = ApiEndpoint + "/register";
         public const string GoogleLoginEndpoint = ApiEndpoint + "/google-login";
-        public const string SendResetCodeEndpoint = ApiEndpoint + "/reset";
-        public const string VerifyResetCodeEndpoint = ApiEndpoint + "/verify/reset";
-        public const string DisableAccountEndpoint = ApiEndpoint + "/disable";
-        public const string VerifyDisableCodeEndpoint = ApiEndpoint + "/verify/disable";
+        public const string ResetPasswordEndpoint = ApiEndpoint + "/reset";
+        public const string ForgetPasswordEndpoint = ApiEndpoint + "/forget";
+        // public const string DisableAccountEndpoint = ApiEndpoint + "/disable";
+        // public const string VerifyDisableCodeEndpoint = ApiEndpoint + "/verify/disable";
         public const string LogoutEndpoint = ApiEndpoint + "/logout";
     }
 
@@ -33,9 +33,10 @@ public class ApiEndpointConstants
 
     public static class FarmerProfile
     {
-        public const string FarmerProfileEndpoint = ApiEndpoint + "/farmer-profile";
+        public const string FarmerProfileEndpoint = ApiEndpoint + "/farmer";
         public const string GetFarmerProfileEndpoint = FarmerProfileEndpoint;
         public const string UpdateFarmerProfileEndpoint = FarmerProfileEndpoint;
+        public const string UploadAvatarEndpoint = FarmerProfileEndpoint + "/upload-avatar";
     }
 
     public static class Farm 
@@ -50,9 +51,10 @@ public class ApiEndpointConstants
 
     public static class WorkerProfile
     {
-        public const string WorkerProfileEndpoint = ApiEndpoint + "/worker-profile";
+        public const string WorkerProfileEndpoint = ApiEndpoint + "/worker";
         public const string GetWorkerProfileEndpoint = WorkerProfileEndpoint;
         public const string UpdateWorkerProfileEndpoint = WorkerProfileEndpoint;
+        public const string UploadAvatarEndpoint = WorkerProfileEndpoint + "/upload-avatar";
     }
     public static class Job
     {
@@ -65,17 +67,22 @@ public class ApiEndpointConstants
         public const string GetAllJobPostsEndpoint = JobPostEndpoint;
         public const string GetAllJobApplicationsEndpoint = JobApplicationEndpoint;
 
-        public const string GetJobCategoryByIdEndpoint = JobCategoryEndpoint + "/{Id}";
-        public const string GetJobPostByIdEndpoint = JobPostEndpoint + "/{Id}";
-        public const string GetJobApplicationsByPostIdEndpoint = JobApplicationEndpoint + "/{Id}";
+        public const string GetJobCategoryByIdEndpoint = JobCategoryEndpoint + "/{id}";
+        public const string GetJobPostByIdEndpoint = JobPostEndpoint + "/{id}";
+        public const string GetJobApplicationByIdEndpoint = JobApplicationEndpoint + "/{id}";
 
-        public const string CreateJobCategoryEndpoint = JobCategoryEndpoint + "/create";
-        public const string CreateJobPostEndpoint = JobPostEndpoint + "/create";
-        public const string CreateJobApplicationEndpoint = JobApplicationEndpoint + "/create";
+        public const string CreateJobCategoryEndpoint = JobCategoryEndpoint;
+        public const string CreateJobPostEndpoint = JobPostEndpoint;
+        public const string CreateJobApplicationEndpoint = JobApplicationEndpoint;
 
-        public const string UpdateJobCategoryEndpoint = JobCategoryEndpoint + "/update";
-        public const string UpdateJobPostEndpoint = JobPostEndpoint + "/update";
-        public const string UpdateJobApplicationEndpoint = JobApplicationEndpoint + "/update";
+        public const string UpdateJobCategoryEndpoint = JobCategoryEndpoint + "/{id}";
+        public const string UpdateJobPostEndpoint = JobPostEndpoint + "/{id}";
+        public const string UpdateJobApplicationEndpoint = JobApplicationEndpoint + "/{id}";
+
+        public const string DeleteJobCategoryEndpoint = JobCategoryEndpoint + "/{id}";
+        public const string DeleteJobPostEndpoint = JobPostEndpoint + "/{id}";
+        public const string DeleteJobApplicationEndpoint = JobApplicationEndpoint + "/{id}";
+        public const string UpdateJobPostStatusEndpoint = JobPostEndpoint + "/update-status" + "/{id}";
     }
 
     public static class WorkerAttendance
