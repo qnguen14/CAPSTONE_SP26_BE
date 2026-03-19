@@ -40,6 +40,8 @@ public interface IMapperlyMapper
     // JobPost
     JobPostDTO JobPostToJobPostDto(JobPost jobPost);
     List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
+    JobSkillRequirementSummaryDTO JobSkillRequirementToSummaryDto(JobSkillRequirement jobSkillRequirement);
+    List<JobSkillRequirementSummaryDTO> JobSkillRequirementsToSummaryDtos(IEnumerable<JobSkillRequirement> jobSkillRequirements);
     JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
     void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 

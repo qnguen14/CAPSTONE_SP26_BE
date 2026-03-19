@@ -23,7 +23,6 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public int WageTypeId { get; set; }
         public decimal WageAmount { get; set; }
         public int PaymentMethodId { get; set; }
-        public string RequiredSkills { get; set; }
         public string GenderPreference { get; set; }
         public DateTime PublishedAt { get; set; }
         public DateTime CreatedAt { get; set; }

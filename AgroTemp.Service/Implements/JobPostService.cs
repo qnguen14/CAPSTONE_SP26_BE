@@ -6,6 +6,7 @@ using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +36,9 @@ namespace AgroTemp.Service.Implements
                 var jobPosts = await _unitOfWork.GetRepository<JobPost>()
                     .GetListAsync(
                         predicate: null,
-                        include: null,
+                        include: q => q
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
                         orderBy: jp => jp.OrderBy(x => x.Title));
                 if (jobPosts == null || !jobPosts.Any())
                 {
@@ -58,7 +61,9 @@ namespace AgroTemp.Service.Implements
                 var jobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
                         predicate: jp => jp.Id == guid,
-                        include: null);
+                        include: q => q
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill));
                 if (jobPost == null)
                 {
                     return null;
@@ -76,11 +81,75 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                {
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+                }
+
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
+
+                if (farmer == null)
+                {
+                    throw new UnauthorizedAccessException("Only farmers can create job posts.");
+                }
+
+                var requestedSkillIds = request.JobSkillRequirementIds
+                    .Where(skillId => skillId != Guid.Empty)
+                    .Distinct()
+                    .ToList();
+
+                var skills = requestedSkillIds.Any()
+                    ? await _unitOfWork.GetRepository<Skill>()
+                        .GetListAsync(predicate: s => requestedSkillIds.Contains(s.Id))
+                    : new List<Skill>();
+
+                if (skills.Count != requestedSkillIds.Count)
+                {
+                    var foundSkillIds = skills.Select(s => s.Id).ToHashSet();
+                    var invalidSkillIds = requestedSkillIds.Where(id => !foundSkillIds.Contains(id));
+                    throw new ArgumentException($"Invalid skill id(s): {string.Join(", ", invalidSkillIds)}");
+                }
+
                 var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
+                if (jobPost.Id == Guid.Empty)
+                {
+                    jobPost.Id = Guid.NewGuid();
+                }
+                jobPost.FarmerId = farmer.Id;
+
+                if (skills.Any())
+                {
+                    jobPost.RequiredSkills = string.Join(", ", skills.Select(skill => skill.Name));
+                }
 
                 await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
                 await _unitOfWork.SaveChangesAsync();
-                var result = _mapper.JobPostToJobPostDto(jobPost);
+
+                if (skills.Any())
+                {
+                    var jobSkillRequirements = skills.Select(skill => new JobSkillRequirement
+                    {
+                        Id = Guid.NewGuid(),
+                        JobPostId = jobPost.Id,
+                        SkillId = skill.Id,
+                        RequiredLevelId = (int)ProficiencyLevel.Beginner,
+                        IsMandatory = true
+                    }).ToList();
+
+                    await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                var createdJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobPost.Id,
+                        include: q => q
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill));
+
+                var result = _mapper.JobPostToJobPostDto(createdJobPost ?? jobPost);
 
                 return result;
             }
