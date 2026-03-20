@@ -601,7 +601,7 @@ public class JobController : ControllerBase
         }
     }
 
-    [HttpPut(ApiEndpointConstants.Job.RespondJobApplicationsEndpoint)]
+    [HttpPut(ApiEndpointConstants.Job.RespondJobApplicationEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<JobApplicationDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
