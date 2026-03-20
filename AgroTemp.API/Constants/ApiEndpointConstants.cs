@@ -89,6 +89,8 @@ public class ApiEndpointConstants
 
         public const string UpdateJobPostStatusEndpoint = JobPostEndpoint + "/update-status" + "/{id}";
         public const string UpdateJobDetailStatusEndpoint = JobDetailEndpoint + "/update-status" + "/{id}";
+
+        public const string RespondJobApplicationsEndpoint = JobApplicationEndpoint + "/respond" + "/{id}";
     }
 
     public static class WorkerAttendance

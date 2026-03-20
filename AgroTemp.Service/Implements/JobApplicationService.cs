@@ -154,5 +154,32 @@ namespace AgroTemp.Service.Implements
                 throw new Exception(ex.Message);
             }
         }
+
+        public async Task<JobApplicationDTO> RespondJobApplications(string id, RespondJobApplicationRequest request)
+        {
+            try
+            {
+                var guid = Guid.Parse(id);
+                var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
+                    .FirstOrDefaultAsync(
+                        predicate: ja => ja.Id == guid,
+                        include: ja => ja.Include(j => j.Worker));
+                if (existingJobApplication == null)
+                {
+                    return null;
+                }
+                existingJobApplication.StatusId = request.StatusId;
+                existingJobApplication.RespondedAt = request.RespondedAt;
+                existingJobApplication.ResponseMessage = request.ResponseMessage;
+                _unitOfWork.GetRepository<JobApplication>().UpdateAsync(existingJobApplication);
+                await _unitOfWork.SaveChangesAsync();
+                var result = _mapper.JobApplicationToJobApplicationDto(existingJobApplication);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
     }
 }

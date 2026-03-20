@@ -601,6 +601,36 @@ public class JobController : ControllerBase
         }
     }
 
+    [HttpPut(ApiEndpointConstants.Job.RespondJobApplicationsEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<JobApplicationDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobApplicationDTO>> RespondJobApplications([FromRoute] string id, [FromBody] RespondJobApplicationRequest request)
+    {
+        try
+        {
+            var response = await _jobApplicationService.RespondJobApplications(id, request);
+            var apiResponse = new ApiResponse<JobApplicationDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job application responded successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error accepting job applications");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while responding to the job application",
+                Data = null
+            });
+        }
+    }
+
     // Job Detail Endpoints
 
     [HttpGet(ApiEndpointConstants.Job.GetAllJobDetailsEndpoint)]
