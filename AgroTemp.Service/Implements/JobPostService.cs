@@ -215,7 +215,8 @@ namespace AgroTemp.Service.Implements
             {
                 var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
-                        predicate: jp => jp.Id == Guid.Parse(id));
+                        predicate: jp => jp.Id == Guid.Parse(id),
+                        include: q => q.Include(jp => jp.Farmer));
                 if (existingJobPost == null)
                 {
                     return null;
