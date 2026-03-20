@@ -89,6 +89,7 @@ namespace AgroTemp.Service.Implements
                 jobApplication.WorkerId = worker.Id;
                 jobApplication.Id = Guid.NewGuid();
                 jobApplication.AppliedAt = DateTime.UtcNow;
+                jobApplication.RespondedAt = null;
                 jobApplication.StatusId = (int)ApplicationStatus.Pending;
 
                 await _unitOfWork.GetRepository<JobApplication>().InsertAsync(jobApplication);

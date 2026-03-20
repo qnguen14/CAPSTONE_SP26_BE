@@ -14,9 +14,9 @@ namespace AgroTemp.Domain.DTO.Job.JobApplication
 
         public string? CoverLetter { get; set; }
 
-        public DateTime AppliedAt { get; set; }
+        public DateTime? AppliedAt { get; set; }
 
-        public DateTime RespondedAt { get; set; }
+        public DateTime? RespondedAt { get; set; }
 
         public string? ResponseMessage { get; set; }
     }

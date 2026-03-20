@@ -54,7 +54,7 @@ namespace AgroTemp.Domain.Entities
         public DateTime AppliedAt { get; set; }
 
         [Column("responded_at")]
-        public DateTime RespondedAt { get; set; }
+        public DateTime? RespondedAt { get; set; }
 
         [Column("response_message")]
         public string? ResponseMessage { get; set; }

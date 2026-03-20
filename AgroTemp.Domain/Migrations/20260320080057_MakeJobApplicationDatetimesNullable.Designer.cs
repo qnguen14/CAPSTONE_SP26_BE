@@ -3,6 +3,7 @@ using System;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260320080057_MakeJobApplicationDatetimesNullable")]
+    partial class MakeJobApplicationDatetimesNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -660,6 +663,311 @@ namespace AgroTemp.Domain.Migrations
                     b.ToTable("Notification", "AgroTempV1");
                 });
 
+            modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSInvoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CodeOfTax")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("code_of_tax");
+
+                    b.Property<string>("InvoiceId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<string>("InvoiceNumber")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("invoice_number");
+
+                    b.Property<DateTime?>("IssuedDatetime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_datetime");
+
+                    b.Property<long?>("IssuedTimestamp")
+                        .HasColumnType("bigint")
+                        .HasColumnName("issued_timestamp");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("ReservationCode")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("reservation_code");
+
+                    b.Property<string>("TransactionId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("transaction_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("PayOS_Invoice", "AgroTempV1");
+                });
+
+            modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccountName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("account_name");
+
+                    b.Property<string>("AccountNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("account_number");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount");
+
+                    b.Property<long>("AmountPaid")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_paid");
+
+                    b.Property<long>("AmountRemaining")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_remaining");
+
+                    b.Property<string>("Bin")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("bin");
+
+                    b.Property<string>("BuyerAddress")
+                        .HasColumnType("text")
+                        .HasColumnName("buyer_address");
+
+                    b.Property<string>("BuyerCompanyName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("buyer_company_name");
+
+                    b.Property<string>("BuyerEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("buyer_email");
+
+                    b.Property<string>("BuyerName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("buyer_name");
+
+                    b.Property<bool?>("BuyerNotGetInvoice")
+                        .HasColumnType("boolean")
+                        .HasColumnName("buyer_not_get_invoice");
+
+                    b.Property<string>("BuyerPhone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("buyer_phone");
+
+                    b.Property<string>("CancelUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("cancel_url");
+
+                    b.Property<DateTime?>("CanceledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("canceled_at");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("text")
+                        .HasColumnName("cancellation_reason");
+
+                    b.Property<string>("CheckoutUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("checkout_url");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<DateTime?>("ExpiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expired_at");
+
+                    b.Property<DateTime?>("LastTransactionUpdate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_transaction_update");
+
+                    b.Property<long>("OrderCode")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_code");
+
+                    b.Property<string>("PaymentLinkId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("payment_link_id");
+
+                    b.Property<string>("QrCode")
+                        .HasColumnType("text")
+                        .HasColumnName("qr_code");
+
+                    b.Property<string>("ReturnUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("return_url");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("status");
+
+                    b.Property<int?>("TaxPercentage")
+                        .HasColumnType("integer")
+                        .HasColumnName("tax_percentage");
+
+                    b.Property<long>("TotalAmount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("total_amount");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderCode")
+                        .IsUnique();
+
+                    b.HasIndex("PaymentLinkId");
+
+                    b.ToTable("PayOS_Order", "AgroTempV1");
+                });
+
+            modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSOrderItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("Price")
+                        .HasColumnType("integer")
+                        .HasColumnName("price");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<int?>("TaxPercentage")
+                        .HasColumnType("integer")
+                        .HasColumnName("tax_percentage");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("unit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("PayOS_Order_Item", "AgroTempV1");
+                });
+
+            modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccountNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("account_number");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("CounterAccountBankId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("counter_account_bank_id");
+
+                    b.Property<string>("CounterAccountBankName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("counter_account_bank_name");
+
+                    b.Property<string>("CounterAccountName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("counter_account_name");
+
+                    b.Property<string>("CounterAccountNumber")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("counter_account_number");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("reference");
+
+                    b.Property<DateTime>("TransactionDateTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("transaction_datetime");
+
+                    b.Property<string>("VirtualAccountName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("virtual_account_name");
+
+                    b.Property<string>("VirtualAccountNumber")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("virtual_account_number");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("PayOS_Transaction", "AgroTempV1");
+                });
+
             modelBuilder.Entity("AgroTemp.Domain.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1282,6 +1590,39 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSInvoice", b =>
+                {
+                    b.HasOne("AgroTemp.Domain.Entities.PayOSOrder", "Order")
+                        .WithMany("Invoices")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSOrderItem", b =>
+                {
+                    b.HasOne("AgroTemp.Domain.Entities.PayOSOrder", "Order")
+                        .WithMany("Items")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSTransaction", b =>
+                {
+                    b.HasOne("AgroTemp.Domain.Entities.PayOSOrder", "Order")
+                        .WithMany("Transactions")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("AgroTemp.Domain.Entities.Payment", b =>
                 {
                     b.HasOne("AgroTemp.Domain.Entities.User", "User")
@@ -1421,6 +1762,15 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("JobSkillRequirements");
 
                     b.Navigation("Ratings");
+                });
+
+            modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSOrder", b =>
+                {
+                    b.Navigation("Invoices");
+
+                    b.Navigation("Items");
+
+                    b.Navigation("Transactions");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Skill", b =>
