@@ -125,16 +125,13 @@ public class ApiEndpointConstants
     public static class Payment
     {
         public const string PaymentEndpoint = ApiEndpoint + "/payment";
-        public const string OrderEndpoint = PaymentEndpoint + "/order";
-        public const string WebhookEndpoint = PaymentEndpoint + "/webhook";
+        public const string VerifyWebhookEndpoint = PaymentEndpoint + "/verify";
 
-        public const string GetOrderEndpoint = OrderEndpoint + "/{id}";
-        public const string CreateOrderEndpoint = OrderEndpoint;
-        public const string CancelOrderEndpoint = OrderEndpoint + "/{orderId}/cancel";
-        public const string GetOrderInvoicesEndpoint = OrderEndpoint + "/{orderId}/invoices";
-        public const string DownloadOrderInvoiceEndpoint = OrderEndpoint + "/{orderId}/invoices/{invoiceId}/download";
-
-        public const string VerifyWebhookEndpoint = WebhookEndpoint + "/payos";
+        public const string GetOrderEndpoint = PaymentEndpoint + "/{id}";
+        public const string CreateOrderEndpoint = PaymentEndpoint;
+        public const string CancelOrderEndpoint = PaymentEndpoint + "/{id}/cancel";
+        public const string GetOrderInvoicesEndpoint = PaymentEndpoint + "/{id}/invoices";
+        public const string DownloadOrderInvoiceEndpoint = PaymentEndpoint + "/{id}/invoices/{invoiceId}/download";
     }
 
     public static class Skill

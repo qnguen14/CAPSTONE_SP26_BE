@@ -230,7 +230,7 @@ public class PayOSService : IPayOSService
             };
         }
 
-        var order = await _unitOfWork.Context.PayOSOrders
+        var order = await _unitOfWork.Context.Set<PayOSOrder>()
             .Include(x => x.Transactions)
             .FirstOrDefaultAsync(x => x.OrderCode == webhookData.OrderCode);
 
@@ -347,7 +347,7 @@ public class PayOSService : IPayOSService
 
     private async Task<PayOSOrder?> GetOrderEntityByIdAsync(Guid id)
     {
-        return await _unitOfWork.Context.PayOSOrders
+        return await _unitOfWork.Context.Set<PayOSOrder>()
             .Include(x => x.Items)
             .Include(x => x.Transactions)
             .Include(x => x.Invoices)

@@ -9,6 +9,7 @@ using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.DTO.Skill;
 using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
+using JobApplicationEntity = AgroTemp.Domain.Entities.JobApplication;
 
 namespace AgroTemp.Domain.Mapper;
 
@@ -48,10 +49,10 @@ public interface IMapperlyMapper
     void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 
     // JobApplication
-    JobApplicationDTO JobApplicationToJobApplicationDto(JobApplication jobApplication);
-    List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplication> jobApplications);
-    JobApplication CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
-    void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplication jobApplication);
+    JobApplicationDTO JobApplicationToJobApplicationDto(JobApplicationEntity jobApplication);
+    List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplicationEntity> jobApplications);
+    JobApplicationEntity CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
+    void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplicationEntity jobApplication);
     
     // JobDetail
     JobDetailDTO JobDetailToJobDetailDto(JobDetail jobDetail);

@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
@@ -83,9 +83,4 @@ public class User
     public virtual ICollection<Rating> ReceivedRatings { get; set; } = new List<Rating>();
 
     public virtual Wallet? Wallet { get; set; }
-
-    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
-    public virtual ICollection<WithdrawalRequest> WithdrawalRequests { get; set; } = new List<WithdrawalRequest>();
-
-    public virtual ICollection<DeviceToken> DeviceTokens { get; set; } = new List<DeviceToken>();
 }
