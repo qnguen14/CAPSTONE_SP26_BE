@@ -23,12 +23,17 @@ public class AgroTempDbContext : DbContext
     public DbSet<JobApplication> JobApplications { get; set; }
     public DbSet<WorkerSession> WorkerSessions { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<DeviceToken> DeviceTokens { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<JobDetail> JobAssignments { get; set; }
     public DbSet<JobAttachment> JobAttachments { get; set; }
     public DbSet<Rating> Ratings { get; set; }
     public DbSet<BlacklistedToken> BlacklistedTokens { get; set; }
     public DbSet<Payment> Payments { get; set; }
+    public DbSet<PayOSOrder> PayOSOrders { get; set; }
+    public DbSet<PayOSOrderItem> PayOSOrderItems { get; set; }
+    public DbSet<PayOSTransaction> PayOSTransactions { get; set; }
+    public DbSet<PayOSInvoice> PayOSInvoices { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
@@ -273,6 +278,35 @@ public class AgroTempDbContext : DbContext
             .WithOne(t => t.Wallet)
             .HasForeignKey(t => t.WalletId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasMany(o => o.Items)
+            .WithOne(i => i.Order)
+            .HasForeignKey(i => i.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasMany(o => o.Transactions)
+            .WithOne(t => t.Order)
+            .HasForeignKey(t => t.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasMany(o => o.Invoices)
+            .WithOne(i => i.Order)
+            .HasForeignKey(i => i.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasIndex(o => o.OrderCode)
+            .IsUnique();
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasIndex(o => o.PaymentLinkId);
+
+        modelBuilder.Entity<DeviceToken>()
+            .HasIndex(dt => new { dt.UserId, dt.ExpoPushToken })
+            .IsUnique();
 
         // Configure User-WithdrawalRequest one-to-many relationship
         modelBuilder.Entity<JobDetail>()

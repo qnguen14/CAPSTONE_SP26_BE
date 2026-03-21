@@ -78,6 +78,7 @@ public class User
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public virtual ICollection<ChatMessage> SentMessages { get; set; } = new List<ChatMessage>();
     public virtual ICollection<ChatMessage> ReceivedMessages { get; set; } = new List<ChatMessage>();
+    public virtual ICollection<DeviceToken> DeviceTokens { get; set; } = new List<DeviceToken>();
     
     public virtual ICollection<Rating> GivenRatings { get; set; } = new List<Rating>();
     public virtual ICollection<Rating> ReceivedRatings { get; set; } = new List<Rating>();
