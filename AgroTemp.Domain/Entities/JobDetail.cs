@@ -47,27 +47,28 @@ public class JobDetail
         get => (JobStatus)StatusId;
         set => StatusId = (int)value;
     }
-
+    
     [Column("work_date")]
     public DateTime? WorkDate { get; set; }
 
     [Column("worker_description")]
     public string WorkerDescription { get; set; }
-    [Column("confirmed_at")]
-    public DateTime? ConfirmedAt { get; set; }
 
     [Column("farmer_feedback")]
     public string FarmerFeedback { get; set; }
 
+    // farmer final decision
     [Column("farmer_approved_percent")]
     public int? FarmerApprovedPercent { get; set; }
 
+    // payment
     [Column("job_price", TypeName = "decimal(18,2)")]
     public decimal JobPrice { get; set; }
 
     [Column("worker_payment_amount", TypeName = "decimal(18,2)")]
     public decimal? WorkerPaymentAmount { get; set; }
 
+    // refund farmer
     [Column("refund_amount", TypeName = "decimal(18,2)")]
     public decimal? RefundAmount { get; set; }
 
@@ -82,6 +83,6 @@ public class JobDetail
     public DateTime? UpdatedAt { get; set; }
 
     public virtual ICollection<WorkerSession> WorkerSessions { get; set; } = new List<WorkerSession>();
-    public virtual ICollection<WalletTransaction> WalletTransactions { get; set; } = new List<WalletTransaction>();
-    //public ICollection<JobAttachment> JobAttachments { get; set; } = new List<JobAttachment>();
+    public ICollection<WalletTransaction> WalletTransactions { get; set; } = new List<WalletTransaction>();
+    public ICollection<JobAttachment> JobAttachments { get; set; } = new List<JobAttachment>();
 }

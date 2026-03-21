@@ -1,4 +1,4 @@
-using AgroTemp.Domain.Entities;
+﻿using AgroTemp.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgroTemp.Domain.Context;
@@ -25,6 +25,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<JobDetail> JobAssignments { get; set; }
+    public DbSet<JobAttachment> JobAttachments { get; set; }
     public DbSet<Rating> Ratings { get; set; }
     public DbSet<BlacklistedToken> BlacklistedTokens { get; set; }
     public DbSet<Payment> Payments { get; set; }
@@ -32,11 +33,6 @@ public class AgroTempDbContext : DbContext
     public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
     public DbSet<DisputeReport> DisputeReports { get; set; }
-    public DbSet<DeviceToken> DeviceTokens { get; set; }
-    public DbSet<PayOSOrder> PayOSOrders { get; set; }
-    public DbSet<PayOSOrderItem> PayOSOrderItems { get; set; }
-    public DbSet<PayOSTransaction> PayOSTransactions { get; set; }
-    public DbSet<PayOSInvoice> PayOSInvoices { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -114,27 +110,27 @@ public class AgroTempDbContext : DbContext
         // Configure precision for decimal columns
         modelBuilder.Entity<Worker>()
             .Property(wp => wp.AverageRating)
-            .HasPrecision(3, 2);
+            .HasPrecision(3, 2); // e.g., 5.00
 
         modelBuilder.Entity<Farmer>()
             .Property(fp => fp.AverageRating)
-            .HasPrecision(3, 2);
+            .HasPrecision(3, 2); // e.g., 5.00
 
         modelBuilder.Entity<Farm>()
             .Property(f => f.Latitude)
-            .HasPrecision(10, 7);
+            .HasPrecision(10, 7); // e.g., -90.0000000 to 90.0000000
 
         modelBuilder.Entity<Farm>()
             .Property(f => f.Longitude)
-            .HasPrecision(10, 7);
+            .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.EstimatedHours)
-            .HasPrecision(10, 2);
+            .HasPrecision(10, 2); // e.g., 12345678.90
 
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.WageAmount)
-            .HasPrecision(18, 2);
+            .HasPrecision(18, 2); // e.g., currency amounts
 
         // Configure JobPost-JobApplication one-to-many relationship
         modelBuilder.Entity<JobPost>()
@@ -219,15 +215,6 @@ public class AgroTempDbContext : DbContext
             .Property(jd => jd.StatusId)
             .HasConversion<int>();
 
-        // Configure precision for JobAssignment decimal columns
-        modelBuilder.Entity<JobDetail>()
-            .Property(jd => jd.TotalHoursWorked)
-            .HasPrecision(10, 2);
-
-        // Configure JobAssignment TotalAmountDue precision
-        modelBuilder.Entity<JobDetail>()
-            .Property(jd => jd.TotalAmountDue)
-            .HasPrecision(18, 2);
 
         // Configure User-Rating (Rater) one-to-many relationship
         modelBuilder.Entity<User>()
@@ -264,52 +251,35 @@ public class AgroTempDbContext : DbContext
 
         // Configure Wallet-WalletTransaction one-to-many relationship
         modelBuilder.Entity<Wallet>()
-            .HasMany(w => w.Transactions)
+            .HasMany(w => w.WalletTransactions)
             .WithOne(t => t.Wallet)
             .HasForeignKey(t => t.WalletId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure User-Payment one-to-many relationship
-        modelBuilder.Entity<User>()
-            .HasMany(u => u.Payments)
-            .WithOne(p => p.User)
-            .HasForeignKey(p => p.UserId)
+        modelBuilder.Entity<Wallet>()
+            .HasMany(w => w.WithdrawalRequests)
+            .WithOne(t => t.Wallet)
+            .HasForeignKey(t => t.WalletId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Wallet>()
+            .HasMany(w => w.Payments)
+            .WithOne(t => t.Wallet)
+            .HasForeignKey(t => t.WalletId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configure User-WithdrawalRequest one-to-many relationship
-        modelBuilder.Entity<User>()
-            .HasMany(u => u.WithdrawalRequests)
-            .WithOne(wr => wr.User)
-            .HasForeignKey(wr => wr.UserId)
+        modelBuilder.Entity<JobDetail>()
+            .HasMany(u => u.WalletTransactions)
+            .WithOne(wr => wr.JobDetail)
+            .HasForeignKey(wr => wr.JobDetailId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure PayOSOrder-Items one-to-many relationship
-        modelBuilder.Entity<PayOSOrder>()
-            .HasMany(o => o.Items)
-            .WithOne(i => i.Order)
-            .HasForeignKey(i => i.OrderId)
+        modelBuilder.Entity<JobDetail>()
+            .HasMany(u => u.JobAttachments)
+            .WithOne(wr => wr.JobDetail)
+            .HasForeignKey(wr => wr.JobDetailId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // Configure PayOSOrder-Transactions one-to-many relationship
-        modelBuilder.Entity<PayOSOrder>()
-            .HasMany(o => o.Transactions)
-            .WithOne(t => t.Order)
-            .HasForeignKey(t => t.OrderId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Configure PayOSOrder-Invoices one-to-many relationship
-        modelBuilder.Entity<PayOSOrder>()
-            .HasMany(o => o.Invoices)
-            .WithOne(i => i.Order)
-            .HasForeignKey(i => i.OrderId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<PayOSOrder>()
-            .HasIndex(o => o.OrderCode)
-            .IsUnique();
-
-        modelBuilder.Entity<PayOSOrder>()
-            .HasIndex(o => o.PaymentLinkId);
 
         base.OnModelCreating(modelBuilder);
     }
