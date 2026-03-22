@@ -144,6 +144,13 @@ public class ApiEndpointConstants
         public const string DeleteSkillEndpoint = SkillEndpoint + "/{id}";
     }
 
+    public static class Weather
+    {
+        public const string WeatherEndpoint = ApiEndpoint + "/weather";
+        public const string GetWeatherByCoordinatesEndpoint = WeatherEndpoint + "/coordinates";
+        public const string GetWeatherByCityEndpoint = WeatherEndpoint + "/city";
+    }
+
     public static class Media
     {
         public const string MediaEndpoint = ApiEndpoint + "/media";
