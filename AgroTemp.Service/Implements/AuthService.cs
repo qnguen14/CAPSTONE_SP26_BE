@@ -315,8 +315,14 @@ public class AuthService : BaseService<User>, IAuthService
         // Send password reset email
         try
         {
-            await _emailService.SendEmailAsync(user.Email, "AgroTemp Password Reset",
-                $"<div style=\"text-align: center;\"><h2>Password Reset Code</h2><h1>{user.PasswordResetToken}</h1><p>This code will expire in 15 minutes.</p><p>If you didn't request this, please ignore this email.</p></div>");
+            await _emailService.SendEmailAsync(user.Email, "AgroTemp - Đặt lại mật khẩu",
+                $@"<div style=""text-align: center;"">
+                    <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+                    <p>Mã xác nhận của bạn là:</p>
+                    <h1 style=""font-size: 48px; letter-spacing: 8px; color: #2E7D32;"">{user.PasswordResetToken}</h1>
+                    <p>Mã này sẽ hết hạn sau <strong>15 phút</strong>.</p>
+                    <p style=""color: #888888; font-size: 13px;"">Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+                </div>");
         }
         catch (Exception ex)
         {

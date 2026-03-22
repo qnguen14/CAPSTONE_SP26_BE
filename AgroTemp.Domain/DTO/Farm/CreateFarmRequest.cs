@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using AgroTemp.Domain.Metadata;
 using System.ComponentModel.DataAnnotations;
 
 namespace AgroTemp.Domain.DTO.Farm
@@ -21,7 +17,23 @@ namespace AgroTemp.Domain.DTO.Farm
         [Required]
         [StringLength(256)]
         public string LocationName { get; set; }
-        
+
+        /// <summary>
+        /// 1 = Livestock (chăn nuôi), 2 = Crop (trồng trọt)
+        /// </summary>
+        [Required]
+        public FarmType FarmType { get; set; }
+
+        /// <summary>
+        /// Required when FarmType = Livestock. Number of animals.
+        /// </summary>
+        public int? LivestockCount { get; set; }
+
+        /// <summary>
+        /// Required when FarmType = Crop. Area in square meters (m²).
+        /// </summary>
+        public decimal? AreaSize { get; set; }
+
         public bool isPrimary { get; set; } = false;
     }
 }
