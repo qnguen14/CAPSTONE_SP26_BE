@@ -22,11 +22,10 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public decimal EstimatedHours { get; set; }
         public int WorkersNeeded { get; set; }
         public int WorkersAccepted { get; set; }
-        public int WageTypeId { get; set; }
+        public int JobTypeId { get; set; }
         public decimal WageAmount { get; set; }
-        public int PaymentMethodId { get; set; }
         public string RequiredSkills { get; set; }
-        public string GenderPreference { get; set; }
+        public string Preferences { get; set; }
         public DateTime PublishedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

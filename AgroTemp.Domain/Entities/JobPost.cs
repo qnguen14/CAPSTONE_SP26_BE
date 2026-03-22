@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
 
-public enum WageType
+public enum JobType
 {
     Daily = 1,
     PerPlot = 2,
@@ -92,26 +92,20 @@ public class JobPost
     public int WorkersAccepted { get; set; }
 
     [Required]
-    [Column("wage_type")]
-    public int WageTypeId { get; set; }
-    public virtual WageType WageType { get; set; }
+    [Column("job_type")]
+    public int JobTypeId { get; set; }
 
     [Required]
     [Column("wage_amount")]
     public decimal WageAmount { get; set; }
 
     [Required]
-    [Column("payment_method")]
-    public int PaymentMethodId { get; set; }
-    public virtual PaymentMethod PaymentMethod { get; set; }
-
-    [Required]
     [Column("required_skills")]
     public string RequiredSkills { get; set; }
 
     [Required]
-    [Column("gender_preference")]
-    public string GenderPreference { get; set; }
+    [Column("preferences")]
+    public string Preferences { get; set; }
 
     [Required]
     [Column("published_at")]
@@ -132,5 +126,4 @@ public class JobPost
     [Required]
     [Column("status")]
     public int StatusId { get; set; }
-    public virtual JobPostStatus Status { get; set; }
 }

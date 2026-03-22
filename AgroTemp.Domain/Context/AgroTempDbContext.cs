@@ -108,11 +108,7 @@ public class AgroTempDbContext : DbContext
 
         // Configure enum conversions for JobPost
         modelBuilder.Entity<JobPost>()
-            .Property(jp => jp.WageTypeId)
-            .HasConversion<int>();
-
-        modelBuilder.Entity<JobPost>()
-            .Property(jp => jp.PaymentMethodId)
+            .Property(jp => jp.JobTypeId)
             .HasConversion<int>();
 
         modelBuilder.Entity<JobPost>()
