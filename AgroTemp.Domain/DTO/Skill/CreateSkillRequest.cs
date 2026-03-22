@@ -12,8 +12,7 @@ public class CreateSkillRequest
     public string Description { get; set; }
 
     [Required]
-    [StringLength(256)]
-    public string Category { get; set; }
+    public int CategoryId { get; set; }
 
     public bool IsActive { get; set; } = true;
 }
