@@ -1,5 +1,6 @@
 ﻿using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Job.JobApplication;
+using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Interfaces;
@@ -12,14 +13,18 @@ namespace AgroTemp.Service.Implements
 {
     public class JobApplicationService : BaseService<JobApplication>, IJobApplicationService
     {
+        private readonly INotificationService _notificationService;
+
         public JobApplicationService(
             IUnitOfWork<AgroTempDbContext> unitOfWork,
             IHttpContextAccessor httpContextAccessor,
-            IMapperlyMapper mapper) : base(unitOfWork, httpContextAccessor, mapper)
+            IMapperlyMapper mapper,
+            INotificationService notificationService) : base(unitOfWork, httpContextAccessor, mapper)
         {
             _unitOfWork = unitOfWork;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
+            _notificationService = notificationService;
         }
 
         public async Task<List<JobApplicationDTO>> GetAllJobApplications()
@@ -85,7 +90,7 @@ namespace AgroTemp.Service.Implements
 
                 var jobApplication = _mapper.CreateJobApplicationRequestToJobApplication(request);
 
-                // set defaults
+                // Set defaults
                 jobApplication.WorkerId = worker.Id;
                 jobApplication.Id = Guid.NewGuid();
                 jobApplication.AppliedAt = DateTime.UtcNow;
@@ -94,6 +99,27 @@ namespace AgroTemp.Service.Implements
 
                 await _unitOfWork.GetRepository<JobApplication>().InsertAsync(jobApplication);
                 await _unitOfWork.SaveChangesAsync();
+
+                // Get the job post and farmer information
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobApplication.JobPostId,
+                        include: q => q.Include(jp => jp.Farmer));
+
+                if (jobPost != null && jobPost.Farmer != null)
+                {
+                    // Send notification to the farmer
+                    var notificationRequest = new CreateNotificationRequest
+                    {
+                        UserId = jobPost.Farmer.UserId,
+                        Type = NotificationType.JobAcceptance,
+                        Title = "New Job Application",
+                        Message = $"A worker has applied for your job post: {jobPost.Title}",
+                        RelatedEntityId = jobApplication.Id
+                    };
+
+                    await _notificationService.CreateAsync(notificationRequest);
+                }
 
                 var result = _mapper.JobApplicationToJobApplicationDto(jobApplication);
                 return result;
