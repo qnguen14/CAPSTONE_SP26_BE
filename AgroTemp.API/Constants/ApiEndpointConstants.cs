@@ -127,6 +127,7 @@ public class ApiEndpointConstants
     {
         public const string PaymentEndpoint = ApiEndpoint + "/payment";
         public const string VerifyWebhookEndpoint = PaymentEndpoint + "/verify";
+        public const string CallbackEndpoint = PaymentEndpoint + "/callback";
 
         public const string GetOrderEndpoint = PaymentEndpoint + "/{id}";
         public const string CreateOrderEndpoint = PaymentEndpoint;
