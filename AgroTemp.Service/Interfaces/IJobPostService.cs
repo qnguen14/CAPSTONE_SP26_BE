@@ -15,5 +15,6 @@ namespace AgroTemp.Service.Interfaces
         Task<JobPostDTO> UpdateJobPost(Guid id, UpdateJobPostRequest request);
         Task<bool> DeleteJobPost(string id);
         Task<JobPostDTO> UpdateJobPostStatus(string id, string status);
+        Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, string? skill);
     }
 }

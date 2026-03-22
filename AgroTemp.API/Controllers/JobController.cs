@@ -432,6 +432,36 @@ public class JobController : ControllerBase
         }
     }
 
+    [HttpGet(ApiEndpointConstants.Job.GetFilteredJobPostsEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFilteredJobPosts([FromQuery] string? title, [FromQuery] string? category, [FromQuery] string? address, [FromQuery] string? skill)
+    {
+        try
+        {
+            var response = await _jobPostService.GetFilteredJobPosts(title, category, address, skill);
+            var apiResponse = new ApiResponse<IEnumerable<JobPostDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Filtered job posts retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving filtered job posts");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving filtered job posts",
+                Data = null
+            });
+        }
+    }
+
     // Job Application Endpoints
 
     [HttpGet(ApiEndpointConstants.Job.GetAllJobApplicationsEndpoint)]
