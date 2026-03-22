@@ -12,4 +12,5 @@ public interface IPayOSService
     Task<PayOSInvoicesInfoResponse?> GetInvoicesAsync(Guid orderId);
     Task<(byte[] Content, string ContentType, string FileName)?> DownloadInvoiceAsync(Guid orderId, string invoiceId);
     Task<PayOSWebhookResultResponse> VerifyWebhookAsync(Webhook webhook);
+    Task<PayOSOrderResponse?> GetPaymentByCallbackAsync(long orderCode, string? paymentLinkId);
 }

@@ -217,6 +217,44 @@ public class PaymentController : ControllerBase
         }
     }
 
+    [HttpGet(ApiEndpointConstants.Payment.CallbackEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<PayOSOrderResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PayOSOrderResponse>> GetPaymentCallback([FromQuery] PaymentCallbackRequest request)
+    {
+        try
+        {
+            var order = await _payOSService.GetPaymentByCallbackAsync(request.OrderCode, request.Id);
+            if (order == null)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = $"Order not found for orderCode {request.OrderCode}",
+                    Data = null
+                });
+            }
+
+            return Ok(new ApiResponse<PayOSOrderResponse>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Payment info retrieved successfully",
+                Data = order
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve payment callback for orderCode {OrderCode}", request.OrderCode);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "Failed to retrieve payment info",
+                Data = ex.Message
+            });
+        }
+    }
+
     [HttpPost(ApiEndpointConstants.Payment.VerifyWebhookEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]

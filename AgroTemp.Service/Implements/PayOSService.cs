@@ -417,6 +417,32 @@ public class PayOSService : IPayOSService
         _unitOfWork.GetRepository<PayOSOrder>().UpdateAsync(order);
     }
 
+    public async Task<PayOSOrderResponse?> GetPaymentByCallbackAsync(long orderCode, string? paymentLinkId)
+    {
+        var order = await _unitOfWork.Context.Set<PayOSOrder>()
+            .Include(x => x.Items)
+            .Include(x => x.Transactions)
+            .Include(x => x.Invoices)
+            .FirstOrDefaultAsync(x => x.OrderCode == orderCode
+                || (!string.IsNullOrWhiteSpace(paymentLinkId) && x.PaymentLinkId == paymentLinkId));
+
+        if (order == null)
+        {
+            return null;
+        }
+
+        var linkId = string.IsNullOrWhiteSpace(paymentLinkId) ? order.PaymentLinkId : paymentLinkId;
+        if (!string.IsNullOrWhiteSpace(linkId))
+        {
+            var paymentLink = await _client.PaymentRequests.GetAsync(linkId);
+            UpdateOrderFromPaymentLink(order, paymentLink);
+            await ReplaceTransactionsFromPaymentLinkAsync(order, paymentLink);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        return MapOrderToResponse(order);
+    }
+
     private async Task<PayOSOrder?> GetOrderEntityByIdAsync(Guid id)
     {
         return await _unitOfWork.Context.Set<PayOSOrder>()
