@@ -8,7 +8,6 @@ namespace AgroTemp.Domain.DTO.Job.JobDetail
 {
     public class UpdateJobDetailRequest
     {
-
         public Guid JobApplicationId { get; set; }
 
         public Guid JobPostId { get; set; }
@@ -17,19 +16,21 @@ namespace AgroTemp.Domain.DTO.Job.JobDetail
 
         public int StatusId { get; set; }
 
-        public DateTime? ConfirmedAt { get; set; }
+        public DateTime? WorkDate { get; set; }
 
-        public DateTime? StartedAt { get; set; }
+        public string WorkerDescription { get; set; }
+
+        public string FarmerFeedback { get; set; }
+
+        public int? FarmerApprovedPercent { get; set; }
+
+        public decimal JobPrice { get; set; }
+
+        public decimal? WorkerPaymentAmount { get; set; }
+
+        public decimal? RefundAmount { get; set; }
 
         public DateTime? CompletedAt { get; set; }
-
-        public bool WorkerCheckedIn { get; set; }
-
-        public bool FarmerConfirmedAttendance { get; set; }
-
-        public decimal? TotalHoursWorked { get; set; }
-
-        public decimal? TotalAmountDue { get; set; }
 
         public DateTime CreatedAt { get; set; }
 
