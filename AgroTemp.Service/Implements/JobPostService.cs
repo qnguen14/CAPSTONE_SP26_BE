@@ -161,7 +161,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<JobPostDTO> UpdateJobPost(Guid id,UpdateJobPostRequest request)
+        public async Task<JobPostDTO> UpdateJobPost(Guid id, UpdateJobPostRequest request)
         {
             try
             {
@@ -235,6 +235,35 @@ namespace AgroTemp.Service.Implements
                 await _unitOfWork.SaveChangesAsync();
                 var result = _mapper.JobPostToJobPostDto(existingJobPost);
 
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, string? skill)
+        {
+            try
+            {
+                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp =>
+                            (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
+                            (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&
+                            (string.IsNullOrEmpty(address) || jp.Address.Contains(address)) &&
+                            (string.IsNullOrEmpty(skill) || jp.RequiredSkills.Contains(skill)),
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderBy(x => x.Title));
+                if (jobPosts == null || !jobPosts.Any())
+                {
+                    return null;
+                }
+                var result = _mapper.JobPostsToJobPostDtos(jobPosts);
                 return result;
             }
             catch (Exception ex)
