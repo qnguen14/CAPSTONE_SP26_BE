@@ -155,7 +155,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<JobApplicationDTO> RespondJobApplications(string id, RespondJobApplicationRequest request)
+        public async Task<JobApplicationDTO> RespondJobApplication(string id, RespondJobApplicationRequest request)
         {
             try
             {
@@ -163,14 +163,28 @@ namespace AgroTemp.Service.Implements
                 var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == guid,
-                        include: ja => ja.Include(j => j.Worker));
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost));
                 if (existingJobApplication == null)
                 {
                     return null;
                 }
+                
                 existingJobApplication.StatusId = request.StatusId;
                 existingJobApplication.RespondedAt = request.RespondedAt;
                 existingJobApplication.ResponseMessage = request.ResponseMessage;
+
+                if (request.StatusId == (int)ApplicationStatus.Accepted)
+                {
+                    existingJobApplication.JobPost.WorkersAccepted += 1;
+
+                    if (existingJobApplication.JobPost.WorkersAccepted == existingJobApplication.JobPost.WorkersNeeded)
+                    {
+                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Closed;
+                    }
+
+                    _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobApplication.JobPost);
+                }
+
                 _unitOfWork.GetRepository<JobApplication>().UpdateAsync(existingJobApplication);
                 await _unitOfWork.SaveChangesAsync();
                 var result = _mapper.JobApplicationToJobApplicationDto(existingJobApplication);

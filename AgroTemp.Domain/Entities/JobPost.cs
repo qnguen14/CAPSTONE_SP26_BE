@@ -10,14 +10,6 @@ public enum JobType
     PerJob = 3
 }
 
-public enum PaymentMethod
-{
-    Cash = 1,
-    BankTransfer = 2,
-    EWallet = 3,
-    EscrowService = 4
-}
-
 public enum JobPostStatus
 {
     Draft = 1,
