@@ -72,6 +72,28 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<JobDetailResponseDTO> GetById(string id)
+        {
+            try
+            {
+                var guid = Guid.Parse(id);
+                var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
+                    .FirstOrDefaultAsync(
+                        predicate: jd => jd.Id == guid,
+                        include: null);
+                if (jobDetail == null)
+                {
+                    return null;
+                }
+                var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<JobDetailDTO> CreateJobDetail(CreateJobDetailRequest request)
         {
             try
@@ -167,6 +189,154 @@ namespace AgroTemp.Service.Implements
                 await _unitOfWork.SaveChangesAsync();
                 var result = _mapper.JobDetailToJobDetailDto(existingJobDetail);
 
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<JobDetailResponseDTO> ReportDailyWork(CreateDailyReportRequest request)
+        {
+            try
+            {
+                var id = request.JobApplicationId;
+                // Check if application exists and is accepted
+                var application = await _unitOfWork.GetRepository<JobApplication>()
+                    .FirstOrDefaultAsync(ja => ja.Id.ToString() == id.ToString(),null,null);
+                if (application == null || application.Status == ApplicationStatus.Accepted)
+                {
+                    throw new Exception("Job application not found or not accepted");
+                }
+
+                // Check if already reported today
+                var today = DateTime.UtcNow.Date;
+                var existingReport = await _unitOfWork.GetRepository<JobDetail>()
+                    .FirstOrDefaultAsync(jd => jd.JobApplicationId == request.JobApplicationId && jd.WorkDate == today,null,null);
+                if (existingReport != null)
+                {
+                    throw new Exception("Already reported for today");
+                }
+
+                // Create new JobDetail
+                var jobDetail = new JobDetail
+                {
+                    Id = Guid.NewGuid(),
+                    JobApplicationId = request.JobApplicationId,
+                    JobPostId = application.JobPostId,
+                    WorkerId = application.WorkerId,
+                    StatusId = (int)JobStatus.Reported,
+                    WorkDate = today,
+                    WorkerDescription = request.WorkerDescription,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                // Add attachments if any
+                if (request.ImageUrls.Any())
+                {
+                    foreach (var url in request.ImageUrls)
+                    {
+                        jobDetail.JobAttachments.Add(new JobAttachment
+                        {
+                            Id = Guid.NewGuid(),
+                            JobDetailId = jobDetail.Id,
+                            FileUrl = url,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+
+                await _unitOfWork.GetRepository<JobDetail>().InsertAsync(jobDetail);
+                await _unitOfWork.SaveChangesAsync();
+
+                var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobDetailResponseDTO>> GetJobDetailsByWorkerId(Guid workerId)
+        {
+            try
+            {
+                var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
+                    .GetListAsync(
+                        predicate: jd => jd.WorkerId == workerId,
+                        include: null,
+                        orderBy: jd => jd.OrderByDescending(x => x.CreatedAt));
+                if (jobDetails == null || !jobDetails.Any())
+                {
+                    return new List<JobDetailResponseDTO>();
+                }
+                var result = _mapper.JobDetailsToJobDetailResponseDtos(jobDetails);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobDetailResponseDTO>> GetJobDetailsByJobPostId(Guid jobPostId)
+        {
+            try
+            {
+                var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
+                    .GetListAsync(
+                        predicate: jd => jd.JobPostId == jobPostId,
+                        include: null,
+                        orderBy: jd => jd.OrderByDescending(x => x.CreatedAt));
+                if (jobDetails == null || !jobDetails.Any())
+                {
+                    return new List<JobDetailResponseDTO>();
+                }
+                var result = _mapper.JobDetailsToJobDetailResponseDtos(jobDetails);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<JobDetailResponseDTO> ApproveJobDetail(Guid id, ApproveJobDetailRequest request)
+        {
+            try
+            {
+                var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
+                    .FirstOrDefaultAsync(jd => jd.Id == id,null,null);
+                if (jobDetail == null)
+                {
+                    throw new Exception("Job detail not found");
+                }
+
+                if (jobDetail.Status != JobStatus.Reported)
+                {
+                    throw new Exception("Job detail is not in reported status");
+                }
+
+                // Calculate payments
+                var workerPayment = jobDetail.JobPrice * request.FarmerApprovedPercent / 100;
+                var refund = jobDetail.JobPrice - workerPayment;
+
+                jobDetail.FarmerApprovedPercent = request.FarmerApprovedPercent;
+                jobDetail.FarmerFeedback = request.FarmerFeedback;
+                jobDetail.WorkerPaymentAmount = workerPayment;
+                jobDetail.RefundAmount = refund;
+                jobDetail.Status = JobStatus.Completed;
+                jobDetail.CompletedAt = DateTime.UtcNow;
+                jobDetail.UpdatedAt = DateTime.UtcNow;
+
+                // TODO: Handle wallet transactions for payment and refund
+
+                _unitOfWork.GetRepository<JobDetail>().UpdateAsync(jobDetail);
+                await _unitOfWork.SaveChangesAsync();
+
+                var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
                 return result;
             }
             catch (Exception ex)

@@ -57,6 +57,8 @@ public interface IMapperlyMapper
     // JobDetail
     JobDetailDTO JobDetailToJobDetailDto(JobDetail jobDetail);
     List<JobDetailDTO> JobDetailsToJobDetailDtos(IEnumerable<JobDetail> jobDetails);
+    JobDetailResponseDTO JobDetailToJobDetailResponseDto(JobDetail jobDetail);
+    List<JobDetailResponseDTO> JobDetailsToJobDetailResponseDtos(IEnumerable<JobDetail> jobDetails);
     JobDetail CreateJobDetailRequestToJobDetail(CreateJobDetailRequest request);
     void UpdateJobDetailRequestToJobDetail(UpdateJobDetailRequest request, JobDetail jobDetail);
 

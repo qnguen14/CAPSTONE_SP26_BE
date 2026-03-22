@@ -6,9 +6,10 @@ namespace AgroTemp.Domain.Entities;
 public enum JobStatus
 {
     InProgress = 1,
-    Completed = 2,
-    CancelledByFarmer = 3,
-    CancelledByWorker = 4
+    Reported = 2,
+    Completed = 3,
+    CancelledByFarmer = 4,
+    CancelledByWorker = 5
 }
 
 [Table("Job_Detail")]
