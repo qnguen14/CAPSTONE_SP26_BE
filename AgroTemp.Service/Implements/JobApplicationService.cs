@@ -212,7 +212,27 @@ namespace AgroTemp.Service.Implements
                 }
 
                 _unitOfWork.GetRepository<JobApplication>().UpdateAsync(existingJobApplication);
+
+                if (existingJobApplication.Worker != null)
+                {
+                    var statusMessage = request.StatusId == (int)ApplicationStatus.Accepted 
+                        ? "accepted" 
+                        : "rejected";
+
+                    var notificationRequest = new CreateNotificationRequest
+                    {
+                        UserId = existingJobApplication.Worker.UserId,
+                        Type = NotificationType.JobAcceptance,
+                        Title = $"Application {statusMessage.ToUpper()}",
+                        Message = $"Your application for \"{existingJobApplication.JobPost.Title}\" has been {statusMessage}.",
+                        RelatedEntityId = existingJobApplication.JobPostId
+                    };
+
+                    await _notificationService.CreateAsync(notificationRequest);
+                }
+
                 await _unitOfWork.SaveChangesAsync();
+
                 var result = _mapper.JobApplicationToJobApplicationDto(existingJobApplication);
                 return result;
             }
