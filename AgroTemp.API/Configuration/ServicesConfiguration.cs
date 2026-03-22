@@ -47,6 +47,7 @@ namespace AgroTemp.API.Configuration
             }));
             services.AddScoped<IPayOSService, PayOSService>();
             services.AddScoped<ISkillService, SkillService>();
+            services.AddHttpClient<IWeatherService, WeatherService>();
 
             // Custom Services
             //services.AddScoped<ICloudinaryService, CloudinaryService>();
