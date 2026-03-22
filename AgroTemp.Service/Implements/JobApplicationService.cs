@@ -113,8 +113,8 @@ namespace AgroTemp.Service.Implements
                     {
                         UserId = jobPost.Farmer.UserId,
                         Type = NotificationType.JobAcceptance,
-                        Title = "New Job Application",
-                        Message = $"A worker has applied for your job post: {jobPost.Title}",
+                        Title = "Đơn tuyển dụng mới",
+                        Message = $"Một công nhân đã nộp đơn tuyển dụng cho bài đăng công việc: {jobPost.Title}",
                         RelatedEntityId = jobApplication.Id
                     };
 
@@ -216,15 +216,15 @@ namespace AgroTemp.Service.Implements
                 if (existingJobApplication.Worker != null)
                 {
                     var statusMessage = request.StatusId == (int)ApplicationStatus.Accepted 
-                        ? "accepted" 
-                        : "rejected";
+                        ? "chấp nhận" 
+                        : "từ chối";
 
                     var notificationRequest = new CreateNotificationRequest
                     {
                         UserId = existingJobApplication.Worker.UserId,
                         Type = NotificationType.JobAcceptance,
-                        Title = $"Application {statusMessage.ToUpper()}",
-                        Message = $"Your application for \"{existingJobApplication.JobPost.Title}\" has been {statusMessage}.",
+                        Title = $"Đơn tuyển dụng {statusMessage.ToUpper()}",
+                        Message = $"Đơn tuyển dụng của bạn cho \"{existingJobApplication.JobPost.Title}\" đã được {statusMessage}.",
                         RelatedEntityId = existingJobApplication.JobPostId
                     };
 
