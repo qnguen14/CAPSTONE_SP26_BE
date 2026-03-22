@@ -34,6 +34,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<PayOSOrderItem> PayOSOrderItems { get; set; }
     public DbSet<PayOSTransaction> PayOSTransactions { get; set; }
     public DbSet<PayOSInvoice> PayOSInvoices { get; set; }
+    public DbSet<PayOSWebhookLog> PayOSWebhookLogs { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
@@ -303,6 +304,15 @@ public class AgroTempDbContext : DbContext
 
         modelBuilder.Entity<PayOSOrder>()
             .HasIndex(o => o.PaymentLinkId);
+
+        modelBuilder.Entity<PayOSWebhookLog>()
+            .HasIndex(l => l.OrderCode);
+
+        modelBuilder.Entity<PayOSWebhookLog>()
+            .HasIndex(l => l.Reference);
+
+        modelBuilder.Entity<PayOSWebhookLog>()
+            .HasIndex(l => l.ReceivedAt);
 
         modelBuilder.Entity<DeviceToken>()
             .HasIndex(dt => new { dt.UserId, dt.ExpoPushToken })

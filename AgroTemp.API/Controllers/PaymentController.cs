@@ -2,6 +2,7 @@ using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Payment;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PayOS.Models.V2.PaymentRequests;
 using PayOS.Models.Webhooks;
@@ -59,6 +60,7 @@ public class PaymentController : ControllerBase
     }
 
     [HttpPost(ApiEndpointConstants.Payment.CreateOrderEndpoint)]
+    //[Authorize(Roles = "Farmer")]
     [ProducesResponseType(typeof(ApiResponse<PayOSOrderResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
