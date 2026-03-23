@@ -25,7 +25,9 @@ public class Notification
     public Guid UserId { get; set; }
     public virtual User User { get; set; }
 
+    [Column("related_entity_id")]
     public Guid? RelatedEntityId { get; set; }
+
     [Required] 
     [Column("type")]
     public NotificationType Type { get; set; }
