@@ -13,4 +13,8 @@ public interface IPayOSService
     Task<(byte[] Content, string ContentType, string FileName)?> DownloadInvoiceAsync(Guid orderId, string invoiceId);
     Task<PayOSWebhookResultResponse> VerifyWebhookAsync(Webhook webhook);
     Task<PayOSOrderResponse?> GetPaymentByCallbackAsync(long orderCode, string? paymentLinkId);
+    Task<WithdrawalResponse> CreateWithdrawalAsync(CreateWithdrawalRequest request);
+    Task<WithdrawalResponse?> GetWithdrawalAsync(Guid withdrawalId);
+    Task<ICollection<WithdrawalResponse>> GetMyWithdrawalsAsync();
+    Task<WithdrawalAccountBalanceResponse> GetWithdrawalAccountBalanceAsync();
 }

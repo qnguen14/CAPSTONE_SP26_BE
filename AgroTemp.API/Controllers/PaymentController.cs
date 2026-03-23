@@ -60,7 +60,7 @@ public class PaymentController : ControllerBase
     }
 
     [HttpPost(ApiEndpointConstants.Payment.CreateOrderEndpoint)]
-    //[Authorize(Roles = "Farmer")]
+    [Authorize(Roles = "Farmer")]
     [ProducesResponseType(typeof(ApiResponse<PayOSOrderResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
