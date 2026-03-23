@@ -22,8 +22,22 @@ public partial class MapperlyMapper : IMapperlyMapper
     
     public partial List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
     
-    [MapProperty("User.Email", nameof(FarmerProfileDTO.Email))]
-    public partial FarmerProfileDTO FarmerToDto(Farmer farmer);
+    public FarmerProfileDTO FarmerToDto(Farmer farmer)
+    {
+        return new FarmerProfileDTO
+        {
+            Id = farmer.Id,
+            UserId = farmer.UserId,
+            ContactName = farmer.ContactName,
+            AverageRating = farmer.AverageRating,
+            TotalJobsPosted = farmer.TotalJobsPosted,
+            TotalJobsCompleted = farmer.TotalJobsCompleted,
+            CreatedAt = farmer.CreatedAt,
+            UpdatedAt = farmer.UpdatedAt,
+            AvatarUrl = farmer.AvatarUrl,
+            User = farmer.User != null ? UserToUserDto(farmer.User) : null
+        };
+    }
 
     //Farm
     public partial FarmDTO FarmToDto(Farm farm);

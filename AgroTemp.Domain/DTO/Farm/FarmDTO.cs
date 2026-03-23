@@ -13,10 +13,8 @@ namespace AgroTemp.Domain.DTO.Farm
         public FarmType FarmType { get; set; }
         public string FarmTypeName => FarmType.ToString();
 
-        // Livestock farming: number of animals
         public int? LivestockCount { get; set; }
 
-        // Crop farming: area in square meters (m²)
         public decimal? AreaSize { get; set; }
 
         public bool IsPrimary { get; set; }

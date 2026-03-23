@@ -71,7 +71,7 @@ public class PayOSService : IPayOSService
         var buyerName = farmer.ContactName;
         var buyerCompanyName = primaryFarm?.LocationName;
         var buyerEmail = farmer.User?.Email;
-        var buyerPhone = farmer.ContactNumber;
+        var buyerPhone = farmer.User?.PhoneNumber;
         var buyerAddress = farmer.User?.Address;
 
         var orderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

@@ -18,20 +18,11 @@ namespace AgroTemp.Domain.DTO.Farm
         [StringLength(256)]
         public string LocationName { get; set; }
 
-        /// <summary>
-        /// 1 = Livestock (chăn nuôi), 2 = Crop (trồng trọt)
-        /// </summary>
         [Required]
         public FarmType FarmType { get; set; }
 
-        /// <summary>
-        /// Required when FarmType = Livestock. Number of animals.
-        /// </summary>
         public int? LivestockCount { get; set; }
 
-        /// <summary>
-        /// Required when FarmType = Crop. Area in square meters (m²).
-        /// </summary>
         public decimal? AreaSize { get; set; }
 
         public bool isPrimary { get; set; } = false;

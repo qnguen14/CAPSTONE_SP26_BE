@@ -23,11 +23,6 @@ public class Farmer
     public string ContactName { get; set; }
 
     [Required]
-    [Column("contact_number")]
-    [StringLength(15)]
-    public string ContactNumber { get; set; }
-
-    [Required]
     [Column("average_rating")]
     public decimal AverageRating { get; set; }
 
