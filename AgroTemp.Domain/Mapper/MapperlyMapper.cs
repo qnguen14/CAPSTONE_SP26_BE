@@ -40,6 +40,7 @@ public partial class MapperlyMapper : IMapperlyMapper
     }
 
     //Farm
+    [MapProperty(nameof(Farm.FarmerId), nameof(FarmDTO.FarmerProfileId))]
     public partial FarmDTO FarmToDto(Farm farm);
     public partial List<FarmDTO> FarmsToDto(IEnumerable<Farm> farms);
 
