@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace AgroTemp.Domain.Metadata
 {
+    public enum FarmType
+    {
+        Livestock = 1,  
+        Crop = 2        
+    }
+
     public enum WalletTransactionType
     {
         Deposit = 1,

@@ -3,6 +3,7 @@ using System;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260322150620_AddFarmTypeEnumAndLivestockCropFields")]
+    partial class AddFarmTypeEnumAndLivestockCropFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -290,6 +293,12 @@ namespace AgroTemp.Domain.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("contact_name");
+
+                    b.Property<string>("ContactNumber")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)")
+                        .HasColumnName("contact_number");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -665,8 +674,7 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("read_at");
 
                     b.Property<Guid?>("RelatedEntityId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("related_entity_id");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("SentAt")
                         .HasColumnType("timestamp with time zone")

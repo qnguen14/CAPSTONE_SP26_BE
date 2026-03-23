@@ -1,3 +1,4 @@
+using AgroTemp.Domain.Metadata;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -31,8 +32,13 @@ public class Farm
 
     [Required]
     [Column("farm_type")]
-    [StringLength(100)]
-    public string FarmType { get; set; }
+    public FarmType FarmType { get; set; }
+
+    [Column("livestock_count")]
+    public int? LivestockCount { get; set; }
+
+    [Column("area_size")]
+    public decimal? AreaSize { get; set; }
 
     [Required]
     [Column("location_name")]
