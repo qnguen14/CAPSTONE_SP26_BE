@@ -36,7 +36,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<PayOSInvoice> PayOSInvoices { get; set; }
     public DbSet<PayOSWebhookLog> PayOSWebhookLogs { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
-    //public DbSet<WalletTransaction> WalletTransactions { get; set; }
+    public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
     public DbSet<DisputeReport> DisputeReports { get; set; }
 
