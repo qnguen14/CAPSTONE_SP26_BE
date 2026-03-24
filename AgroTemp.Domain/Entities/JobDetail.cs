@@ -7,9 +7,7 @@ public enum JobStatus
 {
     InProgress = 1,
     Reported = 2,
-    Completed = 3,
-    CancelledByFarmer = 4,
-    CancelledByWorker = 5
+    Completed = 3
 }
 
 [Table("Job_Detail")]

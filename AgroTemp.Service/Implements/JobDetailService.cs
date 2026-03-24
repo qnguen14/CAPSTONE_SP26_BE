@@ -17,15 +17,18 @@ namespace AgroTemp.Service.Implements
     public class JobDetailService : BaseService<JobDetail>, IJobDetailService
     {
         private readonly IMapperlyMapper _mapper;
+        private readonly IWalletTransactionService _walletTransactionService;
 
         public JobDetailService(
             IUnitOfWork<AgroTempDbContext> unitOfWork,
             IHttpContextAccessor httpContextAccessor,
-            IMapperlyMapper mapper) : base(unitOfWork, httpContextAccessor, mapper)
+            IMapperlyMapper mapper,
+            IWalletTransactionService walletTransactionService) : base(unitOfWork, httpContextAccessor, mapper)
         {
             _unitOfWork = unitOfWork;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
+            _walletTransactionService = walletTransactionService;
         }
 
         public async Task<List<JobDetailDTO>> GetAllJobDetails()
@@ -64,28 +67,6 @@ namespace AgroTemp.Service.Implements
                     return null;
                 }
                 var result = _mapper.JobDetailToJobDetailDto(jobDetail);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-        }
-
-        public async Task<JobDetailResponseDTO> GetById(string id)
-        {
-            try
-            {
-                var guid = Guid.Parse(id);
-                var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
-                    .FirstOrDefaultAsync(
-                        predicate: jd => jd.Id == guid,
-                        include: null);
-                if (jobDetail == null)
-                {
-                    return null;
-                }
-                var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
                 return result;
             }
             catch (Exception ex)
@@ -197,6 +178,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        /////////////////////////////////////////////////////
         public async Task<JobDetailResponseDTO> ReportDailyWork(CreateDailyReportRequest request)
         {
             try
@@ -205,7 +187,7 @@ namespace AgroTemp.Service.Implements
                 // Check if application exists and is accepted
                 var application = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(ja => ja.Id.ToString() == id.ToString(),null,null);
-                if (application == null || application.Status == ApplicationStatus.Accepted)
+                if (application == null || application.Status != ApplicationStatus.Accepted)
                 {
                     throw new Exception("Job application not found or not accepted");
                 }
@@ -218,6 +200,7 @@ namespace AgroTemp.Service.Implements
                 {
                     throw new Exception("Already reported for today");
                 }
+                var jobPost = await _unitOfWork.GetRepository<JobPost>().FirstOrDefaultAsync(jp => jp.Id == application.JobPostId, null, null);
 
                 // Create new JobDetail
                 var jobDetail = new JobDetail
@@ -227,25 +210,13 @@ namespace AgroTemp.Service.Implements
                     JobPostId = application.JobPostId,
                     WorkerId = application.WorkerId,
                     StatusId = (int)JobStatus.Reported,
+                    JobPrice = jobPost.WageAmount,
                     WorkDate = today,
                     WorkerDescription = request.WorkerDescription,
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // Add attachments if any
-                if (request.ImageUrls.Any())
-                {
-                    foreach (var url in request.ImageUrls)
-                    {
-                        jobDetail.JobAttachments.Add(new JobAttachment
-                        {
-                            Id = Guid.NewGuid(),
-                            JobDetailId = jobDetail.Id,
-                            FileUrl = url,
-                            CreatedAt = DateTime.UtcNow
-                        });
-                    }
-                }
+                // JobAttachment is temporarily disabled because the current database does not have this table yet.
 
                 await _unitOfWork.GetRepository<JobDetail>().InsertAsync(jobDetail);
                 await _unitOfWork.SaveChangesAsync();
@@ -307,6 +278,11 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
+                if (request.FarmerApprovedPercent < 0 || request.FarmerApprovedPercent > 100)
+                {
+                    throw new Exception("Farmer approved percent must be between 0 and 100");
+                }
+
                 var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
                     .FirstOrDefaultAsync(jd => jd.Id == id,null,null);
                 if (jobDetail == null)
@@ -331,11 +307,33 @@ namespace AgroTemp.Service.Implements
                 jobDetail.CompletedAt = DateTime.UtcNow;
                 jobDetail.UpdatedAt = DateTime.UtcNow;
 
-                // TODO: Handle wallet transactions for payment and refund
+                await _walletTransactionService.ApplyJobSettlementAsync(jobDetail, workerPayment, refund);
 
                 _unitOfWork.GetRepository<JobDetail>().UpdateAsync(jobDetail);
                 await _unitOfWork.SaveChangesAsync();
 
+                var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+   
+         public async Task<JobDetailResponseDTO> GetById(string id)
+        {
+            try
+            {
+                var guid = Guid.Parse(id);
+                var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
+                    .FirstOrDefaultAsync(
+                        predicate: jd => jd.Id == guid,
+                        include: null);
+                if (jobDetail == null)
+                {
+                    return null;
+                }
                 var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
                 return result;
             }

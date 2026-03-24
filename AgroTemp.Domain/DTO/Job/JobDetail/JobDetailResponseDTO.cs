@@ -39,6 +39,6 @@ namespace AgroTemp.Domain.DTO.Job.JobDetail
 
         public DateTime? UpdatedAt { get; set; }
 
-        public virtual ICollection<JobAttachment> JobAttachments { get; set; } = new List<JobAttachment>();
+        //public virtual ICollection<JobAttachment> JobAttachments { get; set; } = new List<JobAttachment>();
     }
 }
