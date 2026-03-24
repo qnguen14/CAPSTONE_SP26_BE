@@ -45,6 +45,7 @@ public class ApiEndpointConstants
         public const string CreateFarmEndpoint = FarmEndpoint;
         public const string UpdateFarmEndpoint = FarmEndpoint + "/{id}";
         public const string DeleteFarmEndpoint = FarmEndpoint + "/{id}";
+        public const string UploadFarmImageEndpoint = FarmEndpoint + "/{id}/upload-image";
     }
 
     public static class WorkerProfile
@@ -115,9 +116,11 @@ public class ApiEndpointConstants
         public const string NotificationEndpoint = ApiEndpoint + "/notification";
         public const string GetNotificationsEndpoint = NotificationEndpoint;
         public const string GetUnreadNotificationsEndpoint = NotificationEndpoint + "/unread";
+        public const string GetMyActiveTokensEndpoint = NotificationEndpoint + "/tokens";
         public const string MarkAsReadEndpoint = NotificationEndpoint + "/read";
         public const string MarkAllAsReadEndpoint = NotificationEndpoint + "/read-all";
         public const string DeleteNotificationEndpoint = NotificationEndpoint + "/{id}";
+        public const string SendPushNotificationEndpoint = NotificationEndpoint + "/send-push";
 
         public const string RegisterTokenEndpoint = NotificationEndpoint + "/register-token";
         public const string UnregisterTokenEndpoint = NotificationEndpoint + "/unregister-token";
@@ -164,6 +167,16 @@ public class ApiEndpointConstants
 
         public const string GetSpecificRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}";
         public const string GetAverageRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}/average";
+    }
+
+    public static class Dispute
+    {
+        public const string DisputeEndpoint = ApiEndpoint + "/disputes";
+        public const string GetAllDisputesEndpoint = DisputeEndpoint;
+        public const string GetDisputeByIdEndpoint = DisputeEndpoint + "/{id}";
+        public const string CreateDisputeEndpoint = DisputeEndpoint;
+        public const string UpdateDisputeEndpoint = DisputeEndpoint + "/{id}";
+        public const string DeleteDisputeEndpoint = DisputeEndpoint + "/{id}";
     }
 
     public static class Weather

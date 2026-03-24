@@ -1,4 +1,5 @@
-﻿using AgroTemp.Domain.DTO.Farm;
+using AgroTemp.Domain.DTO.Farm;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,5 +16,6 @@ namespace AgroTemp.Service.Interfaces
         Task<FarmDTO> UpdateFarm(Guid id, Guid farmerProfileId, UpdateFarmRequest request);
         Task<bool> DeleteFarm(Guid id, Guid farmerProfileId);
 
+        Task<string> UploadFarmImage(Guid farmId, Guid farmerProfileId, IFormFile file);
     }
 }

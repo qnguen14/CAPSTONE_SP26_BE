@@ -1,5 +1,6 @@
 using AgroTemp.Domain.DTO;
 using AgroTemp.Domain.DTO.Auth;
+using AgroTemp.Domain.DTO.DisputeReport;
 using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
@@ -78,6 +79,12 @@ public interface IMapperlyMapper
     List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings);
     Rating CreateRatingRequestToRating(CreateRatingRequest request);
     void UpdateRatingRequestToRating(UpdateRatingRequest request, Rating rating);
+
+    // Dispute
+    DisputeReportDTO DisputeReportToDisputeReportDto(DisputeReport disputeReport);
+    List<DisputeReportDTO> DisputeReportsToDisputeReportDtos(IEnumerable<DisputeReport> disputeReports);
+    DisputeReport CreateDisputeReportRequestToDisputeReport(CreateDisputeReportRequest request);
+    void UpdateDisputeReportRequestToDisputeReport(UpdateDisputeReportRequest request, DisputeReport disputeReport);
 
     // WorkerSession
     WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);
