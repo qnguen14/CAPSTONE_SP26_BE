@@ -1,4 +1,5 @@
 using AgroTemp.Domain.Context;
+using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.DTO.Payment;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Repository.Interfaces;
@@ -20,15 +21,18 @@ public class PayOSService : IPayOSService
     private readonly PayOSClient _client;
     private readonly IUnitOfWork<AgroTempDbContext> _unitOfWork;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly INotificationService _notificationService;
 
     public PayOSService(
         PayOSClient client,
         IUnitOfWork<AgroTempDbContext> unitOfWork,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        INotificationService notificationService)
     {
         _client = client;
         _unitOfWork = unitOfWork;
         _httpContextAccessor = httpContextAccessor;
+        _notificationService = notificationService;
     }
 
     public async Task<PayOSOrderResponse?> GetOrderAsync(Guid id)
@@ -294,6 +298,7 @@ public class PayOSService : IPayOSService
 
         if (order != null)
         {
+                var wasPaid = string.Equals(order.Status, PaymentLinkStatus.Paid.ToString(), StringComparison.OrdinalIgnoreCase);
                 webhookLog.OrderId = order.Id;
 
             var existingReference = order.Transactions.Any(x => x.Reference == webhookData.Reference);
@@ -326,6 +331,22 @@ public class PayOSService : IPayOSService
             order.LastTransactionUpdate = DateTime.UtcNow;
 
             _unitOfWork.GetRepository<PayOSOrder>().UpdateAsync(order);
+            await _unitOfWork.SaveChangesAsync();
+
+            var isPaidNow = string.Equals(order.Status, PaymentLinkStatus.Paid.ToString(), StringComparison.OrdinalIgnoreCase);
+            if (!wasPaid && isPaidNow && order.UserId.HasValue)
+            {
+                var notificationRequest = new CreateNotificationRequest
+                {
+                    UserId = order.UserId.Value,
+                    Type = NotificationType.PaymentConfirmation,
+                    Title = "Thanh toán thành công",
+                    Message = $"Đơn thanh toán #{order.OrderCode} đã được xác nhận.",
+                    RelatedEntityId = order.Id
+                };
+
+                await _notificationService.CreateAsync(notificationRequest);
+            }
         }
 
             webhookLog.ProcessedAt = DateTime.UtcNow;
