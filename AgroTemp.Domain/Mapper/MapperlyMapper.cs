@@ -92,7 +92,6 @@ public partial class MapperlyMapper : IMapperlyMapper
     // JobPost
     [MapProperty(nameof(JobPost.FarmerId), nameof(JobPostDTO.FarmerProfileId))]
     [MapProperty(nameof(JobPost.Farmer.ContactName), nameof(JobPostDTO.ContactName))]
-    [MapProperty(nameof(JobPost.StatusId), nameof(JobPostDTO.StatusId), Use = nameof(MapStatusId))]
     public partial JobPostDTO JobPostToJobPostDto(JobPost jobPost);
     public partial List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
     [MapProperty(nameof(JobSkillRequirement.SkillId), nameof(JobSkillRequirementSummaryDTO.Id))]

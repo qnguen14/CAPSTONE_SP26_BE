@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgroTemp.Domain.DTO.Job.JobPost;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +13,8 @@ namespace AgroTemp.Domain.DTO.Job.JobApplication
         
         public Guid JobPostId { get; set; }
         
+        public JobPostDTO? JobPost { get; set; }
+
         public WorkerProfileDTO? Worker { get; set; }
         
         public int StatusId { get; set; }
