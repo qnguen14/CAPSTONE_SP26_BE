@@ -4,8 +4,10 @@ using AgroTemp.Domain.Entities;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using PayOS;
+using PayOS.Models.V1.Payouts;
 using PayOS.Models.V2.PaymentRequests;
 using PayOS.Models.V2.PaymentRequests.Invoices;
 using PayOS.Models.Webhooks;
@@ -17,16 +19,19 @@ namespace AgroTemp.Service.Implements;
 public class PayOSService : IPayOSService
 {
     private static readonly JsonSerializerOptions WebhookSerializerOptions = new(JsonSerializerDefaults.Web);
-    private readonly PayOSClient _client;
+    private readonly PayOSClient _orderClient;
+    private readonly PayOSClient _transferClient;
     private readonly IUnitOfWork<AgroTempDbContext> _unitOfWork;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public PayOSService(
-        PayOSClient client,
+        [FromKeyedServices("OrderClient")] PayOSClient orderClient,
+        [FromKeyedServices("TransferClient")] PayOSClient transferClient,
         IUnitOfWork<AgroTempDbContext> unitOfWork,
         IHttpContextAccessor httpContextAccessor)
     {
-        _client = client;
+        _orderClient = orderClient;
+        _transferClient = transferClient;
         _unitOfWork = unitOfWork;
         _httpContextAccessor = httpContextAccessor;
     }
@@ -34,12 +39,17 @@ public class PayOSService : IPayOSService
     public async Task<PayOSOrderResponse?> GetOrderAsync(Guid id)
     {
         var order = await GetOrderEntityByIdAsync(id);
-        if (order == null || string.IsNullOrWhiteSpace(order.PaymentLinkId))
+        if (order == null)
         {
             return null;
         }
 
-        var paymentLink = await _client.PaymentRequests.GetAsync(order.PaymentLinkId);
+        if (string.IsNullOrWhiteSpace(order.PaymentLinkId))
+        {
+            return MapOrderToResponse(order);
+        }
+
+        var paymentLink = await _orderClient.PaymentRequests.GetAsync(order.PaymentLinkId);
         UpdateOrderFromPaymentLink(order, paymentLink);
         await ReplaceTransactionsFromPaymentLinkAsync(order, paymentLink);
         await _unitOfWork.SaveChangesAsync();
@@ -100,7 +110,7 @@ public class PayOSService : IPayOSService
             BuyerName = buyerName,
             BuyerCompanyName = buyerCompanyName,
             BuyerEmail = buyerEmail,
-            BuyerPhone = buyerPhone,
+            //BuyerPhone = buyerPhone,
             BuyerAddress = buyerAddress,
             ExpiredAt = expiredAt.ToUnixTimeSeconds(),
             Items = new List<PaymentLinkItem> { hardcodedItem }
@@ -112,7 +122,7 @@ public class PayOSService : IPayOSService
             TaxPercentage = taxPercentage.HasValue ? (TaxPercentage?)taxPercentage.Value : null
         };
 
-        var paymentResponse = await _client.PaymentRequests.CreateAsync(paymentRequest);
+        var paymentResponse = await _orderClient.PaymentRequests.CreateAsync(paymentRequest);
 
         var order = new PayOSOrder
         {
@@ -138,7 +148,7 @@ public class PayOSService : IPayOSService
             BuyerName = buyerName,
             BuyerCompanyName = buyerCompanyName,
             BuyerEmail = buyerEmail,
-            BuyerPhone = buyerPhone,
+            //BuyerPhone = buyerPhone,
             BuyerAddress = buyerAddress,
             ExpiredAt = expiredAt.UtcDateTime,
             BuyerNotGetInvoice = buyerNotGetInvoice,
@@ -171,7 +181,7 @@ public class PayOSService : IPayOSService
             return null;
         }
 
-        var paymentLink = await _client.PaymentRequests.CancelAsync(order.PaymentLinkId, cancellationReason ?? "Cancelled by user");
+        var paymentLink = await _orderClient.PaymentRequests.CancelAsync(order.PaymentLinkId, cancellationReason ?? "Cancelled by user");
         UpdateOrderFromPaymentLink(order, paymentLink);
         await ReplaceTransactionsFromPaymentLinkAsync(order, paymentLink);
         _unitOfWork.GetRepository<PayOSOrder>().UpdateAsync(order);
@@ -188,7 +198,7 @@ public class PayOSService : IPayOSService
             return null;
         }
 
-        var invoices = await _client.PaymentRequests.Invoices.GetAsync(order.PaymentLinkId);
+        var invoices = await _orderClient.PaymentRequests.Invoices.GetAsync(order.PaymentLinkId);
 
         var existingInvoices = await _unitOfWork.GetRepository<PayOSInvoice>()
             .GetListAsync(predicate: i => i.OrderId == orderId);
@@ -238,7 +248,7 @@ public class PayOSService : IPayOSService
             return null;
         }
 
-        var invoiceFile = await _client.PaymentRequests.Invoices.DownloadAsync(invoiceId, order.PaymentLinkId);
+        var invoiceFile = await _orderClient.PaymentRequests.Invoices.DownloadAsync(invoiceId, order.PaymentLinkId);
         await using var contentStream = invoiceFile.Content;
         using var memoryStream = new MemoryStream();
         await contentStream.CopyToAsync(memoryStream);
@@ -270,13 +280,64 @@ public class PayOSService : IPayOSService
                 throw new ArgumentException("Webhook payload is required.", nameof(webhook));
             }
 
-        var webhookData = await _client.Webhooks.VerifyAsync(webhook);
-        webhookLog.IsVerified = true;
-        webhookLog.OrderCode = webhookData.OrderCode;
-        webhookLog.Reference = webhookData.Reference;
+            var webhookData = await _orderClient.Webhooks.VerifyAsync(webhook);
+            webhookLog.IsVerified = true;
+            webhookLog.OrderCode = webhookData.OrderCode;
+            webhookLog.Reference = webhookData.Reference;
 
-        if (webhookData.OrderCode == 123 && webhookData.Description == "VQRIO123" && webhookData.AccountNumber == "12345678")
-        {
+            if (webhookData.OrderCode == 123 && webhookData.Description == "VQRIO123" && webhookData.AccountNumber == "12345678")
+            {
+                webhookLog.ProcessedAt = DateTime.UtcNow;
+                _unitOfWork.GetRepository<PayOSWebhookLog>().UpdateAsync(webhookLog);
+                await _unitOfWork.SaveChangesAsync();
+
+                return new PayOSWebhookResultResponse
+                {
+                    Message = "Webhook processed successfully",
+                    OrderCode = webhookData.OrderCode
+                };
+            }
+
+            var order = await _unitOfWork.Context.Set<PayOSOrder>()
+            .Include(x => x.Transactions)
+            .FirstOrDefaultAsync(x => x.OrderCode == webhookData.OrderCode);
+
+            if (order != null)
+            {
+                webhookLog.OrderId = order.Id;
+
+                var existingReference = order.Transactions.Any(x => x.Reference == webhookData.Reference);
+                if (!existingReference)
+                {
+                    await _unitOfWork.GetRepository<PayOSTransaction>().InsertAsync(new PayOSTransaction
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderId = order.Id,
+                        Reference = webhookData.Reference,
+                        Amount = webhookData.Amount,
+                        AccountNumber = webhookData.AccountNumber,
+                        Description = webhookData.Description,
+                        TransactionDateTime = ParseWebhookDateTime(webhookData.TransactionDateTime).UtcDateTime,
+                        VirtualAccountName = webhookData.VirtualAccountName,
+                        VirtualAccountNumber = webhookData.VirtualAccountNumber,
+                        CounterAccountBankId = webhookData.CounterAccountBankId,
+                        CounterAccountBankName = webhookData.CounterAccountBankName,
+                        CounterAccountName = webhookData.CounterAccountName,
+                        CounterAccountNumber = webhookData.CounterAccountNumber
+                    });
+                }
+
+                var transactions = await _unitOfWork.GetRepository<PayOSTransaction>()
+                    .GetListAsync(predicate: x => x.OrderId == order.Id);
+
+                order.AmountPaid = transactions.Sum(x => x.Amount);
+                order.AmountRemaining = order.Amount - order.AmountPaid;
+                order.Status = order.AmountRemaining > 0 ? PaymentLinkStatus.Underpaid.ToString() : PaymentLinkStatus.Paid.ToString();
+                order.LastTransactionUpdate = DateTime.UtcNow;
+
+                _unitOfWork.GetRepository<PayOSOrder>().UpdateAsync(order);
+            }
+
             webhookLog.ProcessedAt = DateTime.UtcNow;
             _unitOfWork.GetRepository<PayOSWebhookLog>().UpdateAsync(webhookLog);
             await _unitOfWork.SaveChangesAsync();
@@ -287,57 +348,6 @@ public class PayOSService : IPayOSService
                 OrderCode = webhookData.OrderCode
             };
         }
-
-            var order = await _unitOfWork.Context.Set<PayOSOrder>()
-            .Include(x => x.Transactions)
-            .FirstOrDefaultAsync(x => x.OrderCode == webhookData.OrderCode);
-
-        if (order != null)
-        {
-                webhookLog.OrderId = order.Id;
-
-            var existingReference = order.Transactions.Any(x => x.Reference == webhookData.Reference);
-            if (!existingReference)
-            {
-                await _unitOfWork.GetRepository<PayOSTransaction>().InsertAsync(new PayOSTransaction
-                {
-                    Id = Guid.NewGuid(),
-                    OrderId = order.Id,
-                    Reference = webhookData.Reference,
-                    Amount = webhookData.Amount,
-                    AccountNumber = webhookData.AccountNumber,
-                    Description = webhookData.Description,
-                    TransactionDateTime = ParseWebhookDateTime(webhookData.TransactionDateTime).UtcDateTime,
-                    VirtualAccountName = webhookData.VirtualAccountName,
-                    VirtualAccountNumber = webhookData.VirtualAccountNumber,
-                    CounterAccountBankId = webhookData.CounterAccountBankId,
-                    CounterAccountBankName = webhookData.CounterAccountBankName,
-                    CounterAccountName = webhookData.CounterAccountName,
-                    CounterAccountNumber = webhookData.CounterAccountNumber
-                });
-            }
-
-            var transactions = await _unitOfWork.GetRepository<PayOSTransaction>()
-                .GetListAsync(predicate: x => x.OrderId == order.Id);
-
-            order.AmountPaid = transactions.Sum(x => x.Amount);
-            order.AmountRemaining = order.Amount - order.AmountPaid;
-            order.Status = order.AmountRemaining > 0 ? PaymentLinkStatus.Underpaid.ToString() : PaymentLinkStatus.Paid.ToString();
-            order.LastTransactionUpdate = DateTime.UtcNow;
-
-            _unitOfWork.GetRepository<PayOSOrder>().UpdateAsync(order);
-        }
-
-            webhookLog.ProcessedAt = DateTime.UtcNow;
-            _unitOfWork.GetRepository<PayOSWebhookLog>().UpdateAsync(webhookLog);
-            await _unitOfWork.SaveChangesAsync();
-
-        return new PayOSWebhookResultResponse
-        {
-            Message = "Webhook processed successfully",
-            OrderCode = webhookData.OrderCode
-        };
-    }
         catch (Exception ex)
         {
             webhookLog.ErrorMessage = ex.Message;
@@ -434,13 +444,159 @@ public class PayOSService : IPayOSService
         var linkId = string.IsNullOrWhiteSpace(paymentLinkId) ? order.PaymentLinkId : paymentLinkId;
         if (!string.IsNullOrWhiteSpace(linkId))
         {
-            var paymentLink = await _client.PaymentRequests.GetAsync(linkId);
+            var paymentLink = await _orderClient.PaymentRequests.GetAsync(linkId);
             UpdateOrderFromPaymentLink(order, paymentLink);
             await ReplaceTransactionsFromPaymentLinkAsync(order, paymentLink);
             await _unitOfWork.SaveChangesAsync();
         }
 
         return MapOrderToResponse(order);
+    }
+
+    public async Task<WithdrawalResponse> CreateWithdrawalAsync(CreateWithdrawalRequest request)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (!currentUserId.HasValue)
+        {
+            throw new UnauthorizedAccessException("User is not authenticated.");
+        }
+
+        var wallet = await _unitOfWork.GetRepository<Wallet>()
+            .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId.Value);
+
+        if (wallet == null)
+        {
+            throw new InvalidOperationException("Wallet not found.");
+        }
+
+        if (request.Amount <= 0)
+        {
+            throw new ArgumentException("Withdrawal amount must be greater than 0.", nameof(request.Amount));
+        }
+
+        if (wallet.Balance < request.Amount)
+        {
+            throw new InvalidOperationException("Insufficient wallet balance.");
+        }
+
+        var withdrawalId = Guid.NewGuid();
+        var payoutRequest = new PayoutRequest
+        {
+            ReferenceId = withdrawalId.ToString(),
+            Amount = (long)request.Amount,
+            Description = request.Description ?? $"withdrawal-{withdrawalId}",
+            ToBin = request.ToBin,
+            ToAccountNumber = request.ToAccountNumber,
+            Category = request.Category ?? new List<string>()
+        };
+
+        var payout = await _transferClient.Payouts.CreateAsync(payoutRequest);
+
+        wallet.Balance -= request.Amount;
+        wallet.UpdateAt = DateTime.UtcNow;
+        _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
+
+        var withdrawalRequest = new WithdrawalRequest
+        {
+            Id = withdrawalId,
+            WalletId = wallet.Id,
+            Amount = request.Amount,
+            BankAccountNumber = request.ToAccountNumber,
+            BankName = string.IsNullOrWhiteSpace(request.BankName) ? request.ToBin : request.BankName,
+            AccountHolderName = string.IsNullOrWhiteSpace(request.AccountHolderName)
+                ? payout.Transactions.FirstOrDefault()?.ToAccountName ?? "Unknown"
+                : request.AccountHolderName,
+            Status = payout.ApprovalState.ToString(),
+            Note = payout.Id,
+            CreatedAt = DateTime.UtcNow,
+            ProcessedAt = IsPayoutProcessed(payout) ? DateTime.UtcNow : null
+        };
+
+        await _unitOfWork.GetRepository<WithdrawalRequest>().InsertAsync(withdrawalRequest);
+
+        await _unitOfWork.GetRepository<WalletTransaction>().InsertAsync(new WalletTransaction
+        {
+            Id = Guid.NewGuid(),
+            WalletId = wallet.Id,
+            JobDetailId = null,
+            Type = "WITHDRAWAL",
+            Amount = request.Amount,
+            BalanceAfter = wallet.Balance,
+            ReferenceCode = payout.Id ?? withdrawalId.ToString(),
+            Description = request.Description ?? "Withdraw from wallet",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _unitOfWork.SaveChangesAsync();
+
+        return MapWithdrawalToResponse(withdrawalRequest, payout);
+    }
+
+    public async Task<WithdrawalResponse?> GetWithdrawalAsync(Guid withdrawalId)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (!currentUserId.HasValue)
+        {
+            throw new UnauthorizedAccessException("User is not authenticated.");
+        }
+
+        var withdrawal = await _unitOfWork.GetRepository<WithdrawalRequest>()
+            .FirstOrDefaultAsync(
+                predicate: wr => wr.Id == withdrawalId,
+                include: q => q.Include(x => x.Wallet));
+
+        if (withdrawal == null || withdrawal.Wallet.UserId != currentUserId.Value)
+        {
+            return null;
+        }
+
+        var payout = await GetPayoutByWithdrawalAsync(withdrawal);
+        if (payout != null)
+        {
+            UpdateWithdrawalFromPayout(withdrawal, payout);
+            _unitOfWork.GetRepository<WithdrawalRequest>().UpdateAsync(withdrawal);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        return MapWithdrawalToResponse(withdrawal, payout);
+    }
+
+    public async Task<ICollection<WithdrawalResponse>> GetMyWithdrawalsAsync()
+    {
+        var currentUserId = GetCurrentUserId();
+        if (!currentUserId.HasValue)
+        {
+            throw new UnauthorizedAccessException("User is not authenticated.");
+        }
+
+        var withdrawals = await _unitOfWork.GetRepository<WithdrawalRequest>()
+            .GetListAsync(
+                predicate: wr => wr.Wallet.UserId == currentUserId.Value,
+                orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                include: q => q.Include(x => x.Wallet));
+
+        var responses = new List<WithdrawalResponse>();
+        foreach (var withdrawal in withdrawals)
+        {
+            responses.Add(MapWithdrawalToResponse(withdrawal, null));
+        }
+
+        return responses;
+    }
+
+    public async Task<WithdrawalAccountBalanceResponse> GetWithdrawalAccountBalanceAsync()
+    {
+        var accountInfo = await _transferClient.PayoutsAccount.GetBalanceAsync();
+        var parsedBalance = long.TryParse(accountInfo.Balance, out var balance)
+            ? balance
+            : 0;
+
+        return new WithdrawalAccountBalanceResponse
+        {
+            Balance = parsedBalance,
+            AvailableBalance = parsedBalance,
+            Currency = accountInfo.Currency
+        };
     }
 
     private async Task<PayOSOrder?> GetOrderEntityByIdAsync(Guid id)
@@ -548,5 +704,62 @@ public class PayOSService : IPayOSService
     private static DateTimeOffset? ToOffset(DateTime value)
     {
         return new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc));
+    }
+
+    private async Task<Payout?> GetPayoutByWithdrawalAsync(WithdrawalRequest withdrawal)
+    {
+        if (!string.IsNullOrWhiteSpace(withdrawal.Note))
+        {
+            try
+            {
+                return await _transferClient.Payouts.GetAsync(withdrawal.Note);
+            }
+            catch
+            {
+                // Fall through to list by reference id.
+            }
+        }
+
+        var payoutPage = await _transferClient.Payouts.ListAsync(new GetPayoutListParam { ReferenceId = withdrawal.Id.ToString() });
+        return payoutPage.Data.FirstOrDefault();
+    }
+
+    private static bool IsPayoutProcessed(Payout payout)
+    {
+        var state = payout.ApprovalState.ToString().ToUpperInvariant();
+        return state == "APPROVED" || state == "REJECTED" || state == "PAID";
+    }
+
+    private static void UpdateWithdrawalFromPayout(WithdrawalRequest withdrawal, Payout payout)
+    {
+        withdrawal.Status = payout.ApprovalState.ToString();
+        withdrawal.Note = payout.Id;
+        if (IsPayoutProcessed(payout))
+        {
+            withdrawal.ProcessedAt = DateTime.UtcNow;
+        }
+    }
+
+    private static WithdrawalResponse MapWithdrawalToResponse(WithdrawalRequest withdrawal, Payout? payout)
+    {
+        var latestTx = payout?.Transactions?.FirstOrDefault();
+
+        return new WithdrawalResponse
+        {
+            Id = withdrawal.Id,
+            PayoutId = payout?.Id ?? withdrawal.Note,
+            Amount = withdrawal.Amount,
+            Status = withdrawal.Status,
+            ApprovalState = payout?.ApprovalState.ToString(),
+            BankName = withdrawal.BankName,
+            AccountHolderName = withdrawal.AccountHolderName,
+            BankAccountNumber = withdrawal.BankAccountNumber,
+            ReferenceCode = latestTx?.Reference,
+            Description = latestTx?.Description,
+            CreatedAt = new DateTimeOffset(DateTime.SpecifyKind(withdrawal.CreatedAt, DateTimeKind.Utc)),
+            ProcessedAt = withdrawal.ProcessedAt.HasValue
+                ? new DateTimeOffset(DateTime.SpecifyKind(withdrawal.ProcessedAt.Value, DateTimeKind.Utc))
+                : null
+        };
     }
 }

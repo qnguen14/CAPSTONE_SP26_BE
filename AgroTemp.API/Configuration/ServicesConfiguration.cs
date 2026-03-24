@@ -6,6 +6,7 @@ using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Implements;
 using AgroTemp.Service.Interfaces;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using System.ComponentModel.Design;
 using Resend;
 using AgroTemp.Service.Config.ApiModels;
@@ -39,6 +40,41 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IWorkerAttendanceService, WorkerAttendanceService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IExpoPushService, ExpoPushService>();
+
+            // payOS client for payment link flow (deposit/top-up)
+            services.AddKeyedSingleton<PayOSClient>("OrderClient", (sp, _) => new PayOSClient(new PayOSOptions
+            {
+                ClientId = configuration["PayOS:ClientId"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_CLIENT_ID")
+                    ?? string.Empty,
+                ApiKey = configuration["PayOS:ApiKey"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_API_KEY")
+                    ?? string.Empty,
+                ChecksumKey = configuration["PayOS:ChecksumKey"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_CHECKSUM_KEY")
+                    ?? string.Empty,
+                LogLevel = LogLevel.Debug
+            }));
+
+            // payOS client for payout flow (withdraw)
+            services.AddKeyedSingleton<PayOSClient>("TransferClient", (sp, _) => new PayOSClient(new PayOSOptions
+            {
+                ClientId = configuration["PayOS:PayoutClientId"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_PAYOUT_CLIENT_ID")
+                    ?? configuration["PayOS:ClientId"]
+                    ?? string.Empty,
+                ApiKey = configuration["PayOS:PayoutApiKey"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_PAYOUT_API_KEY")
+                    ?? configuration["PayOS:ApiKey"]
+                    ?? string.Empty,
+                ChecksumKey = configuration["PayOS:PayoutChecksumKey"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_PAYOUT_CHECKSUM_KEY")
+                    ?? configuration["PayOS:ChecksumKey"]
+                    ?? string.Empty,
+                LogLevel = LogLevel.Debug
+            }));
+
+            services.AddScoped<IPayOSService, PayOSService>();
             services.AddScoped<ISkillService, SkillService>();
             services.AddScoped<IRatingService, RatingService>();
             services.AddScoped<IWalletTransactionService, WalletTransactionService>();
