@@ -1,4 +1,5 @@
-﻿using AgroTemp.API.Constants;
+using AgroTemp.API.Constants;
+using AgroTemp.API.Models.Farm;
 using AgroTemp.Domain.DTO;
 using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.Metadata;
@@ -227,6 +228,60 @@ public class FarmController : Controller
                 Data = null
             };
             return StatusCode(statusCode, apiResponse);
+        }
+    }
+
+    [HttpPost(ApiEndpointConstants.Farm.UploadFarmImageEndpoint)]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<string>> UploadFarmImage([FromRoute] Guid id, [FromForm] UploadFarmImageRequest request)
+    {
+        try
+        {
+            if (request?.File == null || request.File.Length == 0)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Message = "Image file is required",
+                    Data = null
+                });
+            }
+
+            var farmerProfile = await _userService.GetFarmerProfile();
+            var imageUrl = await _farmService.UploadFarmImage(id, farmerProfile.Id, request.File);
+
+            return Ok(new ApiResponse<string>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Farm image uploaded successfully",
+                Data = imageUrl
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading farm image for farm {FarmId}", id);
+
+            int statusCode;
+            if (ex.Message.Contains("not found"))
+                statusCode = StatusCodes.Status404NotFound;
+            else if (ex.Message.Contains("only update your own"))
+                statusCode = StatusCodes.Status403Forbidden;
+            else if (ex.Message.Contains("required"))
+                statusCode = StatusCodes.Status400BadRequest;
+            else
+                statusCode = StatusCodes.Status500InternalServerError;
+
+            return StatusCode(statusCode, new ApiResponse<object>
+            {
+                StatusCode = statusCode,
+                Message = ex.Message,
+                Data = null
+            });
         }
     }
 }

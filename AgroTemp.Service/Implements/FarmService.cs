@@ -14,15 +14,18 @@ namespace AgroTemp.Service.Implements;
 public class FarmService : BaseService<Farm>, IFarmService
 {
     private readonly IMapperlyMapper _mapper;
+    private readonly ICloudinaryService _cloudinaryService;
 
     public FarmService(
         IUnitOfWork<AgroTempDbContext> unitOfWork,
         IHttpContextAccessor httpContextAccessor,
-        IMapperlyMapper mapper) : base(unitOfWork, httpContextAccessor, mapper)
+        IMapperlyMapper mapper,
+        ICloudinaryService cloudinaryService) : base(unitOfWork, httpContextAccessor, mapper)
     {
         _unitOfWork = unitOfWork;
         _httpContextAccessor = httpContextAccessor;
         _mapper = mapper;
+        _cloudinaryService = cloudinaryService;
     }
 
     public async Task<List<FarmDTO>> GetFarmByFarmer(Guid farmerProfileId)
@@ -102,6 +105,7 @@ public class FarmService : BaseService<Farm>, IFarmService
                 Latitude = request.Latitude,
                 Longitude = request.Longitude,
                 LocationName = request.LocationName,
+                ImageUrl = request.ImageUrl,
                 FarmType = request.FarmType,
                 LivestockCount = request.FarmType == FarmType.Livestock ? request.LivestockCount : null,
                 AreaSize = request.FarmType == FarmType.Crop ? request.AreaSize : null,
@@ -169,6 +173,11 @@ public class FarmService : BaseService<Farm>, IFarmService
             if (!string.IsNullOrEmpty(request.LocationName))
             {
                 farm.LocationName = request.LocationName;
+            }
+
+            if (request.ImageUrl != null)
+            {
+                farm.ImageUrl = request.ImageUrl;
             }
 
             if (request.FarmType.HasValue)
@@ -242,6 +251,51 @@ public class FarmService : BaseService<Farm>, IFarmService
             await _unitOfWork.SaveChangesAsync();
 
             return true;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<string> UploadFarmImage(Guid farmId, Guid farmerProfileId, IFormFile file)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+            {
+                throw new Exception("Image file is required");
+            }
+
+            var farm = await _unitOfWork.GetRepository<Farm>()
+                .FirstOrDefaultAsync(
+                    predicate: f => f.Id == farmId,
+                    include: null);
+
+            if (farm == null)
+            {
+                throw new Exception("Farm not found");
+            }
+
+            if (farm.FarmerId != farmerProfileId)
+            {
+                throw new Exception("You can only update your own farms");
+            }
+
+            var imageUrl = await _cloudinaryService.UploadImageAsync(file);
+
+            if (!string.IsNullOrEmpty(farm.ImageUrl))
+            {
+                try { await _cloudinaryService.DeleteAsync(farm.ImageUrl); } catch { }
+            }
+
+            farm.ImageUrl = imageUrl;
+            farm.UpdatedAt = DateTime.UtcNow;
+
+            _unitOfWork.GetRepository<Farm>().UpdateAsync(farm);
+            await _unitOfWork.SaveChangesAsync();
+
+            return imageUrl;
         }
         catch (Exception ex)
         {

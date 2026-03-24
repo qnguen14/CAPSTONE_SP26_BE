@@ -45,6 +45,10 @@ public class Farm
     [StringLength(256)]
     public string LocationName { get; set; }
 
+    [Column("image_url")]
+    [StringLength(1024)]
+    public string? ImageUrl { get; set; }
+
     [Required]
     [Column("is_primary")]
     public bool IsPrimary { get; set; }

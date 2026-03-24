@@ -45,6 +45,7 @@ public class ApiEndpointConstants
         public const string CreateFarmEndpoint = FarmEndpoint;
         public const string UpdateFarmEndpoint = FarmEndpoint + "/{id}";
         public const string DeleteFarmEndpoint = FarmEndpoint + "/{id}";
+        public const string UploadFarmImageEndpoint = FarmEndpoint + "/{id}/upload-image";
     }
 
     public static class WorkerProfile
