@@ -132,6 +132,8 @@ public partial class MapperlyMapper : IMapperlyMapper
     // JobDetail
     public partial JobDetailDTO JobDetailToJobDetailDto(JobDetail jobDetail);
     public partial List<JobDetailDTO> JobDetailsToJobDetailDtos(IEnumerable<JobDetail> jobDetails);
+    public partial JobDetailResponseDTO JobDetailToJobDetailResponseDto(JobDetail jobDetail);
+    public partial List<JobDetailResponseDTO> JobDetailsToJobDetailResponseDtos(IEnumerable<JobDetail> jobDetails);
     public partial JobDetail CreateJobDetailRequestToJobDetail(CreateJobDetailRequest request);
     public partial void UpdateJobDetailRequestToJobDetail(UpdateJobDetailRequest request, JobDetail jobDetail);
 

@@ -139,6 +139,13 @@ public class ApiEndpointConstants
         public const string DownloadOrderInvoiceEndpoint = PaymentEndpoint + "/{id}/invoices/{invoiceId}/download";
     }
 
+    public static class Withdraw
+    {
+        public const string WithdrawEndpoint = ApiEndpoint + "/withdraw";
+        public const string WithdrawByIdEndpoint = WithdrawEndpoint + "/{id}";
+        public const string WithdrawBalanceEndpoint = WithdrawEndpoint + "/account-balance";
+    }
+
     public static class Skill
     {
         public const string SkillEndpoint = ApiEndpoint + "/skills";

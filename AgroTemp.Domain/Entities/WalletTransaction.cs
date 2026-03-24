@@ -9,6 +9,14 @@ using System.Threading.Tasks;
 
 namespace AgroTemp.Domain.Entities
 {
+    public enum TransactionType
+    {
+        DEPOSIT = 1,
+        WITHDRAW = 2,
+        JOB_PAYMENT = 3,
+        REFUND = 4
+    }
+
     public class WalletTransaction
     {
         [Key]
@@ -30,8 +38,7 @@ namespace AgroTemp.Domain.Entities
 
         [Required]
         [Column("type")]
-        public string Type { get; set; }
-        // DEPOSIT / WITHDRAW / JOB_PAYMENT / REFUND
+        public TransactionType Type { get; set; }
 
         [Column("amount",TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
