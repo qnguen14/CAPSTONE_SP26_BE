@@ -64,15 +64,14 @@ public class JobPost
     public string Address { get; set; }
 
     [Column("start_date")]
-    public DateTime StartDate { get; set; }
+    public DateTime? StartDate { get; set; }
 
     [Column("end_date")]
-    public DateTime EndDate { get; set; }
+    public DateTime? EndDate { get; set; }
 
     [Column("selected_days")]
     public List<DateTime> SelectedDays { get; set; } = new List<DateTime>();
 
-    [Required]
     [Column("workers_needed")]
     public int WorkersNeeded { get; set; }
 
@@ -93,12 +92,12 @@ public class JobPost
     public string RequiredSkills { get; set; }
 
     [Required]
-    [Column("requirementes")]
-    public string Requirements { get; set; }
+    [Column("requirements")]
+    public List<string> Requirements { get; set; }
 
     [Required]
     [Column("privileges")]
-    public string Privileges { get; set; }
+    public List<string> Privileges { get; set; }
 
     [Required]
     [Column("published_at")]
