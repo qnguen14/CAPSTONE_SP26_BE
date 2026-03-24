@@ -6,6 +6,7 @@ using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.DTO.Notification;
+using AgroTemp.Domain.DTO.Rating;
 using AgroTemp.Domain.DTO.Skill;
 using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
@@ -19,9 +20,9 @@ public partial class MapperlyMapper : IMapperlyMapper
 {
     [MapProperty(nameof(User.Role), nameof(UserDTO.Role))]
     public partial UserDTO UserToUserDto(User user);
-    
+
     public partial List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
-    
+
     public FarmerProfileDTO FarmerToDto(Farmer farmer)
     {
         return new FarmerProfileDTO
@@ -69,7 +70,7 @@ public partial class MapperlyMapper : IMapperlyMapper
 
     [MapProperty(nameof(User.Role), nameof(LoginResponse.Role))]
     public partial LoginResponse UserToLoginResponse(User user);
-    
+
     // Custom mapping for ExperienceLevel enum to string
     private string MapExperienceLevel(ExperienceLevel level) => level.ToString();
 
@@ -106,7 +107,7 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplicationEntity> jobApplications);
     public partial JobApplicationEntity CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
     public partial void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplicationEntity jobApplication);
-    
+
     // Notification
     public partial NotificationDTO NotificationToDto(Notification notification);
     public partial List<NotificationDTO> NotificationsToDto(IEnumerable<Notification> notifications);
@@ -122,6 +123,12 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial List<SkillResponse> SkillsToSkillResponses(IEnumerable<Skill> skills);
     public partial Skill CreateSkillRequestToSkill(CreateSkillRequest request);
     public partial void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
+
+    // Rating
+    public partial RatingDTO RatingToRatingDto(Rating rating);
+    public partial List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings);
+    public partial Rating CreateRatingRequestToRating(CreateRatingRequest request);
+    public partial void UpdateRatingRequestToRating(UpdateRatingRequest request, Rating rating);
 
     // WorkerSession
     [MapProperty(nameof(WorkerSession.JobDetail.JobApplicationId), nameof(WorkerAttendanceDTO.JobApplicationId))]
