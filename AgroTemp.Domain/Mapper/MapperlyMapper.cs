@@ -102,7 +102,24 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 
     // JobApplication
-    public partial JobApplicationDTO JobApplicationToJobApplicationDto(JobApplicationEntity jobApplication);
+    public JobApplicationDTO JobApplicationToJobApplicationDto(JobApplicationEntity jobApplication)
+    {
+        var dto = new JobApplicationDTO
+        {
+            Id = jobApplication.Id,
+            JobPostId = jobApplication.JobPostId,
+            JobPost = jobApplication.JobPost != null ? JobPostToJobPostDto(jobApplication.JobPost) : null,
+            Worker = jobApplication.Worker != null ? WorkerToDto(jobApplication.Worker) : null,
+            StatusId = jobApplication.StatusId,
+            CoverLetter = jobApplication.CoverLetter,
+            AppliedAt = jobApplication.AppliedAt,
+            RespondedAt = jobApplication.RespondedAt,
+            ResponseMessage = jobApplication.ResponseMessage,
+            WorkDates = jobApplication.WorkDates,
+            LocationName = jobApplication.JobPost?.Farm?.LocationName
+        };
+        return dto;
+    }
     public partial List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplicationEntity> jobApplications);
     public partial JobApplicationEntity CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
     public partial void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplicationEntity jobApplication);

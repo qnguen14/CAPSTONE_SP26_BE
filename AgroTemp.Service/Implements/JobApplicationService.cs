@@ -34,7 +34,7 @@ namespace AgroTemp.Service.Implements
                 var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
                     .GetListAsync(
                         predicate: null,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost.Farmer),
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost.Farmer).Include(j => j.JobPost.Farm),
                         orderBy: ja => ja.OrderBy(x => x.AppliedAt));
 
                 if (jobApplications == null || !jobApplications.Any())
@@ -59,7 +59,7 @@ namespace AgroTemp.Service.Implements
                 var jobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == guid,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost.Farmer));
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost.Farmer).Include(j => j.JobPost.Farm));
 
                 if (jobApplication == null)
                 {

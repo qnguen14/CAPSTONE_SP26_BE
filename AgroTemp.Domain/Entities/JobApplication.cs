@@ -59,6 +59,9 @@ namespace AgroTemp.Domain.Entities
         [Column("response_message")]
         public string? ResponseMessage { get; set; }
 
+        [Column("work_dates")]
+        public List<DateTime>? WorkDates { get; set; }
+
         public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
     }
 }
