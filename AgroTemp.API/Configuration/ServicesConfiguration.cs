@@ -41,6 +41,7 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IExpoPushService, ExpoPushService>();
             services.AddScoped<ISkillService, SkillService>();
             services.AddScoped<IRatingService, RatingService>();
+            services.AddScoped<IDisputeReportService, DisputeReportService>();
             services.AddHttpClient<IWeatherService, WeatherService>();
             
             // Email Service

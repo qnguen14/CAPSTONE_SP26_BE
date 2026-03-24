@@ -161,6 +161,16 @@ public class ApiEndpointConstants
         public const string GetAverageRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}/average";
     }
 
+    public static class Dispute
+    {
+        public const string DisputeEndpoint = ApiEndpoint + "/disputes";
+        public const string GetAllDisputesEndpoint = DisputeEndpoint;
+        public const string GetDisputeByIdEndpoint = DisputeEndpoint + "/{id}";
+        public const string CreateDisputeEndpoint = DisputeEndpoint;
+        public const string UpdateDisputeEndpoint = DisputeEndpoint + "/{id}";
+        public const string DeleteDisputeEndpoint = DisputeEndpoint + "/{id}";
+    }
+
     public static class Weather
     {
         public const string WeatherEndpoint = ApiEndpoint + "/weather";
