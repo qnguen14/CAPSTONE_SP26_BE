@@ -97,21 +97,22 @@ namespace AgroTemp.Service.Implements
                     throw new UnauthorizedAccessException("Only farmers can create job posts.");
                 }
 
-                var requestedSkillIds = request.JobSkillRequirementIds
-                    .Where(skillId => skillId != Guid.Empty)
+                var requestedSkillNames = request.JobSkillRequirements?
+                    .Select(jsr => jsr.Name)
+                    .Where(name => !string.IsNullOrEmpty(name))
                     .Distinct()
-                    .ToList();
+                    .ToList() ?? new List<string>();
 
-                var skills = requestedSkillIds.Any()
+                var skills = requestedSkillNames.Any()
                     ? await _unitOfWork.GetRepository<Skill>()
-                        .GetListAsync(predicate: s => requestedSkillIds.Contains(s.Id))
+                        .GetListAsync(predicate: s => requestedSkillNames.Contains(s.Name))
                     : new List<Skill>();
 
-                if (skills.Count != requestedSkillIds.Count)
+                if (skills.Count != requestedSkillNames.Count)
                 {
-                    var foundSkillIds = skills.Select(s => s.Id).ToHashSet();
-                    var invalidSkillIds = requestedSkillIds.Where(id => !foundSkillIds.Contains(id));
-                    throw new ArgumentException($"Invalid skill id(s): {string.Join(", ", invalidSkillIds)}");
+                    var foundSkillNames = skills.Select(s => s.Name).ToHashSet();
+                    var invalidSkillNames = requestedSkillNames.Where(name => !foundSkillNames.Contains(name));
+                    throw new ArgumentException($"Invalid skill name(s): {string.Join(", ", invalidSkillNames)}");
                 }
 
                 var jobPost = _mapper.CreateJobPostRequestToJobPost(request);

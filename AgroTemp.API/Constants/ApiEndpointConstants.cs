@@ -146,6 +146,19 @@ public class ApiEndpointConstants
         public const string DeleteSkillEndpoint = SkillEndpoint + "/{id}";
     }
 
+    public static class Rating
+    {
+        public const string RatingEndpoint = ApiEndpoint + "/ratings";
+        public const string GetAllRatingsEndpoint = RatingEndpoint;
+        public const string GetRatingByIdEndpoint = RatingEndpoint + "/{id}";
+        public const string CreateRatingEndpoint = RatingEndpoint;
+        public const string UpdateRatingEndpoint = RatingEndpoint + "/{id}";
+        public const string DeleteRatingEndpoint = RatingEndpoint + "/{id}";
+
+        public const string GetSpecificRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}";
+        public const string GetAverageRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}/average";
+    }
+
     public static class Weather
     {
         public const string WeatherEndpoint = ApiEndpoint + "/weather";

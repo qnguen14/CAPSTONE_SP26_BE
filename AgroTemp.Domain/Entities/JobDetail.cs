@@ -53,10 +53,10 @@ public class JobDetail
     public DateTime? WorkDate { get; set; }
 
     [Column("worker_description")]
-    public string WorkerDescription { get; set; }
+    public string? WorkerDescription { get; set; }
 
     [Column("farmer_feedback")]
-    public string FarmerFeedback { get; set; }
+    public string? FarmerFeedback { get; set; }
 
     // farmer final decision
     [Column("farmer_approved_percent")]

@@ -268,7 +268,6 @@ public class UserService : BaseService<User>, IUserService
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     ContactName = request.ContactName,
-                    ContactNumber = request.ContactNumber,
                     AverageRating = 0,
                     TotalJobsPosted = 0,
                     TotalJobsCompleted = 0,
@@ -282,7 +281,6 @@ public class UserService : BaseService<User>, IUserService
             else
             {
                 farmerProfile.ContactName = request.ContactName;
-                farmerProfile.ContactNumber = request.ContactNumber;
                 farmerProfile.UpdatedAt = DateTime.UtcNow;
                 farmerProfile.AvatarUrl = request.AvatarUrl;
 

@@ -1,8 +1,9 @@
-﻿using AgroTemp.Domain.Context;
+using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO;
 using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
+using AgroTemp.Domain.Metadata;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
@@ -73,6 +74,13 @@ public class FarmService : BaseService<Farm>, IFarmService
                 throw new Exception("Farmer profile not found");
             }
 
+            // Validate farm type specific fields
+            if (request.FarmType == FarmType.Livestock && (request.LivestockCount == null || request.LivestockCount <= 0))
+                throw new Exception("Livestock count is required and must be greater than 0 for livestock farms.");
+
+            if (request.FarmType == FarmType.Crop && (request.AreaSize == null || request.AreaSize <= 0))
+                throw new Exception("Area size is required and must be greater than 0 for crop farms.");
+
             if (request.isPrimary)
             {
                 var existingPrimaryFarms = await _unitOfWork.GetRepository<Farm>()
@@ -94,6 +102,9 @@ public class FarmService : BaseService<Farm>, IFarmService
                 Latitude = request.Latitude,
                 Longitude = request.Longitude,
                 LocationName = request.LocationName,
+                FarmType = request.FarmType,
+                LivestockCount = request.FarmType == FarmType.Livestock ? request.LivestockCount : null,
+                AreaSize = request.FarmType == FarmType.Crop ? request.AreaSize : null,
                 IsPrimary = request.isPrimary,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -158,6 +169,38 @@ public class FarmService : BaseService<Farm>, IFarmService
             if (!string.IsNullOrEmpty(request.LocationName))
             {
                 farm.LocationName = request.LocationName;
+            }
+
+            if (request.FarmType.HasValue)
+            {
+                var newFarmType = request.FarmType.Value;
+
+                if (newFarmType == FarmType.Livestock && (request.LivestockCount == null || request.LivestockCount <= 0))
+                    throw new Exception("Livestock count is required and must be greater than 0 for livestock farms.");
+
+                if (newFarmType == FarmType.Crop && (request.AreaSize == null || request.AreaSize <= 0))
+                    throw new Exception("Area size is required and must be greater than 0 for crop farms.");
+
+                farm.FarmType = newFarmType;
+                farm.LivestockCount = newFarmType == FarmType.Livestock ? request.LivestockCount : null;
+                farm.AreaSize = newFarmType == FarmType.Crop ? request.AreaSize : null;
+            }
+            else
+            {
+                // FarmType unchanged — update individual fields if provided
+                if (farm.FarmType == FarmType.Livestock && request.LivestockCount.HasValue)
+                {
+                    if (request.LivestockCount <= 0)
+                        throw new Exception("Livestock count must be greater than 0.");
+                    farm.LivestockCount = request.LivestockCount.Value;
+                }
+
+                if (farm.FarmType == FarmType.Crop && request.AreaSize.HasValue)
+                {
+                    if (request.AreaSize <= 0)
+                        throw new Exception("Area size must be greater than 0.");
+                    farm.AreaSize = request.AreaSize.Value;
+                }
             }
 
             if (request.IsPrimary.HasValue)

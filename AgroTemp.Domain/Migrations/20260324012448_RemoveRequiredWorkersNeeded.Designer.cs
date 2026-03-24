@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260324012448_RemoveRequiredWorkersNeeded")]
+    partial class RemoveRequiredWorkersNeeded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -351,11 +354,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("status");
 
-                    b.Property<List<DateTime>>("WorkDates")
-                        .IsRequired()
-                        .HasColumnType("timestamp with time zone[]")
-                        .HasColumnName("work_dates");
-
                     b.Property<Guid>("WorkerId")
                         .HasColumnType("uuid")
                         .HasColumnName("worker_id");
@@ -456,6 +454,7 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("farmer_approved_percent");
 
                     b.Property<string>("FarmerFeedback")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("farmer_feedback");
 
@@ -488,6 +487,7 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("work_date");
 
                     b.Property<string>("WorkerDescription")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("worker_description");
 
@@ -531,7 +531,7 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.Property<DateTime?>("EndDate")
+                    b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_date");
 
@@ -555,9 +555,9 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("job_type");
 
-                    b.Property<List<string>>("Privileges")
+                    b.Property<string>("Privileges")
                         .IsRequired()
-                        .HasColumnType("text[]")
+                        .HasColumnType("text")
                         .HasColumnName("privileges");
 
                     b.Property<DateTime>("PublishedAt")
@@ -569,17 +569,17 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("text")
                         .HasColumnName("required_skills");
 
-                    b.Property<List<string>>("Requirements")
+                    b.Property<string>("Requirements")
                         .IsRequired()
-                        .HasColumnType("text[]")
-                        .HasColumnName("requirements");
+                        .HasColumnType("text")
+                        .HasColumnName("requirementes");
 
                     b.Property<List<DateTime>>("SelectedDays")
                         .IsRequired()
                         .HasColumnType("timestamp with time zone[]")
                         .HasColumnName("selected_days");
 
-                    b.Property<DateTime?>("StartDate")
+                    b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("start_date");
 

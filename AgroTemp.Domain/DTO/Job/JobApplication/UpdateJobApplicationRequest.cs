@@ -21,5 +21,7 @@ namespace AgroTemp.Domain.DTO.Job.JobApplication
         public DateTime RespondedAt { get; set; }
 
         public string? ResponseMessage { get; set; }
+
+        public List<DateTime> WorkDates { get; set; } = new List<DateTime>();
     }
 }

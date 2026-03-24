@@ -6,6 +6,7 @@ using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.DTO.Notification;
+using AgroTemp.Domain.DTO.Rating;
 using AgroTemp.Domain.DTO.Skill;
 using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
@@ -19,13 +20,28 @@ public partial class MapperlyMapper : IMapperlyMapper
 {
     [MapProperty(nameof(User.Role), nameof(UserDTO.Role))]
     public partial UserDTO UserToUserDto(User user);
-    
+
     public partial List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
-    
-    [MapProperty("User.Email", nameof(FarmerProfileDTO.Email))]
-    public partial FarmerProfileDTO FarmerToDto(Farmer farmer);
+
+    public FarmerProfileDTO FarmerToDto(Farmer farmer)
+    {
+        return new FarmerProfileDTO
+        {
+            Id = farmer.Id,
+            UserId = farmer.UserId,
+            ContactName = farmer.ContactName,
+            AverageRating = farmer.AverageRating,
+            TotalJobsPosted = farmer.TotalJobsPosted,
+            TotalJobsCompleted = farmer.TotalJobsCompleted,
+            CreatedAt = farmer.CreatedAt,
+            UpdatedAt = farmer.UpdatedAt,
+            AvatarUrl = farmer.AvatarUrl,
+            User = farmer.User != null ? UserToUserDto(farmer.User) : null
+        };
+    }
 
     //Farm
+    [MapProperty(nameof(Farm.FarmerId), nameof(FarmDTO.FarmerProfileId))]
     public partial FarmDTO FarmToDto(Farm farm);
     public partial List<FarmDTO> FarmsToDto(IEnumerable<Farm> farms);
 
@@ -54,7 +70,7 @@ public partial class MapperlyMapper : IMapperlyMapper
 
     [MapProperty(nameof(User.Role), nameof(LoginResponse.Role))]
     public partial LoginResponse UserToLoginResponse(User user);
-    
+
     // Custom mapping for ExperienceLevel enum to string
     private string MapExperienceLevel(ExperienceLevel level) => level.ToString();
 
@@ -76,7 +92,6 @@ public partial class MapperlyMapper : IMapperlyMapper
     // JobPost
     [MapProperty(nameof(JobPost.FarmerId), nameof(JobPostDTO.FarmerProfileId))]
     [MapProperty(nameof(JobPost.Farmer.ContactName), nameof(JobPostDTO.ContactName))]
-    [MapProperty(nameof(JobPost.StatusId), nameof(JobPostDTO.Status), Use = nameof(MapStatusId))]
     public partial JobPostDTO JobPostToJobPostDto(JobPost jobPost);
     public partial List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
     [MapProperty(nameof(JobSkillRequirement.SkillId), nameof(JobSkillRequirementSummaryDTO.Id))]
@@ -87,11 +102,28 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 
     // JobApplication
-    public partial JobApplicationDTO JobApplicationToJobApplicationDto(JobApplicationEntity jobApplication);
+    public JobApplicationDTO JobApplicationToJobApplicationDto(JobApplicationEntity jobApplication)
+    {
+        var dto = new JobApplicationDTO
+        {
+            Id = jobApplication.Id,
+            JobPostId = jobApplication.JobPostId,
+            JobPost = jobApplication.JobPost != null ? JobPostToJobPostDto(jobApplication.JobPost) : null,
+            Worker = jobApplication.Worker != null ? WorkerToDto(jobApplication.Worker) : null,
+            StatusId = jobApplication.StatusId,
+            CoverLetter = jobApplication.CoverLetter,
+            AppliedAt = jobApplication.AppliedAt,
+            RespondedAt = jobApplication.RespondedAt,
+            ResponseMessage = jobApplication.ResponseMessage,
+            WorkDates = jobApplication.WorkDates,
+            LocationName = jobApplication.JobPost?.Farm?.LocationName
+        };
+        return dto;
+    }
     public partial List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplicationEntity> jobApplications);
     public partial JobApplicationEntity CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
     public partial void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplicationEntity jobApplication);
-    
+
     // Notification
     public partial NotificationDTO NotificationToDto(Notification notification);
     public partial List<NotificationDTO> NotificationsToDto(IEnumerable<Notification> notifications);
@@ -109,6 +141,12 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial List<SkillResponse> SkillsToSkillResponses(IEnumerable<Skill> skills);
     public partial Skill CreateSkillRequestToSkill(CreateSkillRequest request);
     public partial void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
+
+    // Rating
+    public partial RatingDTO RatingToRatingDto(Rating rating);
+    public partial List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings);
+    public partial Rating CreateRatingRequestToRating(CreateRatingRequest request);
+    public partial void UpdateRatingRequestToRating(UpdateRatingRequest request, Rating rating);
 
     // WorkerSession
     [MapProperty(nameof(WorkerSession.JobDetail.JobApplicationId), nameof(WorkerAttendanceDTO.JobApplicationId))]

@@ -6,6 +6,7 @@ using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.DTO.Notification;
+using AgroTemp.Domain.DTO.Rating;
 using AgroTemp.Domain.DTO.Skill;
 using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
@@ -18,7 +19,7 @@ public interface IMapperlyMapper
     // User
     UserDTO UserToUserDto(User user);
     List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
-    
+
     // Farmer
     FarmerProfileDTO FarmerToDto(Farmer farmer);
 
@@ -28,7 +29,7 @@ public interface IMapperlyMapper
 
     // Worker
     WorkerProfileDTO WorkerToDto(Worker worker);
-    
+
     LoginResponse UserToLoginResponse(User user);
     // User RegisterRequestToUser(RegisterRequest resquest);
     // User RequestDTOToUser(UserRequestDTO request);
@@ -53,7 +54,7 @@ public interface IMapperlyMapper
     List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplicationEntity> jobApplications);
     JobApplicationEntity CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
     void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplicationEntity jobApplication);
-    
+
     // JobDetail
     JobDetailDTO JobDetailToJobDetailDto(JobDetail jobDetail);
     List<JobDetailDTO> JobDetailsToJobDetailDtos(IEnumerable<JobDetail> jobDetails);
@@ -71,6 +72,12 @@ public interface IMapperlyMapper
     List<SkillResponse> SkillsToSkillResponses(IEnumerable<Skill> skills);
     Skill CreateSkillRequestToSkill(CreateSkillRequest request);
     void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
+
+    // Rating
+    RatingDTO RatingToRatingDto(Rating rating);
+    List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings);
+    Rating CreateRatingRequestToRating(CreateRatingRequest request);
+    void UpdateRatingRequestToRating(UpdateRatingRequest request, Rating rating);
 
     // WorkerSession
     WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);

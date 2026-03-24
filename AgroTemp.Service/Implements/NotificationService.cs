@@ -92,7 +92,7 @@ public class NotificationService : BaseService<Notification>, INotificationServi
         }
     }
 
-    public async Task MarkAsReadAsync(Guid notificationId)
+    public async Task<NotificationDTO> MarkAsReadAsync(Guid notificationId)
     {
         try
         {
@@ -107,6 +107,8 @@ public class NotificationService : BaseService<Notification>, INotificationServi
 
             _unitOfWork.GetRepository<Notification>().UpdateAsync(notification);
             await _unitOfWork.SaveChangesAsync();
+
+            return _mapper.NotificationToDto(notification);
         }
         catch (Exception ex)
         {
@@ -114,7 +116,7 @@ public class NotificationService : BaseService<Notification>, INotificationServi
         }
     }
 
-    public async Task MarkAllAsReadAsync(Guid userId)
+    public async Task<List<NotificationDTO>> MarkAllAsReadAsync(Guid userId)
     {
         try
         {
@@ -122,7 +124,7 @@ public class NotificationService : BaseService<Notification>, INotificationServi
                 .GetListAsync(predicate: n => n.UserId == userId && !n.IsRead);
 
             if (notifications == null || !notifications.Any())
-                return;
+                return new List<NotificationDTO>();
 
             foreach (var notification in notifications)
             {
@@ -132,6 +134,8 @@ public class NotificationService : BaseService<Notification>, INotificationServi
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            return _mapper.NotificationsToDto(notifications);
         }
         catch (Exception ex)
         {
@@ -192,6 +196,8 @@ public class NotificationService : BaseService<Notification>, INotificationServi
 
                 await _unitOfWork.GetRepository<DeviceToken>().InsertAsync(newToken);
             }
+
+            await _unitOfWork.SaveChangesAsync();
         }
         catch (Exception ex)
         {

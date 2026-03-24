@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260324013414_ReadjustJobPost")]
+    partial class ReadjustJobPost
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -351,11 +354,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("status");
 
-                    b.Property<List<DateTime>>("WorkDates")
-                        .IsRequired()
-                        .HasColumnType("timestamp with time zone[]")
-                        .HasColumnName("work_dates");
-
                     b.Property<Guid>("WorkerId")
                         .HasColumnType("uuid")
                         .HasColumnName("worker_id");
@@ -456,6 +454,7 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("farmer_approved_percent");
 
                     b.Property<string>("FarmerFeedback")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("farmer_feedback");
 
@@ -488,6 +487,7 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("work_date");
 
                     b.Property<string>("WorkerDescription")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("worker_description");
 

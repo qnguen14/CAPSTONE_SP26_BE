@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+using AgroTemp.Domain.Metadata;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AgroTemp.Domain.DTO.Farm
 {
@@ -17,6 +13,12 @@ namespace AgroTemp.Domain.DTO.Farm
 
         [StringLength(256)]
         public string? LocationName { get; set; }
+
+        public FarmType? FarmType { get; set; }
+
+        public int? LivestockCount { get; set; }
+
+        public decimal? AreaSize { get; set; }
 
         public bool? IsPrimary { get; set; }
     }

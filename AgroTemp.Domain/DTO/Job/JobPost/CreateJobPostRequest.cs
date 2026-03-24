@@ -8,24 +8,28 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
 {
     public class CreateJobPostRequest
     {
-    public List<Guid> JobSkillRequirementIds { get; set; } = new();
-    public Guid FarmId { get; set; }
-    public Guid JobCategoryId { get; set; }
-    public string Title { get; set; }
-    public string Description { get; set; }
-    public string Address { get; set; }
-    public DateTime StartDate { get; set; }
-    public DateTime EndDate { get; set; }
-    public decimal EstimatedHours { get; set; }
-    public int WorkersNeeded { get; set; }
-    public int WorkersAccepted { get; set; }
-    public int JobTypeId { get; set; }
-    public decimal WageAmount { get; set; }
-    public string Preferences { get; set; }
-    public DateTime PublishedAt { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public bool IsUrgent { get; set; }
-    public int StatusId { get; set; }
+        public Guid FarmerProfileId { get; set; }
+        public string ContactName { get; set; }
+        public List<JobSkillRequirementSummaryDTO> JobSkillRequirements { get; set; } = new();
+        public Guid FarmId { get; set; }
+        public Guid JobCategoryId { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Address { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public List<DateTime> SelectedDays { get; set; } = new List<DateTime>();
+        public int WorkersNeeded { get; set; }
+        public int WorkersAccepted { get; set; }
+        public int JobTypeId { get; set; }
+        public decimal WageAmount { get; set; }
+        public string RequiredSkills { get; set; }
+        public List<string> Requirements { get; set; } = new List<string>();
+        public List<string> Privileges { get; set; } = new List<string>();
+        public DateTime PublishedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public bool IsUrgent { get; set; }
+        public int StatusId { get; set; }
     }
 }

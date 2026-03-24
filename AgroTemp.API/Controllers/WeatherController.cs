@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AgroTemp.API.Controllers;
 
 [ApiController]
-[Authorize]
+[AllowAnonymous]
 public class WeatherController : Controller
 {
     private readonly IWeatherService _weatherService;

@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Context;
+using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;

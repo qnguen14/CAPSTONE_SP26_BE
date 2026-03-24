@@ -636,11 +636,11 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobApplicationDTO>> RespondJobApplications([FromRoute] string id, [FromBody] RespondJobApplicationRequest request)
+    public async Task<ActionResult<JobApplicationDTO>> RespondJobApplication([FromRoute] string id, [FromBody] RespondJobApplicationRequest request)
     {
         try
         {
-            var response = await _jobApplicationService.RespondJobApplications(id, request);
+            var response = await _jobApplicationService.RespondJobApplication(id, request);
             var apiResponse = new ApiResponse<JobApplicationDTO>
             {
                 StatusCode = StatusCodes.Status200OK,

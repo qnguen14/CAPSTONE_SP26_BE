@@ -1,5 +1,6 @@
 ﻿using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Job.JobApplication;
+using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Interfaces;
@@ -12,14 +13,18 @@ namespace AgroTemp.Service.Implements
 {
     public class JobApplicationService : BaseService<JobApplication>, IJobApplicationService
     {
+        private readonly INotificationService _notificationService;
+
         public JobApplicationService(
             IUnitOfWork<AgroTempDbContext> unitOfWork,
             IHttpContextAccessor httpContextAccessor,
-            IMapperlyMapper mapper) : base(unitOfWork, httpContextAccessor, mapper)
+            IMapperlyMapper mapper,
+            INotificationService notificationService) : base(unitOfWork, httpContextAccessor, mapper)
         {
             _unitOfWork = unitOfWork;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
+            _notificationService = notificationService;
         }
 
         public async Task<List<JobApplicationDTO>> GetAllJobApplications()
@@ -29,7 +34,7 @@ namespace AgroTemp.Service.Implements
                 var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
                     .GetListAsync(
                         predicate: null,
-                        include: ja => ja.Include(j => j.Worker),
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost.Farmer).Include(j => j.JobPost.Farm),
                         orderBy: ja => ja.OrderBy(x => x.AppliedAt));
 
                 if (jobApplications == null || !jobApplications.Any())
@@ -54,7 +59,7 @@ namespace AgroTemp.Service.Implements
                 var jobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == guid,
-                        include: ja => ja.Include(j => j.Worker));
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost.Farmer).Include(j => j.JobPost.Farm));
 
                 if (jobApplication == null)
                 {
@@ -85,7 +90,7 @@ namespace AgroTemp.Service.Implements
 
                 var jobApplication = _mapper.CreateJobApplicationRequestToJobApplication(request);
 
-                // set defaults
+                // Set defaults
                 jobApplication.WorkerId = worker.Id;
                 jobApplication.Id = Guid.NewGuid();
                 jobApplication.AppliedAt = DateTime.UtcNow;
@@ -94,6 +99,27 @@ namespace AgroTemp.Service.Implements
 
                 await _unitOfWork.GetRepository<JobApplication>().InsertAsync(jobApplication);
                 await _unitOfWork.SaveChangesAsync();
+
+                // Get the job post and farmer information
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobApplication.JobPostId,
+                        include: q => q.Include(jp => jp.Farmer));
+
+                if (jobPost != null && jobPost.Farmer != null)
+                {
+                    // Send notification to the farmer
+                    var notificationRequest = new CreateNotificationRequest
+                    {
+                        UserId = jobPost.Farmer.UserId,
+                        Type = NotificationType.JobAcceptance,
+                        Title = "Đơn tuyển dụng mới",
+                        Message = $"Một công nhân đã nộp đơn tuyển dụng cho bài đăng công việc: {jobPost.Title}",
+                        RelatedEntityId = jobApplication.Id
+                    };
+
+                    await _notificationService.CreateAsync(notificationRequest);
+                }
 
                 var result = _mapper.JobApplicationToJobApplicationDto(jobApplication);
                 return result;
@@ -155,7 +181,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<JobApplicationDTO> RespondJobApplications(string id, RespondJobApplicationRequest request)
+        public async Task<JobApplicationDTO> RespondJobApplication(string id, RespondJobApplicationRequest request)
         {
             try
             {
@@ -163,16 +189,50 @@ namespace AgroTemp.Service.Implements
                 var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == guid,
-                        include: ja => ja.Include(j => j.Worker));
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost));
                 if (existingJobApplication == null)
                 {
                     return null;
                 }
+                
                 existingJobApplication.StatusId = request.StatusId;
                 existingJobApplication.RespondedAt = request.RespondedAt;
                 existingJobApplication.ResponseMessage = request.ResponseMessage;
+
+                if (request.StatusId == (int)ApplicationStatus.Accepted)
+                {
+                    existingJobApplication.JobPost.WorkersAccepted += 1;
+
+                    if (existingJobApplication.JobPost.WorkersAccepted == existingJobApplication.JobPost.WorkersNeeded)
+                    {
+                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Closed;
+                    }
+
+                    _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobApplication.JobPost);
+                }
+
                 _unitOfWork.GetRepository<JobApplication>().UpdateAsync(existingJobApplication);
+
+                if (existingJobApplication.Worker != null)
+                {
+                    var statusMessage = request.StatusId == (int)ApplicationStatus.Accepted 
+                        ? "chấp nhận" 
+                        : "từ chối";
+
+                    var notificationRequest = new CreateNotificationRequest
+                    {
+                        UserId = existingJobApplication.Worker.UserId,
+                        Type = NotificationType.JobAcceptance,
+                        Title = $"Đơn tuyển dụng {statusMessage.ToUpper()}",
+                        Message = $"Đơn tuyển dụng của bạn cho \"{existingJobApplication.JobPost.Title}\" đã được {statusMessage}.",
+                        RelatedEntityId = existingJobApplication.JobPostId
+                    };
+
+                    await _notificationService.CreateAsync(notificationRequest);
+                }
+
                 await _unitOfWork.SaveChangesAsync();
+
                 var result = _mapper.JobApplicationToJobApplicationDto(existingJobApplication);
                 return result;
             }
