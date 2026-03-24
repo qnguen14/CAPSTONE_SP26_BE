@@ -18,7 +18,7 @@ namespace AgroTemp.Domain.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("AgroTempV2")
+                .HasDefaultSchema("AgroTempV1")
                 .HasAnnotation("ProductVersion", "8.0.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -46,7 +46,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Blacklisted_Tokens", "AgroTempV2");
+                    b.ToTable("BlacklistedToken", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.ChatMessage", b =>
@@ -87,7 +87,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("SenderId");
 
-                    b.ToTable("Chat_Message", "AgroTempV2");
+                    b.ToTable("Chat_Message", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.DeviceToken", b =>
@@ -132,7 +132,7 @@ namespace AgroTemp.Domain.Migrations
                     b.HasIndex("UserId", "ExpoPushToken")
                         .IsUnique();
 
-                    b.ToTable("Device_Token", "AgroTempV2");
+                    b.ToTable("DeviceToken", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.DisputeReport", b =>
@@ -203,7 +203,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("WorkerId");
 
-                    b.ToTable("Dispute_Reports", "AgroTempV2");
+                    b.ToTable("dispute_reports", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Farm", b =>
@@ -271,7 +271,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("FarmerId");
 
-                    b.ToTable("Farm", "AgroTempV2");
+                    b.ToTable("Farm", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Farmer", b =>
@@ -322,7 +322,7 @@ namespace AgroTemp.Domain.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Farmer", "AgroTempV2");
+                    b.ToTable("Farmer", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobApplication", b =>
@@ -370,7 +370,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("WorkerId");
 
-                    b.ToTable("Job_Application", "AgroTempV2");
+                    b.ToTable("Job_Application", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobAttachment", b =>
@@ -410,7 +410,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("JobDetailId");
 
-                    b.ToTable("job_attachment", "AgroTempV2");
+                    b.ToTable("job_attachment", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobCategory", b =>
@@ -437,7 +437,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Job_Category", "AgroTempV2");
+                    b.ToTable("Job_Category", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobDetail", b =>
@@ -511,7 +511,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("WorkerId");
 
-                    b.ToTable("Job_Detail", "AgroTempV2");
+                    b.ToTable("Job_Detail", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobPost", b =>
@@ -622,7 +622,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("JobCategoryId");
 
-                    b.ToTable("Job_Post", "AgroTempV2");
+                    b.ToTable("Job_Post", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobSkillRequirement", b =>
@@ -654,7 +654,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("SkillId");
 
-                    b.ToTable("Job_Skill_Requirement", "AgroTempV2");
+                    b.ToTable("Job_Skill_Requirement", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Notification", b =>
@@ -703,7 +703,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notification", "AgroTempV2");
+                    b.ToTable("Notification", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSInvoice", b =>
@@ -754,7 +754,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("PayOS_Invoice", "AgroTempV2");
+                    b.ToTable("PayOS_Invoice", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSOrder", b =>
@@ -897,7 +897,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("PaymentLinkId");
 
-                    b.ToTable("PayOS_Order", "AgroTempV2");
+                    b.ToTable("PayOS_Order", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSOrderItem", b =>
@@ -938,7 +938,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("PayOS_Order_Item", "AgroTempV2");
+                    b.ToTable("PayOS_Order_Item", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSTransaction", b =>
@@ -1008,7 +1008,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("PayOS_Transaction", "AgroTempV2");
+                    b.ToTable("PayOS_Transaction", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSWebhookLog", b =>
@@ -1064,7 +1064,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("Reference");
 
-                    b.ToTable("PayOS_Webhook_Log", "AgroTempV2");
+                    b.ToTable("PayOS_Webhook_Log", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Payment", b =>
@@ -1118,7 +1118,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("WalletId");
 
-                    b.ToTable("Payment", "AgroTempV2");
+                    b.ToTable("Payments", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Rating", b =>
@@ -1164,7 +1164,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("RaterId");
 
-                    b.ToTable("Rating", "AgroTempV2");
+                    b.ToTable("Rating", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Skill", b =>
@@ -1195,7 +1195,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Skill", "AgroTempV2");
+                    b.ToTable("Skill", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.User", b =>
@@ -1261,7 +1261,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("User", "AgroTempV2");
+                    b.ToTable("User", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Wallet", b =>
@@ -1300,7 +1300,7 @@ namespace AgroTemp.Domain.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Wallet", "AgroTempV2");
+                    b.ToTable("Wallets", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.WalletTransaction", b =>
@@ -1330,7 +1330,7 @@ namespace AgroTemp.Domain.Migrations
                     b.Property<Guid?>("JobDetailId")
                         .IsRequired()
                         .HasColumnType("uuid")
-                        .HasColumnName("job_detail_id");
+                        .HasColumnName("job_detaid_id");
 
                     b.Property<string>("ReferenceCode")
                         .IsRequired()
@@ -1351,7 +1351,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("WalletId");
 
-                    b.ToTable("Wallet_Transactions", "AgroTempV2");
+                    b.ToTable("WalletTransactions", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.WithdrawalRequest", b =>
@@ -1406,7 +1406,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("WalletId");
 
-                    b.ToTable("Withdrawal_Requests", "AgroTempV2");
+                    b.ToTable("WithdrawalRequests", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Worker", b =>
@@ -1477,7 +1477,7 @@ namespace AgroTemp.Domain.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Worker", "AgroTempV2");
+                    b.ToTable("Worker", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.WorkerSession", b =>
@@ -1542,7 +1542,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("JobDetailId");
 
-                    b.ToTable("Worker_Session", "AgroTempV2");
+                    b.ToTable("Worker_Session", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.WorkerSkill", b =>
@@ -1574,7 +1574,7 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasIndex("WorkerId");
 
-                    b.ToTable("Worker_Skill", "AgroTempV2");
+                    b.ToTable("Worker_Skill", "AgroTempV1");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.ChatMessage", b =>

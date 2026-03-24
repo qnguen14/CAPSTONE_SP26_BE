@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 
 namespace AgroTemp.Domain.Entities
 {
+
+    [Table("Wallet")]
     public class Wallet
     {
         [Key]

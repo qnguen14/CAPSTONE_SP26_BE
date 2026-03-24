@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 
 namespace AgroTemp.Domain.Entities
 {
+
+    [Table("Withdrawal_Requests")]
     public class WithdrawalRequest
     {
         [Key]

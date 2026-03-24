@@ -42,7 +42,7 @@ public class AgroTempDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasDefaultSchema("AgroTempV1");
+        modelBuilder.HasDefaultSchema("AgroTempV2");
         
         // Configure User-Worker one-to-one relationship
         modelBuilder.Entity<User>()

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
 
-[Table("BlacklistedToken")]
+[Table("Blacklisted_Tokens")]
 public class BlacklistedToken
 {
     [Key]

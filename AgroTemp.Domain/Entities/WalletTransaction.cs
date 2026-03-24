@@ -16,6 +16,7 @@ namespace AgroTemp.Domain.Entities
         JOB_PAYMENT = 3,
         REFUND = 4
     }
+    [Table("Wallet_Transactions")]
 
     public class WalletTransaction
     {
@@ -32,7 +33,7 @@ namespace AgroTemp.Domain.Entities
 
         [Required]
         [ForeignKey(nameof (JobDetail))]
-        [Column("job_detaid_id")]
+        [Column("job_detail_id")]
         public Guid? JobDetailId { get; set; }
         public virtual JobDetail JobDetail { get; set; }
 

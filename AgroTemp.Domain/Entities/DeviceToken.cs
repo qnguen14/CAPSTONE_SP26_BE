@@ -8,7 +8,7 @@ public enum DevicePlatform
     Android = 1
 }
 
-[Table("DeviceToken")]
+[Table("Device_Token")]
 public class DeviceToken
 {
     [Key]

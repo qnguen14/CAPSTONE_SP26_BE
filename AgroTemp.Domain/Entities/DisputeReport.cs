@@ -18,7 +18,7 @@ public enum DisputeType
     Other = 3
 }
 
-[Table("dispute_reports")]
+[Table("Dispute_Reports")]
 public class DisputeReport
 {
     [Key]

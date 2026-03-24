@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace AgroTemp.Domain.Entities
 {
+    [Table("Payment")]
     public class Payment
     {
         [Key]
