@@ -80,6 +80,35 @@ public class NotificationController : ControllerBase
         }
     }
 
+    [HttpGet(ApiEndpointConstants.Notification.GetMyActiveTokensEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<string>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<string>>> GetMyActiveTokens()
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var tokens = await _notificationService.GetActiveTokensByUserAsync(userId);
+
+            return Ok(new ApiResponse<IEnumerable<string>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Active device tokens retrieved successfully",
+                Data = tokens
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving active device tokens");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+
     [HttpPatch(ApiEndpointConstants.Notification.MarkAsReadEndpoint)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -223,6 +252,49 @@ public class NotificationController : ControllerBase
             return BadRequest(new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+
+    [HttpPost(ApiEndpointConstants.Notification.SendPushNotificationEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> SendPushNotification([FromBody] SendPushNotificationRequest request)
+    {
+        try
+        {
+            var sent = await _notificationService.SendPushNotificationAsync(
+                request.UserId,
+                request.Title,
+                request.Body,
+                request.Data);
+
+            if (!sent)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Message = "No active token found or push delivery failed",
+                    Data = null
+                });
+            }
+
+            return Ok(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Push notification sent successfully",
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending push notification");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
                 Message = ex.Message,
                 Data = null
             });
