@@ -154,6 +154,9 @@ public class ApiEndpointConstants
         public const string CreateRatingEndpoint = RatingEndpoint;
         public const string UpdateRatingEndpoint = RatingEndpoint + "/{id}";
         public const string DeleteRatingEndpoint = RatingEndpoint + "/{id}";
+
+        public const string GetSpecificRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}";
+        public const string GetAverageRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}/average";
     }
 
     public static class Weather

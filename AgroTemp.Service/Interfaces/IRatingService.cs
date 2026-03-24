@@ -9,5 +9,7 @@ namespace AgroTemp.Service.Interfaces
         Task<RatingDTO> CreateRating(CreateRatingRequest request);
         Task<RatingDTO> UpdateRating(Guid id, UpdateRatingRequest request);
         Task<bool> DeleteRating(Guid id);
+        Task<RatingDTO> GetSpecificRatingByUserId(Guid userId);
+        Task<decimal?> GetAverageRatingByUserId(Guid userId);
     }
 }

@@ -56,12 +56,12 @@ namespace AgroTemp.API.Configuration
             // Custom Services
             services.AddScoped<ICloudinaryService, CloudinaryService>();
             services.AddScoped<IPayOSService, PayOSService>();
-            //services.AddSingleton<PayOSClient>(_ => new PayOSClient(new PayOSOptions
-            //{
-            //    ClientId = configuration["PayOS:ClientId"] ?? string.Empty,
-            //    ApiKey = configuration["PayOS:ApiKey"] ?? string.Empty,
-            //    ChecksumKey = configuration["PayOS:ChecksumKey"] ?? string.Empty
-            //}));
+            services.AddSingleton<PayOSClient>(_ => new PayOSClient(new PayOSOptions
+            {
+                ClientId = configuration["PayOS:ClientId"] ?? string.Empty,
+                ApiKey = configuration["PayOS:ApiKey"] ?? string.Empty,
+                ChecksumKey = configuration["PayOS:ChecksumKey"] ?? string.Empty
+            }));
 
             // Third-Party Services
             RegisterThirdPartyServices(services, configuration);
@@ -77,13 +77,13 @@ namespace AgroTemp.API.Configuration
             });
             CloudinarySetting.Instance = services.BuildServiceProvider().GetService<IOptions<CloudinarySetting>>().Value;
 
-            services.Configure<PayOSSetting>(options =>
-            {
-                options.ClientId = configuration["PayOS:ClientId"];
-                options.ApiKey = configuration["PayOS:ApiKey"];
-                options.ChecksumKey = configuration["PayOS:ChecksumKey"];
-            });
-            PayOSSetting.Instance = services.BuildServiceProvider().GetService<IOptions<PayOSSetting>>().Value;
+            //services.Configure<PayOSSetting>(options =>
+            //{
+            //    options.ClientId = configuration["PayOS:ClientId"];
+            //    options.ApiKey = configuration["PayOS:ApiKey"];
+            //    options.ChecksumKey = configuration["PayOS:ChecksumKey"];
+            //});
+            //PayOSSetting.Instance = services.BuildServiceProvider().GetService<IOptions<PayOSSetting>>().Value;
         }
     }
 }

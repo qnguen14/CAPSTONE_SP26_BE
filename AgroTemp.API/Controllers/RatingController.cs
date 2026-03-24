@@ -195,5 +195,83 @@ namespace AgroTemp.API.Controllers
                 });
             }
         }
+
+        [HttpGet(ApiEndpointConstants.Rating.GetSpecificRatingByUserIdEndpoint)]
+        [ProducesResponseType(typeof(ApiResponse<RatingDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<RatingDTO>> GetSpecificRatingByUserId([FromRoute] Guid id)
+        {
+            try
+            {
+                var response = await _ratingService.GetSpecificRatingByUserId(id);
+                if (response == null)
+                {
+                    return NotFound(new ApiResponse<object>
+                    {
+                        StatusCode = StatusCodes.Status404NotFound,
+                        Message = "Rating not found for the user",
+                        Data = null
+                    });
+                }
+                var apiResponse = new ApiResponse<RatingDTO>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    Message = "Rating retrieved successfully for the user",
+                    Data = response
+                };
+                return Ok(apiResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving rating for the user");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Message = "An error occurred while retrieving the rating for the user",
+                    Data = null
+                });
+            }
+        }
+
+        [HttpGet(ApiEndpointConstants.Rating.GetAverageRatingByUserIdEndpoint)]
+        [ProducesResponseType(typeof(ApiResponse<double>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<decimal?>> GetAverageRatingByUserId([FromRoute] Guid userId)
+        {
+            try
+            {
+                var response = await _ratingService.GetAverageRatingByUserId(userId);
+                if (response == null)
+                {
+                    return NotFound(new ApiResponse<object>
+                    {
+                        StatusCode = StatusCodes.Status404NotFound,
+                        Message = "No ratings found for the user",
+                        Data = null
+                    });
+                }
+                var apiResponse = new ApiResponse<decimal?>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    Message = "Average rating retrieved successfully for the user",
+                    Data = response
+                };
+                return Ok(apiResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving average rating for the user");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Message = "An error occurred while retrieving the average rating for the user",
+                    Data = null
+                });
+            }
+        }
     }
 }

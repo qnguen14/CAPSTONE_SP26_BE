@@ -7,10 +7,6 @@ using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AgroTemp.Service.Implements
 {
@@ -146,6 +142,57 @@ namespace AgroTemp.Service.Implements
                 _unitOfWork.GetRepository<Rating>().DeleteAsync(existingRating);
                 await _unitOfWork.SaveChangesAsync();
                 return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<RatingDTO> GetSpecificRatingByUserId(Guid userId)
+        {
+            try
+            {
+                var rating = await _unitOfWork.GetRepository<Rating>()
+                    .FirstOrDefaultAsync(
+                        predicate: r => r.RateeId == userId,
+                        include: q => q
+                            .Include(r => r.Rater)
+                            .Include(r => r.Ratee)
+                            .Include(r => r.JobPost));
+                if (rating == null)
+                {
+                    return null;
+                }
+                var result = _mapper.RatingToRatingDto(rating);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<decimal?> GetAverageRatingByUserId(Guid userId)
+        {
+            try
+            {
+                var ratings = await _unitOfWork.GetRepository<Rating>()
+                    .GetListAsync(
+                        predicate: r => r.RateeId == userId,
+                        include: q => q
+                            .Include(r => r.Rater)
+                            .Include(r => r.Ratee)
+                            .Include(r => r.JobPost));
+
+                if (ratings == null || !ratings.Any())
+                {
+                    return null;
+                }
+
+                var averageScore = ratings.Average(r => r.RatingScore);
+                
+                return (decimal)averageScore;
             }
             catch (Exception ex)
             {
