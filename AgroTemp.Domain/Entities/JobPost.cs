@@ -7,7 +7,7 @@ public enum JobType
 {
     Daily = 1,
     PerPlot = 2,
-    PerJob = 3
+    PerJob = 3  
 }
 
 public enum JobPostStatus
@@ -63,17 +63,14 @@ public class JobPost
     [Column("address")]
     public string Address { get; set; }
 
-    [Required]
     [Column("start_date")]
     public DateTime StartDate { get; set; }
 
-    [Required]
     [Column("end_date")]
     public DateTime EndDate { get; set; }
 
-    [Required]
-    [Column("estimated_hours")]
-    public decimal EstimatedHours { get; set; }
+    [Column("selected_days")]
+    public List<DateTime> SelectedDays { get; set; } = new List<DateTime>();
 
     [Required]
     [Column("workers_needed")]
@@ -96,8 +93,12 @@ public class JobPost
     public string RequiredSkills { get; set; }
 
     [Required]
-    [Column("preferences")]
-    public string Preferences { get; set; }
+    [Column("requirementes")]
+    public string Requirements { get; set; }
+
+    [Required]
+    [Column("privileges")]
+    public string Privileges { get; set; }
 
     [Required]
     [Column("published_at")]

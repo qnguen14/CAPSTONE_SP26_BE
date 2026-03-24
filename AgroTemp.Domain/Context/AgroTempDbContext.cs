@@ -131,11 +131,7 @@ public class AgroTempDbContext : DbContext
         modelBuilder.Entity<Farm>()
             .Property(f => f.Longitude)
             .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
-
-        modelBuilder.Entity<JobPost>()
-            .Property(jp => jp.EstimatedHours)
-            .HasPrecision(10, 2); // e.g., 12345678.90
-
+            
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.WageAmount)
             .HasPrecision(18, 2); // e.g., currency amounts
