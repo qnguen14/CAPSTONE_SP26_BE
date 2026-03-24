@@ -519,7 +519,7 @@ public class PayOSService : IPayOSService
             Id = Guid.NewGuid(),
             WalletId = wallet.Id,
             JobDetailId = null,
-            Type = "WITHDRAWAL",
+            Type = TransactionType.WITHDRAW,
             Amount = request.Amount,
             BalanceAfter = wallet.Balance,
             ReferenceCode = payout.Id ?? withdrawalId.ToString(),

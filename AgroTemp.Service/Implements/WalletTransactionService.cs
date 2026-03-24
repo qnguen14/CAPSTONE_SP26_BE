@@ -76,7 +76,7 @@ namespace AgroTemp.Service.Implements
                         Id = Guid.NewGuid(),
                         WalletId = workerWallet.Id,
                         JobDetailId = jobDetail.Id,
-                        Type = WalletTransactionType.JobPayment.ToString(),
+                        Type = TransactionType.JOB_PAYMENT,
                         Amount = workerPaymentAmount,
                         BalanceAfter = workerWallet.Balance,
                         ReferenceCode = $"JOB-{jobDetail.Id:N}-PAY",
@@ -97,7 +97,7 @@ namespace AgroTemp.Service.Implements
                         Id = Guid.NewGuid(),
                         WalletId = farmerWallet.Id,
                         JobDetailId = jobDetail.Id,
-                        Type = WalletTransactionType.Refund.ToString(),
+                        Type = TransactionType.REFUND,
                         Amount = refundAmount,
                         BalanceAfter = farmerWallet.Balance,
                         ReferenceCode = $"JOB-{jobDetail.Id:N}-REFUND",
@@ -116,7 +116,7 @@ namespace AgroTemp.Service.Implements
                     await CreditLegacyWalletAsync(
                         userId: worker.UserId,
                         amount: workerPaymentAmount,
-                        type: WalletTransactionType.JobPayment,
+                        type: TransactionType.JOB_PAYMENT,
                         referenceId: $"JOB-{jobDetail.Id:N}-PAY",
                         description: $"Worker payment for job detail {jobDetail.Id}");
                 }
@@ -126,7 +126,7 @@ namespace AgroTemp.Service.Implements
                     await CreditLegacyWalletAsync(
                         userId: farmer.UserId,
                         amount: refundAmount,
-                        type: WalletTransactionType.Refund,
+                        type: TransactionType.REFUND,
                         referenceId: $"JOB-{jobDetail.Id:N}-REFUND",
                         description: $"Refund for job detail {jobDetail.Id}");
                 }
@@ -146,7 +146,7 @@ namespace AgroTemp.Service.Implements
         private async Task CreditLegacyWalletAsync(
             Guid userId,
             decimal amount,
-            WalletTransactionType type,
+            TransactionType type,
             string referenceId,
             string description)
         {
