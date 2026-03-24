@@ -115,9 +115,11 @@ public class ApiEndpointConstants
         public const string NotificationEndpoint = ApiEndpoint + "/notification";
         public const string GetNotificationsEndpoint = NotificationEndpoint;
         public const string GetUnreadNotificationsEndpoint = NotificationEndpoint + "/unread";
+        public const string GetMyActiveTokensEndpoint = NotificationEndpoint + "/tokens";
         public const string MarkAsReadEndpoint = NotificationEndpoint + "/read";
         public const string MarkAllAsReadEndpoint = NotificationEndpoint + "/read-all";
         public const string DeleteNotificationEndpoint = NotificationEndpoint + "/{id}";
+        public const string SendPushNotificationEndpoint = NotificationEndpoint + "/send-push";
 
         public const string RegisterTokenEndpoint = NotificationEndpoint + "/register-token";
         public const string UnregisterTokenEndpoint = NotificationEndpoint + "/unregister-token";
