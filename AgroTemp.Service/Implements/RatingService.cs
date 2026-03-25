@@ -173,6 +173,30 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<List<RatingDTO>> GetAllRatingsByUserId(Guid userId)
+        {
+            try
+            {
+                var ratings = await _unitOfWork.GetRepository<Rating>()
+                    .GetListAsync(
+                        predicate: r => r.RateeId == userId,
+                        include: q => q
+                            .Include(r => r.Rater)
+                            .Include(r => r.Ratee)
+                            .Include(r => r.JobPost));
+                if (ratings == null || !ratings.Any())
+                {
+                    return null;
+                }
+                var result = _mapper.RatingsToRatingDtos(ratings);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<decimal?> GetAverageRatingByUserId(Guid userId)
         {
             try

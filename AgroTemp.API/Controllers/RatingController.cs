@@ -235,6 +235,45 @@ namespace AgroTemp.API.Controllers
             }
         }
 
+        [HttpGet(ApiEndpointConstants.Rating.GetAllRatingsByUserIdEndpoint)]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<RatingDTO>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<RatingDTO>>> GetAllRatingsByUserId([FromRoute] Guid userId)
+        {
+            try
+            {
+                var response = await _ratingService.GetAllRatingsByUserId(userId);
+                if (response == null || !response.Any())
+                {
+                    return NotFound(new ApiResponse<object>
+                    {
+                        StatusCode = StatusCodes.Status404NotFound,
+                        Message = "No ratings found for the user",
+                        Data = null
+                    });
+                }
+                var apiResponse = new ApiResponse<IEnumerable<RatingDTO>>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    Message = "Ratings retrieved successfully for the user",
+                    Data = response
+                };
+                return Ok(apiResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving ratings for the user");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Message = "An error occurred while retrieving ratings for the user",
+                    Data = null
+                });
+            }
+        }
+
         [HttpGet(ApiEndpointConstants.Rating.GetAverageRatingByUserIdEndpoint)]
         [ProducesResponseType(typeof(ApiResponse<double>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
