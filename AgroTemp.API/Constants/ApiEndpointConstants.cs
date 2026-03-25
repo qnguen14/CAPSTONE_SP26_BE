@@ -173,10 +173,13 @@ public class ApiEndpointConstants
     {
         public const string DisputeEndpoint = ApiEndpoint + "/disputes";
         public const string GetAllDisputesEndpoint = DisputeEndpoint;
-        public const string GetDisputeByIdEndpoint = DisputeEndpoint + "/{id}";
+        public const string GetMyDisputesEndpoint = DisputeEndpoint + "/mine";
+        public const string GetDisputeByIdEndpoint = DisputeEndpoint + "/{id:guid}";
         public const string CreateDisputeEndpoint = DisputeEndpoint;
-        public const string UpdateDisputeEndpoint = DisputeEndpoint + "/{id}";
-        public const string DeleteDisputeEndpoint = DisputeEndpoint + "/{id}";
+        public const string UpdateDisputeEndpoint = DisputeEndpoint + "/{id:guid}";
+        public const string DeleteDisputeEndpoint = DisputeEndpoint + "/{id:guid}";
+        public const string ReviewDisputeEndpoint = DisputeEndpoint + "/{id:guid}/review";
+        public const string ResolveDisputeEndpoint = DisputeEndpoint + "/{id:guid}/resolve";
     }
 
     public static class Weather
