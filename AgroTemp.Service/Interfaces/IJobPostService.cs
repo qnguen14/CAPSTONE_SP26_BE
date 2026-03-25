@@ -17,7 +17,18 @@ namespace AgroTemp.Service.Interfaces
         Task<JobPostDTO> UpdateJobPostUrgency(string id, bool isUrgent);
         Task<JobPostDTO> UpdateJobPostStatus(string id, string status);
         Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, string? skill);
+
+
         Task<JobPostDTO> SaveJobPostDraft(CreateJobPostRequest request);
         Task<List<JobPostDTO>> GetFarmerDrafts();
+
+
+        Task<PaginatedJobDiscoveryResponse> SearchJobsAsync(JobSearchFilterRequest filter);
+        Task<List<JobDiscoveryDTO>> GetNearbyJobsAsync(decimal latitude, decimal longitude, double maxDistanceKm = 20);
+        Task<List<JobDiscoveryDTO>> GetJobsByDateAsync(string dateFilter);
+        Task<List<JobDiscoveryDTO>> GetJobsBySkillAsync(List<string> skills);
+        Task<List<JobDiscoveryDTO>> GetJobsByWageRangeAsync(decimal minWage, decimal? maxWage = null);
+        Task<List<JobDiscoveryDTO>> GetJobsByTypeAsync(int jobTypeId);
+        Task<List<JobDiscoveryDTO>> GetUrgentJobsAsync(decimal latitude, decimal longitude, double maxDistanceKm = 20);
     }
 }

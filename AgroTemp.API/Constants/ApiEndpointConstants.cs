@@ -97,6 +97,14 @@ public class ApiEndpointConstants
 
         public const string SaveJobPostDraftEndpoint = JobPostEndpoint + "/draft";
         public const string GetFarmerDraftsEndpoint = JobPostEndpoint + "/drafts";
+
+        public const string SearchJobsEndpoint = JobPostEndpoint + "/search";
+        public const string GetNearbyJobsEndpoint = JobPostEndpoint + "/nearby";
+        public const string GetJobsByDateEndpoint = JobPostEndpoint + "/by-date";
+        public const string GetJobsBySkillEndpoint = JobPostEndpoint + "/by-skill";
+        public const string GetJobsByWageRangeEndpoint = JobPostEndpoint + "/by-wage";
+        public const string GetJobsByTypeEndpoint = JobPostEndpoint + "/by-type";
+        public const string GetUrgentJobsEndpoint = JobPostEndpoint + "/urgent";
     }
 
     public static class WorkerAttendance

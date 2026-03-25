@@ -95,6 +95,77 @@ public partial class MapperlyMapper : IMapperlyMapper
     [MapProperty(nameof(JobPost.Farmer.ContactName), nameof(JobPostDTO.ContactName))]
     public partial JobPostDTO JobPostToJobPostDto(JobPost jobPost);
     public partial List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
+
+    // JobDiscovery
+    public JobDiscoveryDTO JobPostToJobDiscoveryDto(JobPost jobPost)
+    {
+        if (jobPost == null) return null;
+
+        var jobTypeName = jobPost.JobTypeId switch
+        {
+            1 => "Daily",
+            2 => "PerPlot",
+            3 => "PerJob",
+            _ => "Unknown"
+        };
+
+        var startDate = jobPost.StartDate ?? (jobPost.SelectedDays?.FirstOrDefault());
+        var endDate = jobPost.EndDate ?? (jobPost.SelectedDays?.LastOrDefault());
+        int? durationDays = null;
+        if (startDate.HasValue && endDate.HasValue)
+        {
+            durationDays = (int)(endDate.Value.Date - startDate.Value.Date).TotalDays + 1;
+        }
+
+        var isUpcoming = startDate.HasValue && startDate.Value > DateTime.UtcNow && 
+                        startDate.Value <= DateTime.UtcNow.AddDays(7);
+
+        return new JobDiscoveryDTO
+        {
+            Id = jobPost.Id,
+            FarmerProfileId = jobPost.FarmerId,
+            ContactName = jobPost.Farmer?.ContactName,
+            FarmId = jobPost.FarmId,
+            JobCategoryId = jobPost.JobCategoryId,
+            Title = jobPost.Title,
+            Description = jobPost.Description,
+            Address = jobPost.Address,
+            StartDate = jobPost.StartDate,
+            EndDate = jobPost.EndDate,
+            SelectedDays = jobPost.SelectedDays,
+            WorkersNeeded = jobPost.WorkersNeeded,
+            WorkersAccepted = jobPost.WorkersAccepted,
+            JobTypeId = jobPost.JobTypeId,
+            JobTypeName = jobTypeName,
+            WageAmount = jobPost.WageAmount,
+            RequiredSkills = jobPost.RequiredSkills,
+            Requirements = jobPost.Requirements,
+            Privileges = jobPost.Privileges,
+            PublishedAt = jobPost.PublishedAt,
+            IsUrgent = jobPost.IsUrgent,
+            StatusId = jobPost.StatusId,
+            FarmerAverageRating = jobPost.Farmer?.AverageRating ?? 0,
+            LocationName = jobPost.Farm?.LocationName,
+            SkillsMatchCount = jobPost.JobSkillRequirements?.Count ?? 0,
+            AllSkillsMatched = false,
+            DurationDays = durationDays,
+            IsUpcoming = isUpcoming,
+            MatchScore = 50, // Default neutral score
+            SimilarJobsCompleted = 0,
+            JobSkillRequirements = jobPost.JobSkillRequirements?.Select(jsr => new JobSkillRequirementSummaryDTO
+            {
+                Id = jsr.SkillId,
+                Name = jsr.Skill?.Name
+            }).ToList() ?? new List<JobSkillRequirementSummaryDTO>()
+        };
+    }
+
+    public List<JobDiscoveryDTO> JobPostsToJobDiscoveryDtos(IEnumerable<JobPost> jobPosts)
+    {
+        return jobPosts?.Select(JobPostToJobDiscoveryDto).ToList() ?? new List<JobDiscoveryDTO>();
+    }
+
+    // JobSkillRequirement
     [MapProperty(nameof(JobSkillRequirement.SkillId), nameof(JobSkillRequirementSummaryDTO.Id))]
     [MapProperty("Skill.Name", nameof(JobSkillRequirementSummaryDTO.Name))]
     public partial JobSkillRequirementSummaryDTO JobSkillRequirementToSummaryDto(JobSkillRequirement jobSkillRequirement);
