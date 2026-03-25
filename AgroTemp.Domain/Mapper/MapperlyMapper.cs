@@ -114,11 +114,11 @@ public partial class MapperlyMapper : IMapperlyMapper
         int? durationDays = null;
         if (startDate.HasValue && endDate.HasValue)
         {
-            durationDays = (int)(endDate.Value.Date - startDate.Value.Date).TotalDays + 1;
+            durationDays = endDate.Value.DayNumber - startDate.Value.DayNumber + 1;
         }
 
-        var isUpcoming = startDate.HasValue && startDate.Value > DateTime.UtcNow && 
-                        startDate.Value <= DateTime.UtcNow.AddDays(7);
+        var isUpcoming = startDate.HasValue && startDate.Value.ToDateTime(TimeOnly.MinValue) > DateTime.UtcNow && 
+                        startDate.Value.ToDateTime(TimeOnly.MinValue) <= DateTime.UtcNow.AddDays(7);
 
         return new JobDiscoveryDTO
         {
@@ -133,6 +133,8 @@ public partial class MapperlyMapper : IMapperlyMapper
             StartDate = jobPost.StartDate,
             EndDate = jobPost.EndDate,
             SelectedDays = jobPost.SelectedDays,
+            StartTime = jobPost.StartTime,
+            EndTime = jobPost.EndTime,
             WorkersNeeded = jobPost.WorkersNeeded,
             WorkersAccepted = jobPost.WorkersAccepted,
             JobTypeId = jobPost.JobTypeId,

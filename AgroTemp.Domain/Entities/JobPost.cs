@@ -5,8 +5,8 @@ namespace AgroTemp.Domain.Entities;
 
 public enum JobType
 {
-    Daily = 1,
-    PerJob = 2 
+    PerJob = 1,
+    Daily = 2
 }
 
 public enum JobPostStatus
@@ -59,13 +59,19 @@ public class JobPost
     public string Address { get; set; }
 
     [Column("start_date")]
-    public DateTime? StartDate { get; set; }
+    public DateOnly? StartDate { get; set; }
 
     [Column("end_date")]
-    public DateTime? EndDate { get; set; }
+    public DateOnly? EndDate { get; set; }
 
     [Column("selected_days")]
-    public List<DateTime> SelectedDays { get; set; } = new List<DateTime>();
+    public List<DateOnly> SelectedDays { get; set; } = new List<DateOnly>();
+
+    [Column("start_time")]
+    public TimeOnly StartTime { get; set; }
+    
+    [Column("end_time")]
+    public TimeOnly EndTime { get; set; }
 
     [Column("workers_needed")]
     public int WorkersNeeded { get; set; }

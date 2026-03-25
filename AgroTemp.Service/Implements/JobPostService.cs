@@ -139,10 +139,8 @@ namespace AgroTemp.Service.Implements
                     }).ToList();
 
                     await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
+                    await _unitOfWork.SaveChangesAsync();
                 }
-
-                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
-                await _unitOfWork.SaveChangesAsync();
 
                 var createdJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
@@ -582,18 +580,18 @@ namespace AgroTemp.Service.Implements
             try
             {
                 var now = DateTime.UtcNow;
-                DateTime? dateStart = null;
-                DateTime? dateEnd = null;
+                DateOnly? dateStart = null;
+                DateOnly? dateEnd = null;
 
                 switch (dateFilter?.ToLower())
                 {
                     case "today" or "hôm nay":
-                        dateStart = now.Date;
-                        dateEnd = now.Date.AddDays(1).AddTicks(-1);
+                        dateStart = DateOnly.FromDateTime(now.Date);
+                        dateEnd = DateOnly.FromDateTime(now.Date);
                         break;
                     case "tomorrow" or "ngày mai":
-                        dateStart = now.Date.AddDays(1);
-                        dateEnd = now.Date.AddDays(2).AddTicks(-1);
+                        dateStart = DateOnly.FromDateTime(now.Date.AddDays(1));
+                        dateEnd = DateOnly.FromDateTime(now.Date.AddDays(1));
                         break;
                     case "weekend" or "cuối tuần":
                         // Friday evening to Sunday night
@@ -601,16 +599,16 @@ namespace AgroTemp.Service.Implements
                         var daysUntilFriday = (5 - dayOfWeek + 7) % 7;
                         if (daysUntilFriday == 0 && now.Hour >= 18) daysUntilFriday = 7;
                         
-                        dateStart = now.Date.AddDays(daysUntilFriday);
-                        dateEnd = now.Date.AddDays(daysUntilFriday + 3).AddTicks(-1);
+                        dateStart = DateOnly.FromDateTime(now.Date.AddDays(daysUntilFriday));
+                        dateEnd = DateOnly.FromDateTime(now.Date.AddDays(daysUntilFriday + 2));
                         break;
                     case "upcoming" or "sắp tới":
-                        dateStart = now.Date;
-                        dateEnd = now.Date.AddDays(30).AddTicks(-1);
+                        dateStart = DateOnly.FromDateTime(now.Date);
+                        dateEnd = DateOnly.FromDateTime(now.Date.AddDays(30));
                         break;
                     default:
-                        dateStart = now.Date;
-                        dateEnd = now.Date.AddDays(7).AddTicks(-1);
+                        dateStart = DateOnly.FromDateTime(now.Date);
+                        dateEnd = DateOnly.FromDateTime(now.Date.AddDays(7));
                         break;
                 }
 

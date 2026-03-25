@@ -89,20 +89,20 @@ namespace AgroTemp.Service.Helpers
                 if (dateStart.HasValue && dateEnd.HasValue)
                 {
                     filtered = filtered.Where(jp =>
-                        (jp.StartDate >= dateStart && jp.StartDate <= dateEnd) ||
-                        (jp.SelectedDays.Any(d => d >= dateStart && d <= dateEnd))).ToList();
+                        (jp.StartDate?.ToDateTime(TimeOnly.MinValue) >= dateStart && jp.StartDate?.ToDateTime(TimeOnly.MinValue) <= dateEnd) ||
+                        (jp.SelectedDays.Any(d => d.ToDateTime(TimeOnly.MinValue) >= dateStart && d.ToDateTime(TimeOnly.MinValue) <= dateEnd))).ToList();
                 }
             }
 
             // Filter by custom date range
             if (filter.StartDateFrom.HasValue)
             {
-                filtered = filtered.Where(jp => jp.StartDate >= filter.StartDateFrom.Value).ToList();
+                filtered = filtered.Where(jp => jp.StartDate?.ToDateTime(TimeOnly.MinValue) >= filter.StartDateFrom.Value).ToList();
             }
 
             if (filter.StartDateTo.HasValue)
             {
-                filtered = filtered.Where(jp => jp.StartDate <= filter.StartDateTo.Value).ToList();
+                filtered = filtered.Where(jp => jp.StartDate?.ToDateTime(TimeOnly.MinValue) <= filter.StartDateTo.Value).ToList();
             }
 
             // Filter by duration
@@ -112,13 +112,13 @@ namespace AgroTemp.Service.Helpers
                 {
                     // Single day jobs
                     filtered = filtered.Where(jp => jp.StartDate.HasValue && jp.EndDate.HasValue &&
-                        jp.EndDate.Value.Date == jp.StartDate.Value.Date).ToList();
+                        jp.EndDate.Value.DayNumber == jp.StartDate.Value.DayNumber).ToList();
                 }
                 else if (filter.DurationType.ToLower() == "days")
                 {
                     // Multi-day jobs
                     filtered = filtered.Where(jp => jp.StartDate.HasValue && jp.EndDate.HasValue &&
-                        jp.EndDate.Value.Date > jp.StartDate.Value.Date).ToList();
+                        jp.EndDate.Value.DayNumber > jp.StartDate.Value.DayNumber).ToList();
                 }
             }
 

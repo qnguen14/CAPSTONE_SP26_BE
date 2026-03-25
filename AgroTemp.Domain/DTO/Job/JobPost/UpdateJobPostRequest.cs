@@ -16,9 +16,11 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public string Title { get; set; }
         public string Description { get; set; }
         public string Address { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-        public List<DateTime> SelectedDays { get; set; } = new List<DateTime>();
+        public DateOnly? StartDate { get; set; }
+        public DateOnly? EndDate { get; set; }
+        public List<DateOnly> SelectedDays { get; set; } = new List<DateOnly>();
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
         public int WorkersNeeded { get; set; }
         public int WorkersAccepted { get; set; }
         public int JobTypeId { get; set; }
