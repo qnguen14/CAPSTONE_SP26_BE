@@ -1,4 +1,5 @@
 using AgroTemp.API.Configuration;
+using AgroTemp.API.Hubs;
 using AgroTemp.API.Middleware;
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.Mapper;
@@ -31,6 +32,7 @@ builder.Configuration
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSignalR();
 builder.Services.AddServices(builder.Configuration);
 builder.Services.AddCorsConfiguration();
 builder.Services.AddSwaggerConfiguration();
@@ -87,6 +89,7 @@ app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();
 app.UseMiddleware<TokenBlacklistMiddleware>();
 
+app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization();
 app.MapControllers();
 
 app.Run();
