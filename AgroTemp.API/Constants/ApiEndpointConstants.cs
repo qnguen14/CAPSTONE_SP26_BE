@@ -138,6 +138,17 @@ public class ApiEndpointConstants
         public const string UnregisterTokenEndpoint = NotificationEndpoint + "/unregister-token";
     }
 
+    public static class Messages
+    {
+        public const string MessagesEndpoint = ApiEndpoint + "/messages";
+
+        public const string GetMessagesEndpoint = MessagesEndpoint;
+        public const string SendMessageEndpoint = MessagesEndpoint;
+
+        // Optional read-receipt endpoint (used later)
+        public const string MarkConversationAsReadEndpoint = MessagesEndpoint + "/read";
+    }
+
     public static class Payment
     {
         public const string PaymentEndpoint = ApiEndpoint + "/payment";
