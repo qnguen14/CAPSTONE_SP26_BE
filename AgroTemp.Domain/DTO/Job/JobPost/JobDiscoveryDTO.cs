@@ -22,7 +22,6 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public int JobTypeId { get; set; }
         public string JobTypeName { get; set; } // "Daily", "PerPlot", "PerJob"
         public decimal WageAmount { get; set; }
-        public string RequiredSkills { get; set; }
         public List<string> Requirements { get; set; } = new List<string>();
         public List<string> Privileges { get; set; } = new List<string>();
         public DateTime PublishedAt { get; set; }

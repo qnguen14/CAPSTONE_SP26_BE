@@ -268,11 +268,9 @@ public class FarmService : BaseService<Farm>, IFarmService
             }
 
             var farm = await _unitOfWork.GetRepository<Farm>()
-                .FirstOrDefaultAsync(
-                    predicate: f => f.Id == farmId,
-                    include: null);
+                .FirstOrDefaultAsync(predicate: f => f.Id == farmId);
 
-            if (farm == null)
+            if (farm is null)
             {
                 throw new Exception("Farm not found");
             }
@@ -284,12 +282,12 @@ public class FarmService : BaseService<Farm>, IFarmService
 
             var imageUrl = await _cloudinaryService.UploadImageAsync(file);
 
-            if (!string.IsNullOrEmpty(farm.ImageUrl))
+            if (farm.ImageUrl != null && farm.ImageUrl.Count > 0)
             {
-                try { await _cloudinaryService.DeleteAsync(farm.ImageUrl); } catch { }
+                try { await _cloudinaryService.DeleteAsync(farm.ImageUrl[0]); } catch { }
             }
 
-            farm.ImageUrl = imageUrl;
+            farm.ImageUrl = new List<string> { imageUrl };
             farm.UpdatedAt = DateTime.UtcNow;
 
             _unitOfWork.GetRepository<Farm>().UpdateAsync(farm);

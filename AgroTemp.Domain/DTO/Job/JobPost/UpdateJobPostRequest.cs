@@ -10,7 +10,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
     {
         public Guid FarmerProfileId { get; set; }
         public string ContactName { get; set; }
-        public List<JobSkillRequirementSummaryDTO> JobSkillRequirements { get; set; } = new();
+        public List<Guid> SkillIds { get; set; } = new();
         public Guid FarmId { get; set; }
         public Guid JobCategoryId { get; set; }
         public string Title { get; set; }
@@ -23,7 +23,6 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public int WorkersAccepted { get; set; }
         public int JobTypeId { get; set; }
         public decimal WageAmount { get; set; }
-        public string RequiredSkills { get; set; }
         public List<string> Requirements { get; set; } = new List<string>();
         public List<string> Privileges { get; set; } = new List<string>();
         public DateTime PublishedAt { get; set; }

@@ -138,7 +138,6 @@ public partial class MapperlyMapper : IMapperlyMapper
             JobTypeId = jobPost.JobTypeId,
             JobTypeName = jobTypeName,
             WageAmount = jobPost.WageAmount,
-            RequiredSkills = jobPost.RequiredSkills,
             Requirements = jobPost.Requirements,
             Privileges = jobPost.Privileges,
             PublishedAt = jobPost.PublishedAt,

@@ -14,8 +14,7 @@ namespace AgroTemp.Domain.DTO.Farm
         [StringLength(256)]
         public string? LocationName { get; set; }
 
-        [StringLength(1024)]
-        public string? ImageUrl { get; set; }
+        public List<string>? ImageUrl { get; set; }
 
         public FarmType? FarmType { get; set; }
 

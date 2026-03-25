@@ -98,22 +98,20 @@ namespace AgroTemp.Service.Implements
                     throw new UnauthorizedAccessException("Only farmers can create job posts.");
                 }
 
-                var requestedSkillNames = request.JobSkillRequirements?
-                    .Select(jsr => jsr.Name)
-                    .Where(name => !string.IsNullOrEmpty(name))
+                var requestedSkillIds = request.SkillIds?
                     .Distinct()
-                    .ToList() ?? new List<string>();
+                    .ToList() ?? new List<Guid>();
 
-                var skills = requestedSkillNames.Any()
+                var skills = requestedSkillIds.Any()
                     ? await _unitOfWork.GetRepository<Skill>()
-                        .GetListAsync(predicate: s => requestedSkillNames.Contains(s.Name))
+                        .GetListAsync(predicate: s => requestedSkillIds.Contains(s.Id))
                     : new List<Skill>();
 
-                if (skills.Count != requestedSkillNames.Count)
+                if (skills.Count != requestedSkillIds.Count)
                 {
-                    var foundSkillNames = skills.Select(s => s.Name).ToHashSet();
-                    var invalidSkillNames = requestedSkillNames.Where(name => !foundSkillNames.Contains(name));
-                    throw new ArgumentException($"Invalid skill name(s): {string.Join(", ", invalidSkillNames)}");
+                    var foundSkillIds = skills.Select(s => s.Id).ToHashSet();
+                    var invalidSkillIds = requestedSkillIds.Where(id => !foundSkillIds.Contains(id));
+                    throw new ArgumentException($"Invalid skill ID(s): {string.Join(", ", invalidSkillIds)}");
                 }
 
                 var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
@@ -122,11 +120,6 @@ namespace AgroTemp.Service.Implements
                     jobPost.Id = Guid.NewGuid();
                 }
                 jobPost.FarmerId = farmer.Id;
-
-                if (skills.Any())
-                {
-                    jobPost.RequiredSkills = string.Join(", ", skills.Select(skill => skill.Name));
-                }
 
                 await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
                 await _unitOfWork.SaveChangesAsync();
@@ -169,17 +162,65 @@ namespace AgroTemp.Service.Implements
             {
                 var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
-                        predicate: jp => jp.Id == id);
+                        predicate: jp => jp.Id == id,
+                        include: q => q.Include(jp => jp.JobSkillRequirements).ThenInclude(jsr => jsr.Skill));
 
                 if (existingJobPost == null)
                 {
                     return null;
                 }
 
+                if (request.SkillIds != null)
+                {
+                    var requestedSkillIds = request.SkillIds.Distinct().ToList();
+                    var existingSkillIds = existingJobPost.JobSkillRequirements.Select(jsr => jsr.SkillId).ToList();
+
+                    var skillsToAdd = requestedSkillIds.Except(existingSkillIds).ToList();
+                    var skillsToRemove = existingSkillIds.Except(requestedSkillIds).ToList();
+
+                    if (skillsToAdd.Any())
+                    {
+                        var validSkills = await _unitOfWork.GetRepository<Skill>()
+                            .GetListAsync(predicate: s => skillsToAdd.Contains(s.Id));
+
+                        if (validSkills.Count != skillsToAdd.Count)
+                        {
+                            var foundSkillIds = validSkills.Select(s => s.Id).ToHashSet();
+                            var invalidSkillIds = skillsToAdd.Where(sid => !foundSkillIds.Contains(sid));
+                            throw new ArgumentException($"Invalid skill ID(s): {string.Join(", ", invalidSkillIds)}");
+                        }
+
+                        var newJobSkillRequirements = skillsToAdd.Select(skillId => new JobSkillRequirement
+                        {
+                            Id = Guid.NewGuid(),
+                            JobPostId = existingJobPost.Id,
+                            SkillId = skillId,
+                            RequiredLevelId = (int)ProficiencyLevel.Beginner,
+                            IsMandatory = true
+                        }).ToList();
+                        
+                        await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(newJobSkillRequirements);
+                    }
+
+                    if (skillsToRemove.Any())
+                    {
+                        var requirementsToRemove = existingJobPost.JobSkillRequirements
+                            .Where(jsr => skillsToRemove.Contains(jsr.SkillId))
+                            .ToList();
+                        _unitOfWork.GetRepository<JobSkillRequirement>().DeleteRangeAsync(requirementsToRemove);
+                    }
+                }
+
                 _mapper.UpdateJobPostRequestToJobPost(request, existingJobPost);
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
                 await _unitOfWork.SaveChangesAsync();
-                var result = _mapper.JobPostToJobPostDto(existingJobPost);
+                
+                var updatedJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == id,
+                        include: q => q.Include(jp => jp.JobSkillRequirements).ThenInclude(jsr => jsr.Skill));
+                
+                var result = _mapper.JobPostToJobPostDto(updatedJobPost ?? existingJobPost);
 
                 return result;
             }
@@ -279,7 +320,7 @@ namespace AgroTemp.Service.Implements
                             (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
                             (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&
                             (string.IsNullOrEmpty(address) || jp.Address.Contains(address)) &&
-                            (string.IsNullOrEmpty(skill) || jp.RequiredSkills.Contains(skill)),
+                            (string.IsNullOrEmpty(skill) || jp.JobSkillRequirements.Any(jsr => jsr.Skill.Name == skill)),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
@@ -330,20 +371,18 @@ namespace AgroTemp.Service.Implements
                 await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
                 await _unitOfWork.SaveChangesAsync();
 
-                if (request.JobSkillRequirements?.Any() == true)
+                if (request.SkillIds?.Any() == true)
                 {
-                    var requestedSkillNames = request.JobSkillRequirements
-                        .Select(jsr => jsr.Name)
-                        .Where(name => !string.IsNullOrEmpty(name))
+                    var requestedSkillIds = request.SkillIds
                         .Distinct()
                         .ToList();
 
-                    var skills = requestedSkillNames.Any()
+                    var skills = requestedSkillIds.Any()
                         ? await _unitOfWork.GetRepository<Skill>()
-                            .GetListAsync(predicate: s => requestedSkillNames.Contains(s.Name))
+                            .GetListAsync(predicate: s => requestedSkillIds.Contains(s.Id))
                         : new List<Skill>();
 
-                    if (skills.Count == requestedSkillNames.Count)
+                    if (skills.Count == requestedSkillIds.Count)
                     {
                         var jobSkillRequirements = skills.Select(skill => new JobSkillRequirement
                         {
@@ -357,7 +396,6 @@ namespace AgroTemp.Service.Implements
                         await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
                         await _unitOfWork.SaveChangesAsync();
                         
-                        jobPost.RequiredSkills = string.Join(", ", skills.Select(skill => skill.Name));
                         _unitOfWork.GetRepository<JobPost>().UpdateAsync(jobPost);
                         await _unitOfWork.SaveChangesAsync();
                     }
@@ -605,7 +643,7 @@ namespace AgroTemp.Service.Implements
                 var jobs = await _unitOfWork.GetRepository<JobPost>()
                     .GetListAsync(
                         predicate: jp => jp.StatusId == (int)JobPostStatus.Published &&
-                                       skills.Any(s => jp.RequiredSkills.Contains(s)),
+                                       jp.JobSkillRequirements.Any(jsr => skills.Contains(jsr.Skill.Name)),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.Farm)

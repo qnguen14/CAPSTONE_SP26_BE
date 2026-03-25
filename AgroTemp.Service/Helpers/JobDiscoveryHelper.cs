@@ -53,14 +53,14 @@ namespace AgroTemp.Service.Helpers
                 filtered = filtered.Where(jp =>
                     jp.Title.ToLower().Contains(keyword) ||
                     jp.Description.ToLower().Contains(keyword) ||
-                    jp.RequiredSkills.ToLower().Contains(keyword)).ToList();
+                    jp.JobSkillRequirements.Any(jsr => jsr.Skill.Name.ToLower().Contains(keyword))).ToList();
             }
 
             // Filter by skills
             if (filter.RequiredSkills?.Any() == true)
             {
                 filtered = filtered.Where(jp =>
-                    filter.RequiredSkills.Any(s => jp.RequiredSkills.ToLower().Contains(s.ToLower()))).ToList();
+                    filter.RequiredSkills.Any(s => jp.JobSkillRequirements.Any(jsr => jsr.Skill.Name == s))).ToList();
             }
 
             // Filter by date
@@ -170,7 +170,7 @@ namespace AgroTemp.Service.Helpers
             if (filter.RequiredSkills?.Any() == true)
             {
                 var matchedSkills = filter.RequiredSkills
-                    .Count(s => job.RequiredSkills?.ToLower().Contains(s.ToLower()) ?? false);
+                    .Count(s => job.JobSkillRequirements?.Exists(jsr => jsr.Name == s) ?? false);
                 score += matchedSkills * 10;
             }
 

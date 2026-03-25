@@ -40,10 +40,6 @@ public class JobPost
     public Guid FarmId { get; set; }
     public virtual Farm Farm { get; set; }
 
-    public virtual ICollection<JobSkillRequirement> JobSkillRequirements { get; set; } = new List<JobSkillRequirement>();
-    public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
-    public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
-
     [Required]
     [ForeignKey(nameof(JobCategory))]
     [Column("job_category_id")]
@@ -88,10 +84,6 @@ public class JobPost
     public decimal WageAmount { get; set; }
 
     [Required]
-    [Column("required_skills")]
-    public string RequiredSkills { get; set; }
-
-    [Required]
     [Column("requirements")]
     public List<string> Requirements { get; set; }
 
@@ -118,4 +110,9 @@ public class JobPost
     [Required]
     [Column("status")]
     public int StatusId { get; set; }
+
+    public virtual ICollection<JobSkillRequirement> JobSkillRequirements { get; set; } = new List<JobSkillRequirement>();
+    public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
+    public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+
 }
