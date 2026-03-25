@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgroTemp.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,7 +20,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public List<DateTime> SelectedDays { get; set; } = new List<DateTime>();
         public int WorkersNeeded { get; set; }
         public int WorkersAccepted { get; set; }
-        public int JobTypeId { get; set; }
+        public JobType JobTypeId { get; set; }
         public decimal WageAmount { get; set; }
         public List<string> Requirements { get; set; } = new List<string>();
         public List<string> Privileges { get; set; } = new List<string>();

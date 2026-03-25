@@ -19,15 +19,18 @@ namespace AgroTemp.Service.Implements
     public class JobPostService : BaseService<JobPost>, IJobPostService
     {
         private readonly IMapperlyMapper _mapper;
+        private readonly IWalletService _walletService;
 
         public JobPostService(
             IUnitOfWork<AgroTempDbContext> unitOfWork,
             IHttpContextAccessor httpContextAccessor,
-            IMapperlyMapper mapper) : base(unitOfWork, httpContextAccessor, mapper)
+            IMapperlyMapper mapper,
+            IWalletService walletService) : base(unitOfWork, httpContextAccessor, mapper)
         {
             _unitOfWork = unitOfWork;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
+            _walletService = walletService;
         }
 
         public async Task<List<JobPostDTO>> GetAllJobPosts()
@@ -136,8 +139,10 @@ namespace AgroTemp.Service.Implements
                     }).ToList();
 
                     await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
-                    await _unitOfWork.SaveChangesAsync();
                 }
+
+                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
+                await _unitOfWork.SaveChangesAsync();
 
                 var createdJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(

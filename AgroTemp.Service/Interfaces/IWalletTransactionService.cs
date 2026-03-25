@@ -4,6 +4,6 @@ namespace AgroTemp.Service.Interfaces
 {
     public interface IWalletTransactionService
     {
-        Task ApplyJobSettlementAsync(JobDetail jobDetail, decimal workerPaymentAmount, decimal refundAmount);
+        Task CreateAsync(Wallet wallet, Guid? jobDetailId, TransactionType type, decimal amount, decimal balanceAfter, string referenceCode, string description);
     }
 }

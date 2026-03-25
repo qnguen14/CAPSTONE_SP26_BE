@@ -6,8 +6,7 @@ namespace AgroTemp.Domain.Entities;
 public enum JobType
 {
     Daily = 1,
-    PerPlot = 2,
-    PerJob = 3  
+    PerJob = 2 
 }
 
 public enum JobPostStatus

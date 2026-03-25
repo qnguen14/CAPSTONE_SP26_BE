@@ -21,6 +21,7 @@ public class AuthService : BaseService<User>, IAuthService
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly ILogger<AuthService> _logger;
+    private readonly IWalletService _walletService;
 
     public AuthService(
         IUnitOfWork<AgroTempDbContext> unitOfWork, 
@@ -28,11 +29,13 @@ public class AuthService : BaseService<User>, IAuthService
         IMapperlyMapper mapper,
         IConfiguration configuration,
         IEmailService emailService,
-        ILogger<AuthService> logger) : base(unitOfWork, httpContextAccessor, mapper)
+        ILogger<AuthService> logger,
+        IWalletService walletService) : base(unitOfWork, httpContextAccessor, mapper)
     {
         _configuration = configuration;
         _emailService = emailService;
         _logger = logger;
+        _walletService = walletService;
     }
 
     public async Task<LoginResponse> Login(LoginRequest request)
@@ -125,6 +128,7 @@ public class AuthService : BaseService<User>, IAuthService
             
 
         await _unitOfWork.GetRepository<User>().InsertAsync(user);
+                await _walletService.GetOrCreateWalletAsync(user.Id);
         await _unitOfWork.SaveChangesAsync();
 
         // Generate JWT token
@@ -188,6 +192,7 @@ public class AuthService : BaseService<User>, IAuthService
                 };
 
                 await _unitOfWork.GetRepository<User>().InsertAsync(user);
+                await _walletService.GetOrCreateWalletAsync(user.Id);
                 await _unitOfWork.SaveChangesAsync();
             }
             else if (!user.IsActive)

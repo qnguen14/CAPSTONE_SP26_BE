@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260325145218_MakeWalletTransactionJobDetailOptional")]
+    partial class MakeWalletTransactionJobDetailOptional
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -234,9 +237,9 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("farmer_id");
 
-                    b.Property<List<string>>("ImageUrl")
+                    b.Property<string>("ImageUrl")
                         .HasMaxLength(1024)
-                        .HasColumnType("text[]")
+                        .HasColumnType("character varying(1024)")
                         .HasColumnName("image_url");
 
                     b.Property<bool>("IsPrimary")
@@ -567,6 +570,11 @@ namespace AgroTemp.Domain.Migrations
                     b.Property<DateTime>("PublishedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("published_at");
+
+                    b.Property<string>("RequiredSkills")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("required_skills");
 
                     b.Property<List<string>>("Requirements")
                         .IsRequired()
