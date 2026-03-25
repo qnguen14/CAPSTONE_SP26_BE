@@ -544,15 +544,15 @@ namespace AgroTemp.Service.Implements
 
                 switch (dateFilter?.ToLower())
                 {
-                    case "today":
+                    case "today" or "hôm nay":
                         dateStart = now.Date;
                         dateEnd = now.Date.AddDays(1).AddTicks(-1);
                         break;
-                    case "tomorrow":
+                    case "tomorrow" or "ngày mai":
                         dateStart = now.Date.AddDays(1);
                         dateEnd = now.Date.AddDays(2).AddTicks(-1);
                         break;
-                    case "weekend":
+                    case "weekend" or "cuối tuần":
                         // Friday evening to Sunday night
                         var dayOfWeek = (int)now.DayOfWeek;
                         var daysUntilFriday = (5 - dayOfWeek + 7) % 7;
@@ -561,7 +561,7 @@ namespace AgroTemp.Service.Implements
                         dateStart = now.Date.AddDays(daysUntilFriday);
                         dateEnd = now.Date.AddDays(daysUntilFriday + 3).AddTicks(-1);
                         break;
-                    case "upcoming":
+                    case "upcoming" or "sắp tới":
                         dateStart = now.Date;
                         dateEnd = now.Date.AddDays(30).AddTicks(-1);
                         break;
