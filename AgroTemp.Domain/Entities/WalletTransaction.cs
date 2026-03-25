@@ -14,7 +14,8 @@ namespace AgroTemp.Domain.Entities
         DEPOSIT = 1,
         WITHDRAW = 2,
         JOB_PAYMENT = 3,
-        REFUND = 4
+        REFUND = 4,
+        JOB_LOCK = 5
     }
     [Table("Wallet_Transactions")]
 
@@ -31,11 +32,10 @@ namespace AgroTemp.Domain.Entities
         public Guid WalletId { get; set; }
         public virtual Wallet Wallet { get; set; }
 
-        [Required]
         [ForeignKey(nameof (JobDetail))]
         [Column("job_detail_id")]
         public Guid? JobDetailId { get; set; }
-        public virtual JobDetail JobDetail { get; set; }
+        public virtual JobDetail? JobDetail { get; set; }
 
         [Required]
         [Column("type")]
