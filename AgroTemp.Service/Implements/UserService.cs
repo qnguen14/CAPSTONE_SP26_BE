@@ -16,8 +16,8 @@ public class UserService : BaseService<User>, IUserService
     private readonly IMapperlyMapper _mapper;
     private readonly ICloudinaryService _cloudinaryService;
     public UserService(
-        IUnitOfWork<AgroTempDbContext> unitOfWork, 
-        IHttpContextAccessor httpContextAccessor, 
+        IUnitOfWork<AgroTempDbContext> unitOfWork,
+        IHttpContextAccessor httpContextAccessor,
         IMapperlyMapper mapper,
         ICloudinaryService cloudinaryService) : base(unitOfWork, httpContextAccessor, mapper)
     {
@@ -61,7 +61,7 @@ public class UserService : BaseService<User>, IUserService
             {
                 return null;
             }
-            
+
             var result = _mapper.UsersToUserDtos(users);
             return result;
         }
@@ -110,19 +110,31 @@ public class UserService : BaseService<User>, IUserService
             {
                 throw new Exception("Phone number already exists");
             }
+            var userId = Guid.NewGuid();
+
+            var wallet = new Wallet
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Balance = 0,
+                LockedBalance = 0,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
 
             var user = new User
             {
-                Id = Guid.NewGuid(),
+                Id = userId,
                 Email = request.Email,
                 PhoneNumber = request.PhoneNumber,
                 Address = request.Address,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                RoleId = request.RoleId,
-                Role = (UserRole)request.RoleId,
+                RoleId = (int)request.RoleId,
+                Role = request.RoleId,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = request.IsActive,
-                IsVerified = request.IsVerified
+                IsVerified = request.IsVerified,
+                Wallet = wallet
             };
 
             await _unitOfWork.GetRepository<User>().InsertAsync(user);
@@ -312,8 +324,8 @@ public class UserService : BaseService<User>, IUserService
                     predicate: wp => wp.UserId == userId,
                     include: query => query
                         .Include(w => w.User)
-                        // .Include(w => w.WorkerSkills)
-                        //     .ThenInclude(ws => ws.Skill)
+                            // .Include(w => w.WorkerSkills)
+                            //     .ThenInclude(ws => ws.Skill)
                             );
 
             if (workerProfile == null)
@@ -372,8 +384,8 @@ public class UserService : BaseService<User>, IUserService
                         predicate: wp => wp.Id == workerProfile.Id,
                         include: query => query
                             .Include(w => w.User)
-                            // .Include(w => w.WorkerSkills)
-                            //     .ThenInclude(ws => ws.Skill)
+                                // .Include(w => w.WorkerSkills)
+                                //     .ThenInclude(ws => ws.Skill)
                                 );
             }
             else
@@ -416,7 +428,7 @@ public class UserService : BaseService<User>, IUserService
             }
 
             var imageUrl = await _cloudinaryService.UploadImageAsync(file);
-            
+
             // Delete old avatar if it exists
             if (!string.IsNullOrEmpty(farmerProfile.AvatarUrl))
             {

@@ -17,18 +17,18 @@ namespace AgroTemp.Service.Implements
     public class JobDetailService : BaseService<JobDetail>, IJobDetailService
     {
         private readonly IMapperlyMapper _mapper;
-        private readonly IWalletTransactionService _walletTransactionService;
+        private readonly IWalletService _walletService;
 
         public JobDetailService(
             IUnitOfWork<AgroTempDbContext> unitOfWork,
             IHttpContextAccessor httpContextAccessor,
             IMapperlyMapper mapper,
-            IWalletTransactionService walletTransactionService) : base(unitOfWork, httpContextAccessor, mapper)
+            IWalletService walletService) : base(unitOfWork, httpContextAccessor, mapper)
         {
             _unitOfWork = unitOfWork;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
-            _walletTransactionService = walletTransactionService;
+            _walletService = walletService;
         }
 
         public async Task<List<JobDetailDTO>> GetAllJobDetails()
@@ -307,7 +307,7 @@ namespace AgroTemp.Service.Implements
                 jobDetail.CompletedAt = DateTime.UtcNow;
                 jobDetail.UpdatedAt = DateTime.UtcNow;
 
-                await _walletTransactionService.ApplyJobSettlementAsync(jobDetail, workerPayment, refund);
+                await _walletService.ApplyJobSettlementAsync(jobDetail, workerPayment, refund);
 
                 _unitOfWork.GetRepository<JobDetail>().UpdateAsync(jobDetail);
                 await _unitOfWork.SaveChangesAsync();

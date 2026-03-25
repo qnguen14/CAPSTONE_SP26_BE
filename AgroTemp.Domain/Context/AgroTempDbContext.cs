@@ -319,6 +319,7 @@ public class AgroTempDbContext : DbContext
             .HasMany(u => u.WalletTransactions)
             .WithOne(wr => wr.JobDetail)
             .HasForeignKey(wr => wr.JobDetailId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<JobDetail>()
