@@ -210,6 +210,30 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<JobPostDTO> UpdateJobPostUrgency(string id, bool isUrgent)
+        {
+            try
+            {
+                var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == Guid.Parse(id),
+                        include: q => q.Include(jp => jp.Farmer));
+                if (existingJobPost == null)
+                {
+                    return null;
+                }
+                existingJobPost.IsUrgent = isUrgent;
+                _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
+                await _unitOfWork.SaveChangesAsync();
+                var result = _mapper.JobPostToJobPostDto(existingJobPost);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<JobPostDTO> UpdateJobPostStatus(string id, string status)
         {
             try

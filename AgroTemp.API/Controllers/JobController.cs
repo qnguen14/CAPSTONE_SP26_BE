@@ -432,6 +432,45 @@ public class JobController : ControllerBase
         }
     }
 
+    [HttpPut(ApiEndpointConstants.Job.UpdateJobPostUrgencyEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobPostDTO>> UpdateJobPostUrgency([FromRoute] string id, [FromQuery] bool isUrgent)
+    {
+        try
+        {
+            var response = await _jobPostService.UpdateJobPostUrgency(id, isUrgent);
+            if (response == null)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = "Job post not found",
+                    Data = null
+                });
+            }
+            var apiResponse = new ApiResponse<JobPostDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job post urgency updated successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating job post urgency");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while updating the job post urgency",
+                Data = null
+            });
+        }
+    }
+
     [HttpGet(ApiEndpointConstants.Job.GetFilteredJobPostsEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
