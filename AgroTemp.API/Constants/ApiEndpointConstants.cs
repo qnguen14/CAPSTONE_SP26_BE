@@ -94,6 +94,9 @@ public class ApiEndpointConstants
 
         public const string RespondJobApplicationEndpoint = JobApplicationEndpoint + "/respond" + "/{id}";
         public const string GetFilteredJobPostsEndpoint = JobPostEndpoint + "/filter";
+
+        public const string SaveJobPostDraftEndpoint = JobPostEndpoint + "/draft";
+        public const string GetFarmerDraftsEndpoint = JobPostEndpoint + "/drafts";
     }
 
     public static class WorkerAttendance

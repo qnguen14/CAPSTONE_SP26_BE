@@ -296,5 +296,129 @@ namespace AgroTemp.Service.Implements
                 throw new Exception(ex.Message);
             }
         }
+
+        public async Task<JobPostDTO> SaveJobPostDraft(CreateJobPostRequest request)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                {
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+                }
+
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
+
+                if (farmer == null)
+                {
+                    throw new UnauthorizedAccessException("Only farmers can save job post drafts.");
+                }
+
+                var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
+                if (jobPost.Id == Guid.Empty)
+                {
+                    jobPost.Id = Guid.NewGuid();
+                }
+                
+                jobPost.FarmerId = farmer.Id;
+                jobPost.StatusId = (int)JobPostStatus.Draft;
+                jobPost.CreatedAt = DateTime.UtcNow;
+                jobPost.UpdatedAt = DateTime.UtcNow;
+
+                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
+                await _unitOfWork.SaveChangesAsync();
+
+                if (request.JobSkillRequirements?.Any() == true)
+                {
+                    var requestedSkillNames = request.JobSkillRequirements
+                        .Select(jsr => jsr.Name)
+                        .Where(name => !string.IsNullOrEmpty(name))
+                        .Distinct()
+                        .ToList();
+
+                    var skills = requestedSkillNames.Any()
+                        ? await _unitOfWork.GetRepository<Skill>()
+                            .GetListAsync(predicate: s => requestedSkillNames.Contains(s.Name))
+                        : new List<Skill>();
+
+                    if (skills.Count == requestedSkillNames.Count)
+                    {
+                        var jobSkillRequirements = skills.Select(skill => new JobSkillRequirement
+                        {
+                            Id = Guid.NewGuid(),
+                            JobPostId = jobPost.Id,
+                            SkillId = skill.Id,
+                            RequiredLevelId = (int)ProficiencyLevel.Beginner,
+                            IsMandatory = true
+                        }).ToList();
+
+                        await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
+                        await _unitOfWork.SaveChangesAsync();
+                        
+                        jobPost.RequiredSkills = string.Join(", ", skills.Select(skill => skill.Name));
+                        _unitOfWork.GetRepository<JobPost>().UpdateAsync(jobPost);
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+                }
+
+                var createdJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobPost.Id,
+                        include: q => q
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.Farmer));
+
+                var result = _mapper.JobPostToJobPostDto(createdJobPost ?? jobPost);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobPostDTO>> GetFarmerDrafts()
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                {
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+                }
+
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
+
+                if (farmer == null)
+                {
+                    throw new UnauthorizedAccessException("Only farmers can retrieve drafts.");
+                }
+
+                var drafts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.FarmerId == farmer.Id && jp.StatusId == (int)JobPostStatus.Draft,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.Farm)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderByDescending(x => x.UpdatedAt));
+
+                if (drafts == null || !drafts.Any())
+                {
+                    return new List<JobPostDTO>();
+                }
+
+                var result = _mapper.JobPostsToJobPostDtos(drafts);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
     }
 }
