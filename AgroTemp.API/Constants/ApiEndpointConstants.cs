@@ -200,6 +200,7 @@ public class ApiEndpointConstants
         public const string WeatherEndpoint = ApiEndpoint + "/weather";
         public const string GetWeatherByCoordinatesEndpoint = WeatherEndpoint + "/coordinates";
         public const string GetWeatherByCityEndpoint = WeatherEndpoint + "/city";
+        public const string GetWeatherByCurrentUserAddressEndpoint = WeatherEndpoint + "/me";
     }
 
     public static class Media
