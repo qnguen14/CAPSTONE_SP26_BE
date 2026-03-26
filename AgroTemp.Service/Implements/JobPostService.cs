@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Context;
+using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
@@ -123,6 +123,10 @@ namespace AgroTemp.Service.Implements
                     jobPost.Id = Guid.NewGuid();
                 }
                 jobPost.FarmerId = farmer.Id;
+                jobPost.StatusId = (int)JobPostStatus.Draft;
+                jobPost.CreatedAt = DateTime.UtcNow;
+                jobPost.UpdatedAt = DateTime.UtcNow;
+                jobPost.PublishedAt = default;
 
                 await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
                 await _unitOfWork.SaveChangesAsync();
@@ -292,9 +296,33 @@ namespace AgroTemp.Service.Implements
                     return null;
                 }
 
+                var oldStatusId = existingJobPost.StatusId;
+
                 if (Enum.TryParse(status, out JobPostStatus jobPostStatus))
                 {
                     existingJobPost.StatusId = (int)jobPostStatus;
+                    existingJobPost.UpdatedAt = DateTime.UtcNow;
+
+                    var farmer = existingJobPost.Farmer;
+                    if (farmer != null)
+                    {
+                        // First transition to Published: count posted job + set PublishedAt
+                        if (oldStatusId != (int)JobPostStatus.Published &&
+                            existingJobPost.StatusId == (int)JobPostStatus.Published)
+                        {
+                            farmer.TotalJobsPosted += 1;
+                            existingJobPost.PublishedAt = DateTime.UtcNow;
+                        }
+
+                        // First transition to Completed
+                        if (oldStatusId != (int)JobPostStatus.Completed &&
+                            existingJobPost.StatusId == (int)JobPostStatus.Completed)
+                        {
+                            farmer.TotalJobsCompleted += 1;
+                        }
+
+                        _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmer);
+                    }
                 }
                 else
                 {
