@@ -66,6 +66,11 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    await AdminSeedConfiguration.EnsureAdminSeedAsync(app.Services, app.Configuration);
+}
+
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
