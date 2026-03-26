@@ -23,17 +23,20 @@ public class PayOSService : IPayOSService
     private readonly PayOSClient _transferClient;
     private readonly IUnitOfWork<AgroTempDbContext> _unitOfWork;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IWalletService _walletService;
 
     public PayOSService(
         [FromKeyedServices("OrderClient")] PayOSClient orderClient,
         [FromKeyedServices("TransferClient")] PayOSClient transferClient,
         IUnitOfWork<AgroTempDbContext> unitOfWork,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IWalletService walletService)
     {
         _orderClient = orderClient;
         _transferClient = transferClient;
         _unitOfWork = unitOfWork;
         _httpContextAccessor = httpContextAccessor;
+        _walletService = walletService;
     }
 
     public async Task<PayOSOrderResponse?> GetOrderAsync(Guid id)
@@ -52,6 +55,7 @@ public class PayOSService : IPayOSService
         var paymentLink = await _orderClient.PaymentRequests.GetAsync(order.PaymentLinkId);
         UpdateOrderFromPaymentLink(order, paymentLink);
         await ReplaceTransactionsFromPaymentLinkAsync(order, paymentLink);
+        await SyncDepositTransactionsToWalletAsync(order);
         await _unitOfWork.SaveChangesAsync();
 
         return MapOrderToResponse(order);
@@ -325,6 +329,12 @@ public class PayOSService : IPayOSService
                         CounterAccountName = webhookData.CounterAccountName,
                         CounterAccountNumber = webhookData.CounterAccountNumber
                     });
+
+                    await CreditWalletFromPayOSAsync(
+                        order,
+                        webhookData.Amount,
+                        webhookData.Reference,
+                        webhookData.Description);
                 }
 
                 var transactions = await _unitOfWork.GetRepository<PayOSTransaction>()
@@ -447,6 +457,7 @@ public class PayOSService : IPayOSService
             var paymentLink = await _orderClient.PaymentRequests.GetAsync(linkId);
             UpdateOrderFromPaymentLink(order, paymentLink);
             await ReplaceTransactionsFromPaymentLinkAsync(order, paymentLink);
+            await SyncDepositTransactionsToWalletAsync(order);
             await _unitOfWork.SaveChangesAsync();
         }
 
@@ -461,13 +472,7 @@ public class PayOSService : IPayOSService
             throw new UnauthorizedAccessException("User is not authenticated.");
         }
 
-        var wallet = await _unitOfWork.GetRepository<Wallet>()
-            .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId.Value);
-
-        if (wallet == null)
-        {
-            throw new InvalidOperationException("Wallet not found.");
-        }
+        var wallet = await _walletService.GetOrCreateWalletAsync(currentUserId.Value);
 
         if (request.Amount <= 0)
         {
@@ -553,6 +558,7 @@ public class PayOSService : IPayOSService
         var payout = await GetPayoutByWithdrawalAsync(withdrawal);
         if (payout != null)
         {
+            await ReconcileWithdrawalWalletAsync(withdrawal, payout);
             UpdateWithdrawalFromPayout(withdrawal, payout);
             _unitOfWork.GetRepository<WithdrawalRequest>().UpdateAsync(withdrawal);
             await _unitOfWork.SaveChangesAsync();
@@ -704,6 +710,109 @@ public class PayOSService : IPayOSService
     private static DateTimeOffset? ToOffset(DateTime value)
     {
         return new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc));
+    }
+
+    private async Task CreditWalletFromPayOSAsync(PayOSOrder order, long amount, string? reference, string? description)
+    {
+        if (!order.UserId.HasValue || amount <= 0)
+        {
+            return;
+        }
+
+        var referenceCode = BuildDepositReferenceCode(order.OrderCode, reference);
+        var existed = await _unitOfWork.GetRepository<WalletTransaction>()
+            .FirstOrDefaultAsync(predicate: x => x.ReferenceCode == referenceCode);
+
+        if (existed != null)
+        {
+            return;
+        }
+
+        var wallet = await _walletService.GetOrCreateWalletAsync(order.UserId.Value);
+        wallet.Balance += amount;
+        wallet.UpdateAt = DateTime.UtcNow;
+        _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
+
+        await _unitOfWork.GetRepository<WalletTransaction>().InsertAsync(new WalletTransaction
+        {
+            Id = Guid.NewGuid(),
+            WalletId = wallet.Id,
+            JobDetailId = null,
+            Type = TransactionType.DEPOSIT,
+            Amount = amount,
+            BalanceAfter = wallet.Balance,
+            ReferenceCode = referenceCode,
+            Description = string.IsNullOrWhiteSpace(description) ? "Deposit from PayOS" : description,
+            CreatedAt = DateTime.UtcNow
+        });
+    }
+
+    private async Task SyncDepositTransactionsToWalletAsync(PayOSOrder order)
+    {
+        if (order.Transactions == null || order.Transactions.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var transaction in order.Transactions)
+        {
+            await CreditWalletFromPayOSAsync(order, transaction.Amount, transaction.Reference, transaction.Description);
+        }
+    }
+
+    private async Task ReconcileWithdrawalWalletAsync(WithdrawalRequest withdrawal, Payout payout)
+    {
+        var payoutState = payout.ApprovalState.ToString().ToUpperInvariant();
+        if (payoutState != "REJECTED")
+        {
+            return;
+        }
+
+        var refundReferenceCode = BuildWithdrawalRefundReferenceCode(withdrawal.Id);
+        var existedRefund = await _unitOfWork.GetRepository<WalletTransaction>()
+            .FirstOrDefaultAsync(predicate: x => x.ReferenceCode == refundReferenceCode);
+
+        if (existedRefund != null)
+        {
+            return;
+        }
+
+        var wallet = await _unitOfWork.GetRepository<Wallet>()
+            .FirstOrDefaultAsync(predicate: w => w.Id == withdrawal.WalletId);
+
+        if (wallet == null)
+        {
+            return;
+        }
+
+        wallet.Balance += withdrawal.Amount;
+        wallet.UpdateAt = DateTime.UtcNow;
+        _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
+
+        await _unitOfWork.GetRepository<WalletTransaction>().InsertAsync(new WalletTransaction
+        {
+            Id = Guid.NewGuid(),
+            WalletId = wallet.Id,
+            JobDetailId = null,
+            Type = TransactionType.REFUND,
+            Amount = withdrawal.Amount,
+            BalanceAfter = wallet.Balance,
+            ReferenceCode = refundReferenceCode,
+            Description = "Refund withdrawal amount because payout was rejected",
+            CreatedAt = DateTime.UtcNow
+        });
+    }
+
+    private static string BuildDepositReferenceCode(long orderCode, string? reference)
+    {
+        return string.IsNullOrWhiteSpace(reference)
+            ? $"PAYOS-DEPOSIT-{orderCode}"
+            : $"PAYOS-DEPOSIT-{orderCode}-{reference}";
+    }
+
+    private static string BuildWithdrawalRefundReferenceCode(Guid withdrawalId)
+    {
+        return $"PAYOS-WITHDRAW-REFUND-{withdrawalId:N}";
     }
 
     private async Task<Payout?> GetPayoutByWithdrawalAsync(WithdrawalRequest withdrawal)
