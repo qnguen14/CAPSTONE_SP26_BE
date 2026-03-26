@@ -62,6 +62,7 @@ public class ApiEndpointConstants
         public const string JobPostEndpoint = JobEndpoint + "/post";
         public const string JobApplicationEndpoint = JobEndpoint + "/application";
         public const string JobDetailEndpoint = JobEndpoint + "/detail";
+        public const string GetJobApplicationsByJobPostEndpoint = JobApplicationEndpoint + "/by-job-post" + "/{jobPostId}";
 
         public const string GetAllJobCategoriesEndpoint = JobCategoryEndpoint;
         public const string GetAllJobPostsEndpoint = JobPostEndpoint;
@@ -89,10 +90,24 @@ public class ApiEndpointConstants
         public const string DeleteJobDetailEndpoint = JobDetailEndpoint + "/{id}";
 
         public const string UpdateJobPostStatusEndpoint = JobPostEndpoint + "/update-status" + "/{id}";
+        public const string UpdateJobPostUrgencyEndpoint = JobPostEndpoint + "/update-urgency" + "/{id}";
         public const string UpdateJobDetailStatusEndpoint = JobDetailEndpoint + "/update-status" + "/{id}";
 
         public const string RespondJobApplicationEndpoint = JobApplicationEndpoint + "/respond" + "/{id}";
+        public const string AutoAcceptUrgentJobApplicationsEndpoint = JobApplicationEndpoint + "/auto-accept/{jobPostId}";
+
         public const string GetFilteredJobPostsEndpoint = JobPostEndpoint + "/filter";
+
+        public const string SaveJobPostDraftEndpoint = JobPostEndpoint + "/draft";
+        public const string GetFarmerDraftsEndpoint = JobPostEndpoint + "/drafts";
+
+        public const string SearchJobsEndpoint = JobPostEndpoint + "/search";
+        public const string GetNearbyJobsEndpoint = JobPostEndpoint + "/nearby";
+        public const string GetJobsByDateEndpoint = JobPostEndpoint + "/by-date";
+        public const string GetJobsBySkillEndpoint = JobPostEndpoint + "/by-skill";
+        public const string GetJobsByWageRangeEndpoint = JobPostEndpoint + "/by-wage";
+        public const string GetJobsByTypeEndpoint = JobPostEndpoint + "/by-type";
+        public const string GetUrgentJobsEndpoint = JobPostEndpoint + "/urgent";
     }
 
     public static class WorkerAttendance
@@ -124,6 +139,17 @@ public class ApiEndpointConstants
 
         public const string RegisterTokenEndpoint = NotificationEndpoint + "/register-token";
         public const string UnregisterTokenEndpoint = NotificationEndpoint + "/unregister-token";
+    }
+
+    public static class Messages
+    {
+        public const string MessagesEndpoint = ApiEndpoint + "/messages";
+
+        public const string GetMessagesEndpoint = MessagesEndpoint;
+        public const string SendMessageEndpoint = MessagesEndpoint;
+
+        // Optional read-receipt endpoint (used later)
+        public const string MarkConversationAsReadEndpoint = MessagesEndpoint + "/read";
     }
 
     public static class Payment
@@ -166,6 +192,7 @@ public class ApiEndpointConstants
         public const string DeleteRatingEndpoint = RatingEndpoint + "/{id}";
 
         public const string GetSpecificRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}";
+        public const string GetAllRatingsByUserIdEndpoint = RatingEndpoint + "/user/{userId}/all";
         public const string GetAverageRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}/average";
     }
 
@@ -187,6 +214,7 @@ public class ApiEndpointConstants
         public const string WeatherEndpoint = ApiEndpoint + "/weather";
         public const string GetWeatherByCoordinatesEndpoint = WeatherEndpoint + "/coordinates";
         public const string GetWeatherByCityEndpoint = WeatherEndpoint + "/city";
+        public const string GetWeatherByCurrentUserAddressEndpoint = WeatherEndpoint + "/me";
     }
 
     public static class Media

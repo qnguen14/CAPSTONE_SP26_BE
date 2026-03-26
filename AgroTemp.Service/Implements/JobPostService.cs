@@ -1,9 +1,10 @@
-﻿using AgroTemp.Domain.Context;
+using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
+using AgroTemp.Service.Helpers;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -18,15 +19,18 @@ namespace AgroTemp.Service.Implements
     public class JobPostService : BaseService<JobPost>, IJobPostService
     {
         private readonly IMapperlyMapper _mapper;
+        private readonly IWalletService _walletService;
 
         public JobPostService(
             IUnitOfWork<AgroTempDbContext> unitOfWork,
             IHttpContextAccessor httpContextAccessor,
-            IMapperlyMapper mapper) : base(unitOfWork, httpContextAccessor, mapper)
+            IMapperlyMapper mapper,
+            IWalletService walletService) : base(unitOfWork, httpContextAccessor, mapper)
         {
             _unitOfWork = unitOfWork;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
+            _walletService = walletService;
         }
 
         public async Task<List<JobPostDTO>> GetAllJobPosts()
@@ -97,22 +101,20 @@ namespace AgroTemp.Service.Implements
                     throw new UnauthorizedAccessException("Only farmers can create job posts.");
                 }
 
-                var requestedSkillNames = request.JobSkillRequirements?
-                    .Select(jsr => jsr.Name)
-                    .Where(name => !string.IsNullOrEmpty(name))
+                var requestedSkillIds = request.SkillIds?
                     .Distinct()
-                    .ToList() ?? new List<string>();
+                    .ToList() ?? new List<Guid>();
 
-                var skills = requestedSkillNames.Any()
+                var skills = requestedSkillIds.Any()
                     ? await _unitOfWork.GetRepository<Skill>()
-                        .GetListAsync(predicate: s => requestedSkillNames.Contains(s.Name))
+                        .GetListAsync(predicate: s => requestedSkillIds.Contains(s.Id))
                     : new List<Skill>();
 
-                if (skills.Count != requestedSkillNames.Count)
+                if (skills.Count != requestedSkillIds.Count)
                 {
-                    var foundSkillNames = skills.Select(s => s.Name).ToHashSet();
-                    var invalidSkillNames = requestedSkillNames.Where(name => !foundSkillNames.Contains(name));
-                    throw new ArgumentException($"Invalid skill name(s): {string.Join(", ", invalidSkillNames)}");
+                    var foundSkillIds = skills.Select(s => s.Id).ToHashSet();
+                    var invalidSkillIds = requestedSkillIds.Where(id => !foundSkillIds.Contains(id));
+                    throw new ArgumentException($"Invalid skill ID(s): {string.Join(", ", invalidSkillIds)}");
                 }
 
                 var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
@@ -121,11 +123,10 @@ namespace AgroTemp.Service.Implements
                     jobPost.Id = Guid.NewGuid();
                 }
                 jobPost.FarmerId = farmer.Id;
-
-                if (skills.Any())
-                {
-                    jobPost.RequiredSkills = string.Join(", ", skills.Select(skill => skill.Name));
-                }
+                jobPost.StatusId = (int)JobPostStatus.Draft;
+                jobPost.CreatedAt = DateTime.UtcNow;
+                jobPost.UpdatedAt = DateTime.UtcNow;
+                jobPost.PublishedAt = default;
 
                 await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
                 await _unitOfWork.SaveChangesAsync();
@@ -168,17 +169,65 @@ namespace AgroTemp.Service.Implements
             {
                 var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
-                        predicate: jp => jp.Id == id);
+                        predicate: jp => jp.Id == id,
+                        include: q => q.Include(jp => jp.JobSkillRequirements).ThenInclude(jsr => jsr.Skill));
 
                 if (existingJobPost == null)
                 {
                     return null;
                 }
 
+                if (request.SkillIds != null)
+                {
+                    var requestedSkillIds = request.SkillIds.Distinct().ToList();
+                    var existingSkillIds = existingJobPost.JobSkillRequirements.Select(jsr => jsr.SkillId).ToList();
+
+                    var skillsToAdd = requestedSkillIds.Except(existingSkillIds).ToList();
+                    var skillsToRemove = existingSkillIds.Except(requestedSkillIds).ToList();
+
+                    if (skillsToAdd.Any())
+                    {
+                        var validSkills = await _unitOfWork.GetRepository<Skill>()
+                            .GetListAsync(predicate: s => skillsToAdd.Contains(s.Id));
+
+                        if (validSkills.Count != skillsToAdd.Count)
+                        {
+                            var foundSkillIds = validSkills.Select(s => s.Id).ToHashSet();
+                            var invalidSkillIds = skillsToAdd.Where(sid => !foundSkillIds.Contains(sid));
+                            throw new ArgumentException($"Invalid skill ID(s): {string.Join(", ", invalidSkillIds)}");
+                        }
+
+                        var newJobSkillRequirements = skillsToAdd.Select(skillId => new JobSkillRequirement
+                        {
+                            Id = Guid.NewGuid(),
+                            JobPostId = existingJobPost.Id,
+                            SkillId = skillId,
+                            RequiredLevelId = (int)ProficiencyLevel.Beginner,
+                            IsMandatory = true
+                        }).ToList();
+                        
+                        await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(newJobSkillRequirements);
+                    }
+
+                    if (skillsToRemove.Any())
+                    {
+                        var requirementsToRemove = existingJobPost.JobSkillRequirements
+                            .Where(jsr => skillsToRemove.Contains(jsr.SkillId))
+                            .ToList();
+                        _unitOfWork.GetRepository<JobSkillRequirement>().DeleteRangeAsync(requirementsToRemove);
+                    }
+                }
+
                 _mapper.UpdateJobPostRequestToJobPost(request, existingJobPost);
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
                 await _unitOfWork.SaveChangesAsync();
-                var result = _mapper.JobPostToJobPostDto(existingJobPost);
+                
+                var updatedJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == id,
+                        include: q => q.Include(jp => jp.JobSkillRequirements).ThenInclude(jsr => jsr.Skill));
+                
+                var result = _mapper.JobPostToJobPostDto(updatedJobPost ?? existingJobPost);
 
                 return result;
             }
@@ -210,6 +259,30 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<JobPostDTO> UpdateJobPostUrgency(string id, bool isUrgent)
+        {
+            try
+            {
+                var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == Guid.Parse(id),
+                        include: q => q.Include(jp => jp.Farmer));
+                if (existingJobPost == null)
+                {
+                    return null;
+                }
+                existingJobPost.IsUrgent = isUrgent;
+                _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
+                await _unitOfWork.SaveChangesAsync();
+                var result = _mapper.JobPostToJobPostDto(existingJobPost);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<JobPostDTO> UpdateJobPostStatus(string id, string status)
         {
             try
@@ -223,9 +296,33 @@ namespace AgroTemp.Service.Implements
                     return null;
                 }
 
+                var oldStatusId = existingJobPost.StatusId;
+
                 if (Enum.TryParse(status, out JobPostStatus jobPostStatus))
                 {
                     existingJobPost.StatusId = (int)jobPostStatus;
+                    existingJobPost.UpdatedAt = DateTime.UtcNow;
+
+                    var farmer = existingJobPost.Farmer;
+                    if (farmer != null)
+                    {
+                        // First transition to Published: count posted job + set PublishedAt
+                        if (oldStatusId != (int)JobPostStatus.Published &&
+                            existingJobPost.StatusId == (int)JobPostStatus.Published)
+                        {
+                            farmer.TotalJobsPosted += 1;
+                            existingJobPost.PublishedAt = DateTime.UtcNow;
+                        }
+
+                        // First transition to Completed
+                        if (oldStatusId != (int)JobPostStatus.Completed &&
+                            existingJobPost.StatusId == (int)JobPostStatus.Completed)
+                        {
+                            farmer.TotalJobsCompleted += 1;
+                        }
+
+                        _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmer);
+                    }
                 }
                 else
                 {
@@ -254,7 +351,7 @@ namespace AgroTemp.Service.Implements
                             (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
                             (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&
                             (string.IsNullOrEmpty(address) || jp.Address.Contains(address)) &&
-                            (string.IsNullOrEmpty(skill) || jp.RequiredSkills.Contains(skill)),
+                            (string.IsNullOrEmpty(skill) || jp.JobSkillRequirements.Any(jsr => jsr.Skill.Name == skill)),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
@@ -270,6 +367,435 @@ namespace AgroTemp.Service.Implements
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<JobPostDTO> SaveJobPostDraft(CreateJobPostRequest request)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                {
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+                }
+
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
+
+                if (farmer == null)
+                {
+                    throw new UnauthorizedAccessException("Only farmers can save job post drafts.");
+                }
+
+                var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
+                if (jobPost.Id == Guid.Empty)
+                {
+                    jobPost.Id = Guid.NewGuid();
+                }
+                
+                jobPost.FarmerId = farmer.Id;
+                jobPost.StatusId = (int)JobPostStatus.Draft;
+                jobPost.CreatedAt = DateTime.UtcNow;
+                jobPost.UpdatedAt = DateTime.UtcNow;
+
+                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
+                await _unitOfWork.SaveChangesAsync();
+
+                if (request.SkillIds?.Any() == true)
+                {
+                    var requestedSkillIds = request.SkillIds
+                        .Distinct()
+                        .ToList();
+
+                    var skills = requestedSkillIds.Any()
+                        ? await _unitOfWork.GetRepository<Skill>()
+                            .GetListAsync(predicate: s => requestedSkillIds.Contains(s.Id))
+                        : new List<Skill>();
+
+                    if (skills.Count == requestedSkillIds.Count)
+                    {
+                        var jobSkillRequirements = skills.Select(skill => new JobSkillRequirement
+                        {
+                            Id = Guid.NewGuid(),
+                            JobPostId = jobPost.Id,
+                            SkillId = skill.Id,
+                            RequiredLevelId = (int)ProficiencyLevel.Beginner,
+                            IsMandatory = true
+                        }).ToList();
+
+                        await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
+                        await _unitOfWork.SaveChangesAsync();
+                        
+                        _unitOfWork.GetRepository<JobPost>().UpdateAsync(jobPost);
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+                }
+
+                var createdJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobPost.Id,
+                        include: q => q
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.Farmer));
+
+                var result = _mapper.JobPostToJobPostDto(createdJobPost ?? jobPost);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobPostDTO>> GetFarmerDrafts()
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                {
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+                }
+
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
+
+                if (farmer == null)
+                {
+                    throw new UnauthorizedAccessException("Only farmers can retrieve drafts.");
+                }
+
+                var drafts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.FarmerId == farmer.Id && jp.StatusId == (int)JobPostStatus.Draft,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.Farm)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderByDescending(x => x.UpdatedAt));
+
+                if (drafts == null || !drafts.Any())
+                {
+                    return new List<JobPostDTO>();
+                }
+
+                var result = _mapper.JobPostsToJobPostDtos(drafts);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<PaginatedJobDiscoveryResponse> SearchJobsAsync(JobSearchFilterRequest filter)
+        {
+            try
+            {
+                filter.PageSize = Math.Min(filter.PageSize, 100); // Max 100 items per page
+                var skip = (filter.PageNumber - 1) * filter.PageSize;
+
+                // Get all published and active job posts with related data
+                var query = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.Farm)
+                            .Include(jp => jp.JobCategory)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill));
+
+                if (query == null || !query.Any())
+                {
+                    return new PaginatedJobDiscoveryResponse
+                    {
+                        Jobs = new List<JobDiscoveryDTO>(),
+                        TotalCount = 0,
+                        PageNumber = filter.PageNumber,
+                        PageSize = filter.PageSize
+                    };
+                }
+
+                // Apply filters
+                var filtered = JobDiscoveryHelper.ApplyJobFilters(query.ToList(), filter);
+
+                // Convert to DTOs using mapper
+                var jobDtos = _mapper.JobPostsToJobDiscoveryDtos(filtered);
+
+                // Post-process: Add distance, match score and other calculated fields
+                foreach (var dto in jobDtos)
+                {
+                    JobDiscoveryHelper.ApplyDiscoveryCalculations(dto, filter);
+                }
+
+                // Apply sorting
+                jobDtos = JobDiscoveryHelper.ApplyJobSorting(jobDtos, filter.SortBy);
+
+                // Pagination
+                var totalCount = jobDtos.Count;
+                var paginatedJobs = jobDtos.Skip(skip).Take(filter.PageSize).ToList();
+
+                return new PaginatedJobDiscoveryResponse
+                {
+                    Jobs = paginatedJobs,
+                    TotalCount = totalCount,
+                    PageNumber = filter.PageNumber,
+                    PageSize = filter.PageSize,
+                    Message = $"Found {totalCount} job(s)"
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error searching jobs: {ex.Message}");
+            }
+        }
+
+        public async Task<List<JobDiscoveryDTO>> GetNearbyJobsAsync(decimal latitude, decimal longitude, double maxDistanceKm = 20)
+        {
+            try
+            {
+                var publishedJobs = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.Farm)
+                            .Include(jp => jp.JobCategory)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderBy(x => x.StartDate));
+
+                if (publishedJobs == null || !publishedJobs.Any())
+                {
+                    return new List<JobDiscoveryDTO>();
+                }
+
+                var nearbyJobs = new List<JobDiscoveryDTO>();
+
+                foreach (var job in publishedJobs)
+                {
+                    if (job.Farm != null)
+                    {
+                        var distance = DistanceCalculator.GetDistanceInKilometers(
+                            latitude, longitude,
+                            job.Farm.Latitude, job.Farm.Longitude);
+
+                        if (distance <= maxDistanceKm)
+                        {
+                            var dto = _mapper.JobPostToJobDiscoveryDto(job);
+                            dto.DistanceKm = distance;
+                            nearbyJobs.Add(dto);
+                        }
+                    }
+                }
+
+                // Sort by distance
+                nearbyJobs = nearbyJobs.OrderBy(x => x.DistanceKm).ToList();
+                return nearbyJobs;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting nearby jobs: {ex.Message}");
+            }
+        }
+
+        public async Task<List<JobDiscoveryDTO>> GetJobsByDateAsync(string dateFilter)
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+                DateOnly? dateStart = null;
+                DateOnly? dateEnd = null;
+
+                switch (dateFilter?.ToLower())
+                {
+                    case "today" or "hôm nay":
+                        dateStart = DateOnly.FromDateTime(now.Date);
+                        dateEnd = DateOnly.FromDateTime(now.Date);
+                        break;
+                    case "tomorrow" or "ngày mai":
+                        dateStart = DateOnly.FromDateTime(now.Date.AddDays(1));
+                        dateEnd = DateOnly.FromDateTime(now.Date.AddDays(1));
+                        break;
+                    case "weekend" or "cuối tuần":
+                        // Friday evening to Sunday night
+                        var dayOfWeek = (int)now.DayOfWeek;
+                        var daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+                        if (daysUntilFriday == 0 && now.Hour >= 18) daysUntilFriday = 7;
+                        
+                        dateStart = DateOnly.FromDateTime(now.Date.AddDays(daysUntilFriday));
+                        dateEnd = DateOnly.FromDateTime(now.Date.AddDays(daysUntilFriday + 2));
+                        break;
+                    case "upcoming" or "sắp tới":
+                        dateStart = DateOnly.FromDateTime(now.Date);
+                        dateEnd = DateOnly.FromDateTime(now.Date.AddDays(30));
+                        break;
+                    default:
+                        dateStart = DateOnly.FromDateTime(now.Date);
+                        dateEnd = DateOnly.FromDateTime(now.Date.AddDays(7));
+                        break;
+                }
+
+                var jobs = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published &&
+                                       ((jp.StartDate >= dateStart && jp.StartDate <= dateEnd) ||
+                                        (jp.SelectedDays != null && jp.SelectedDays.Any(d => d >= dateStart && d <= dateEnd))),
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.Farm)
+                            .Include(jp => jp.JobCategory)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderBy(x => x.StartDate));
+
+                var result = jobs?.Select(j => _mapper.JobPostToJobDiscoveryDto(j)).ToList() ?? new List<JobDiscoveryDTO>();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting jobs by date: {ex.Message}");
+            }
+        }
+
+        public async Task<List<JobDiscoveryDTO>> GetJobsBySkillAsync(List<string> skills)
+        {
+            try
+            {
+                if (skills == null || !skills.Any())
+                {
+                    return new List<JobDiscoveryDTO>();
+                }
+
+                var jobs = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published &&
+                                       jp.JobSkillRequirements.Any(jsr => skills.Contains(jsr.Skill.Name)),
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.Farm)
+                            .Include(jp => jp.JobCategory)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderBy(x => x.Title));
+
+                var result = jobs?.Select(j => _mapper.JobPostToJobDiscoveryDto(j)).ToList() ?? new List<JobDiscoveryDTO>();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting jobs by skill: {ex.Message}");
+            }
+        }
+
+        public async Task<List<JobDiscoveryDTO>> GetJobsByWageRangeAsync(decimal minWage, decimal? maxWage = null)
+        {
+            try
+            {
+                if (minWage < 0 || (maxWage.HasValue && maxWage.Value < minWage))
+                {
+                    throw new ArgumentException("Invalid wage range");
+                }
+
+                var jobs = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published &&
+                                       jp.WageAmount >= minWage &&
+                                       (maxWage == null || jp.WageAmount <= maxWage),
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.Farm)
+                            .Include(jp => jp.JobCategory)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderByDescending(x => x.WageAmount));
+
+                var result = jobs?.Select(j => _mapper.JobPostToJobDiscoveryDto(j)).ToList() ?? new List<JobDiscoveryDTO>();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting jobs by wage range: {ex.Message}");
+            }
+        }
+
+        public async Task<List<JobDiscoveryDTO>> GetJobsByTypeAsync(int jobTypeId)
+        {
+            try
+            {
+                if (jobTypeId <= 0)
+                {
+                    throw new ArgumentException("Invalid job type ID");
+                }
+
+                var jobs = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published && jp.JobTypeId == jobTypeId,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.Farm)
+                            .Include(jp => jp.JobCategory)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderBy(x => x.Title));
+
+                var result = jobs?.Select(j => _mapper.JobPostToJobDiscoveryDto(j)).ToList() ?? new List<JobDiscoveryDTO>();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting jobs by type: {ex.Message}");
+            }
+        }
+
+        public async Task<List<JobDiscoveryDTO>> GetUrgentJobsAsync(decimal latitude, decimal longitude, double maxDistanceKm = 20)
+        {
+            try
+            {
+                var urgentJobs = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published && jp.IsUrgent,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.Farm)
+                            .Include(jp => jp.JobCategory)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderBy(x => x.StartDate));
+
+                if (urgentJobs == null || !urgentJobs.Any())
+                {
+                    return new List<JobDiscoveryDTO>();
+                }
+
+                var nearby = new List<JobDiscoveryDTO>();
+                foreach (var job in urgentJobs)
+                {
+                    if (job.Farm != null)
+                    {
+                        var distance = DistanceCalculator.GetDistanceInKilometers(
+                            latitude, longitude,
+                            job.Farm.Latitude, job.Farm.Longitude);
+
+                        if (distance <= maxDistanceKm)
+                        {
+                            var dto = _mapper.JobPostToJobDiscoveryDto(job);
+                            dto.DistanceKm = distance;
+                            nearby.Add(dto);
+                        }
+                    }
+                }
+
+                nearby = nearby.OrderBy(x => x.DistanceKm).ToList();
+                return nearby;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting urgent jobs: {ex.Message}");
             }
         }
     }

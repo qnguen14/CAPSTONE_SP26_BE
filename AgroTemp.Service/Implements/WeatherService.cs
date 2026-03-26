@@ -12,6 +12,7 @@ public class WeatherService : IWeatherService
     private readonly IConfiguration _configuration;
     private readonly ILogger<WeatherService> _logger;
     private const string BaseUrl = "https://api.openweathermap.org/data/2.5/weather";
+    private const string GeocodingBaseUrl = "https://api.openweathermap.org/geo/1.0/direct";
 
     public WeatherService(HttpClient httpClient, IConfiguration configuration, ILogger<WeatherService> logger)
     {
@@ -32,6 +33,46 @@ public class WeatherService : IWeatherService
         var apiKey = GetApiKey();
         var url = $"{BaseUrl}?q={Uri.EscapeDataString(city)}&appid={apiKey}&units=metric&lang=vi";
         return await FetchWeatherAsync(url);
+    }
+
+    public async Task<WeatherDTO> GetWeatherByAddressAsync(string address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+            throw new ArgumentException("Address is required.", nameof(address));
+
+        var apiKey = GetApiKey();
+        var geocodingUrl =
+            $"{GeocodingBaseUrl}?q={Uri.EscapeDataString(address)}&limit=1&appid={apiKey}&lang=vi";
+
+        try
+        {
+            var response = await _httpClient.GetAsync(geocodingUrl);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogError("OpenWeather geocoding API error {StatusCode}: {Body}", response.StatusCode, errorBody);
+                throw new HttpRequestException(
+                    $"Geocoding API returned {(int)response.StatusCode}: {response.ReasonPhrase}");
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+
+            if (doc.RootElement.ValueKind != JsonValueKind.Array || doc.RootElement.GetArrayLength() == 0)
+                throw new Exception("No geocoding results for the provided address.");
+
+            var first = doc.RootElement[0];
+            var lat = first.GetProperty("lat").GetDouble();
+            var lon = first.GetProperty("lon").GetDouble();
+
+            return await GetWeatherByCoordinatesAsync(lat, lon);
+        }
+        catch (Exception ex) when (ex is not InvalidOperationException && ex is not HttpRequestException)
+        {
+            _logger.LogError(ex, "Unexpected error fetching weather data by address");
+            throw new Exception("Failed to retrieve weather data from the provided address.", ex);
+        }
     }
 
     private string GetApiKey()

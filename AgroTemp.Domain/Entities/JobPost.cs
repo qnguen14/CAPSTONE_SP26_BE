@@ -5,9 +5,8 @@ namespace AgroTemp.Domain.Entities;
 
 public enum JobType
 {
-    Daily = 1,
-    PerPlot = 2,
-    PerJob = 3  
+    PerJob = 1,
+    Daily = 2
 }
 
 public enum JobPostStatus
@@ -40,10 +39,6 @@ public class JobPost
     public Guid FarmId { get; set; }
     public virtual Farm Farm { get; set; }
 
-    public virtual ICollection<JobSkillRequirement> JobSkillRequirements { get; set; } = new List<JobSkillRequirement>();
-    public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
-    public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
-
     [Required]
     [ForeignKey(nameof(JobCategory))]
     [Column("job_category_id")]
@@ -64,13 +59,19 @@ public class JobPost
     public string Address { get; set; }
 
     [Column("start_date")]
-    public DateTime? StartDate { get; set; }
+    public DateOnly? StartDate { get; set; }
 
     [Column("end_date")]
-    public DateTime? EndDate { get; set; }
+    public DateOnly? EndDate { get; set; }
 
     [Column("selected_days")]
-    public List<DateTime> SelectedDays { get; set; } = new List<DateTime>();
+    public List<DateOnly> SelectedDays { get; set; } = new List<DateOnly>();
+
+    [Column("start_time")]
+    public TimeOnly StartTime { get; set; }
+    
+    [Column("end_time")]
+    public TimeOnly EndTime { get; set; }
 
     [Column("workers_needed")]
     public int WorkersNeeded { get; set; }
@@ -86,10 +87,6 @@ public class JobPost
     [Required]
     [Column("wage_amount")]
     public decimal WageAmount { get; set; }
-
-    [Required]
-    [Column("required_skills")]
-    public string RequiredSkills { get; set; }
 
     [Required]
     [Column("requirements")]
@@ -118,4 +115,9 @@ public class JobPost
     [Required]
     [Column("status")]
     public int StatusId { get; set; }
+
+    public virtual ICollection<JobSkillRequirement> JobSkillRequirements { get; set; } = new List<JobSkillRequirement>();
+    public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
+    public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+
 }

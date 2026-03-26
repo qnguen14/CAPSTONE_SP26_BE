@@ -39,6 +39,7 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IFarmService, FarmService>();
             services.AddScoped<IWorkerAttendanceService, WorkerAttendanceService>();
             services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IMessageService, MessageService>();
             services.AddScoped<IExpoPushService, ExpoPushService>();
 
             // payOS client for payment link flow (deposit/top-up)
@@ -78,6 +79,7 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<ISkillService, SkillService>();
             services.AddScoped<IRatingService, RatingService>();
             services.AddScoped<IDisputeReportService, DisputeReportService>();
+            services.AddScoped<IWalletService, WalletService>();
             services.AddScoped<IWalletTransactionService, WalletTransactionService>();
             services.AddHttpClient<IWeatherService, WeatherService>();
             
