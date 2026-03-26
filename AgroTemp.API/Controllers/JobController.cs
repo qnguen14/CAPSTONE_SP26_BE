@@ -835,6 +835,66 @@ public class JobController : ControllerBase
         }
     }
 
+    [HttpPut(ApiEndpointConstants.Job.AutoAcceptUrgentJobApplicationsEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobApplicationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobApplicationDTO>>> AutoAcceptUrgentJobApplications([FromRoute] Guid jobPostId)
+    {
+        try
+        {
+            var response = await _jobApplicationService.AutoAcceptUrgentJobApplicationsAsync(jobPostId);
+            return Ok(new ApiResponse<IEnumerable<JobApplicationDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = $"{response.Count} pending application(s) have been automatically accepted.",
+                Data = response
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Job post {JobPostId} not found for auto-accept", jobPostId);
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized auto-accept attempt for job post {JobPostId}", jobPostId);
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid auto-accept operation for job post {JobPostId}", jobPostId);
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error auto-accepting urgent job applications for job post {JobPostId}", jobPostId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while auto-accepting job applications",
+                Data = null
+            });
+        }
+    }
+
     // Job Detail Endpoints
 
     [HttpGet(ApiEndpointConstants.Job.GetAllJobDetailsEndpoint)]

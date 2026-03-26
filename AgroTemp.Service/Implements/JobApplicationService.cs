@@ -270,5 +270,78 @@ namespace AgroTemp.Service.Implements
                 throw new Exception(ex.Message);
             }
         }
+
+        public async Task<List<JobApplicationDTO>> AutoAcceptUrgentJobApplicationsAsync(Guid jobPostId)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobPostId,
+                        include: q => q.Include(jp => jp.Farmer));
+
+                if (jobPost == null)
+                    throw new KeyNotFoundException("Job post not found.");
+
+                if (jobPost.Farmer == null || jobPost.Farmer.UserId != currentUserId)
+                    throw new UnauthorizedAccessException("Only the farmer who owns this job post can auto-accept applications.");
+
+                if (!jobPost.IsUrgent)
+                    throw new InvalidOperationException("Auto-accept is only available for urgent job posts.");
+
+                var remainingSlots = jobPost.WorkersNeeded - jobPost.WorkersAccepted;
+                if (remainingSlots <= 0)
+                    throw new InvalidOperationException("This job post has already reached its required number of workers.");
+
+                var pendingApplications = await _unitOfWork.GetRepository<JobApplication>()
+                    .GetListAsync(
+                        predicate: ja => ja.JobPostId == jobPostId
+                                      && ja.StatusId == (int)ApplicationStatus.Pending,
+                        include: q => q.Include(ja => ja.Worker),
+                        orderBy: q => q.OrderBy(ja => ja.AppliedAt));
+
+                if (pendingApplications == null || !pendingApplications.Any())
+                    throw new InvalidOperationException("No pending applications found for this job post.");
+
+                var toAccept = pendingApplications.Take(remainingSlots).ToList();
+
+                foreach (var application in toAccept)
+                {
+                    application.StatusId = (int)ApplicationStatus.Accepted;
+                    application.RespondedAt = DateTime.UtcNow;
+                    application.ResponseMessage = "Đơn tuyển dụng của bạn đã được tự động chấp nhận do công việc này đang cần người gấp.";
+
+                    _unitOfWork.GetRepository<JobApplication>().UpdateAsync(application);
+
+                    if (application.Worker != null)
+                    {
+                        await _notificationService.CreateAsync(new CreateNotificationRequest
+                        {
+                            UserId = application.Worker.UserId,
+                            Type = NotificationType.JobAcceptance,
+                            Title = "Đơn tuyển dụng được CHẤP NHẬN",
+                            Message = $"Đơn tuyển dụng của bạn cho \"{jobPost.Title}\" đã được tự động chấp nhận vì đây là công việc khẩn cấp.",
+                            RelatedEntityId = jobPostId
+                        });
+                    }
+                }
+
+                jobPost.WorkersAccepted += toAccept.Count;
+
+                if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
+                    jobPost.StatusId = (int)JobPostStatus.Closed;
+
+                _unitOfWork.GetRepository<JobPost>().UpdateAsync(jobPost);
+                await _unitOfWork.SaveChangesAsync();
+
+                return _mapper.JobApplicationsToJobApplicationDtos(toAccept);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
     }
 }
