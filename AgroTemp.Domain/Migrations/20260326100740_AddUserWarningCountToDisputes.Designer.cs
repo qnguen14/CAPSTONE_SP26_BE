@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260326100740_AddUserWarningCountToDisputes")]
+    partial class AddUserWarningCountToDisputes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -246,9 +249,9 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("farmer_id");
 
-                    b.Property<string>("ImageUrl")
+                    b.Property<List<string>>("ImageUrl")
                         .HasMaxLength(1024)
-                        .HasColumnType("character varying(1024)")
+                        .HasColumnType("text[]")
                         .HasColumnName("image_url");
 
                     b.Property<bool>("IsPrimary")
@@ -547,9 +550,13 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("timestamp with time zone")
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date")
                         .HasColumnName("end_date");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("end_time");
 
                     b.Property<Guid>("FarmId")
                         .HasColumnType("uuid")
@@ -580,24 +587,23 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("published_at");
 
-                    b.Property<string>("RequiredSkills")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("required_skills");
-
                     b.Property<List<string>>("Requirements")
                         .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("requirements");
 
-                    b.Property<List<DateTime>>("SelectedDays")
+                    b.Property<List<DateOnly>>("SelectedDays")
                         .IsRequired()
-                        .HasColumnType("timestamp with time zone[]")
+                        .HasColumnType("date[]")
                         .HasColumnName("selected_days");
 
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("timestamp with time zone")
+                    b.Property<DateOnly?>("StartDate")
+                        .HasColumnType("date")
                         .HasColumnName("start_date");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("start_time");
 
                     b.Property<int>("StatusId")
                         .HasColumnType("integer")
@@ -1348,7 +1354,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("desription");
 
                     b.Property<Guid?>("JobDetailId")
-                        .IsRequired()
                         .HasColumnType("uuid")
                         .HasColumnName("job_detail_id");
 
@@ -1879,8 +1884,7 @@ namespace AgroTemp.Domain.Migrations
                     b.HasOne("AgroTemp.Domain.Entities.JobDetail", "JobDetail")
                         .WithMany("WalletTransactions")
                         .HasForeignKey("JobDetailId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("AgroTemp.Domain.Entities.Wallet", "Wallet")
                         .WithMany("WalletTransactions")

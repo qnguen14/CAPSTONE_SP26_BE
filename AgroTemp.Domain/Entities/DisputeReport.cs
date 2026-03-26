@@ -18,6 +18,16 @@ public enum DisputeType
     Other = 3
 }
 
+// None = both sides are right, no one gets banned
+// Reporter = the one who created the dispute is wrong
+// Accused = the one being reported is wrong
+public enum PenaltyTarget
+{
+    None = 0,
+    Reporter = 1,
+    Accused = 2
+}
+
 [Table("Dispute_Reports")]
 public class DisputeReport
 {
@@ -81,6 +91,23 @@ public class DisputeReport
     [ForeignKey(nameof(ResolvedBy))]
     public Guid? ResolvedById { get; set; }
     public virtual User ResolvedBy { get; set; }
+
+    [Column("reporter_user_id")]
+    public Guid? ReporterUserId { get; set; }
+
+    [Column("accused_user_id")]
+    public Guid? AccusedUserId { get; set; }
+
+    // Admin decision: who gets penalized (None / Reporter / Accused)
+    [Column("penalty_target")]
+    public int PenaltyTargetId { get; set; } = (int)PenaltyTarget.None;
+
+    [NotMapped]
+    public PenaltyTarget PenaltyTarget
+    {
+        get => (PenaltyTarget)PenaltyTargetId;
+        set => PenaltyTargetId = (int)value;
+    }
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

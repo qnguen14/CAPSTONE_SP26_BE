@@ -19,4 +19,11 @@ public class DisputeReportDTO
     public Guid? ResolvedById { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? ResolvedAt { get; set; }
+
+    public Guid? ReporterUserId { get; set; }
+
+    public Guid? AccusedUserId { get; set; }
+
+    public int PenaltyTargetId { get; set; }
+    public PenaltyTarget PenaltyTarget => (PenaltyTarget)PenaltyTargetId;
 }
