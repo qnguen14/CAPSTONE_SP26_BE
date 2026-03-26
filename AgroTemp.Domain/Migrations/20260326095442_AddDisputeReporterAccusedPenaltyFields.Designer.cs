@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260326095442_AddDisputeReporterAccusedPenaltyFields")]
+    partial class AddDisputeReporterAccusedPenaltyFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1243,10 +1246,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_verified");
 
-                    b.Property<DateTime?>("LastWarnedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_warned_at");
-
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1277,10 +1276,6 @@ namespace AgroTemp.Domain.Migrations
                     b.Property<DateTime?>("VerificationTokenExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("verification_token_expires_at");
-
-                    b.Property<int>("WarningCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("warning_count");
 
                     b.HasKey("Id");
 
