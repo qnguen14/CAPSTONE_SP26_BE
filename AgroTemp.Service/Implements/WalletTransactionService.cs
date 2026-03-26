@@ -36,5 +36,25 @@ namespace AgroTemp.Service.Implements
                 CreatedAt = DateTime.UtcNow
             });
         }
+
+        public async Task<WalletTransaction?> GetByIdAsync(Guid transactionId)
+        {
+            return await _unitOfWork.GetRepository<WalletTransaction>()
+                .FirstOrDefaultAsync(predicate: x => x.Id == transactionId);
+        }
+
+        public async Task<ICollection<WalletTransaction>> GetAllAsync()
+        {
+            return await _unitOfWork.GetRepository<WalletTransaction>()
+                .GetListAsync();
+        }
+
+        public async Task<ICollection<WalletTransaction>> GetByWalletIdAsync(Guid walletId)
+        {
+            return await _unitOfWork.GetRepository<WalletTransaction>()
+                .GetListAsync(
+                    predicate: x => x.WalletId == walletId,
+                    orderBy: q => q.OrderByDescending(x => x.CreatedAt));
+        }
     }
 }
