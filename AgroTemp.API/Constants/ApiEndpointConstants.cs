@@ -239,4 +239,20 @@ public class ApiEndpointConstants
         public const string DeleteResourceEndpoint = MediaDeleteEndpoint + "/resource";
         public const string DeleteResourcesEndpoint = MediaDeleteEndpoint + "/resources";
     }
+
+    public static class Wallet
+    {
+        public const string WalletEndpoint = ApiEndpoint + "/wallet";
+        public const string GetAllWalletsEndpoint = WalletEndpoint;
+        public const string GetWalletByIdEndpoint = WalletEndpoint + "/{id}";
+        public const string GetMyWalletEndpoint = WalletEndpoint + "/me";
+    }
+
+    public static class WalletTransaction
+    {
+        public const string WalletTransactionEndpoint = ApiEndpoint + "/wallet-transaction";
+        public const string GetAllWalletTransactionsEndpoint = WalletTransactionEndpoint;
+        public const string GetWalletTransactionByIdEndpoint = WalletTransactionEndpoint + "/{id}";
+        public const string GetWalletTransactionsByWalletIdEndpoint = WalletTransactionEndpoint + "/wallet/{walletId}";
+    }
 }

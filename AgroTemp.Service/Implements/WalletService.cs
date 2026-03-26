@@ -317,5 +317,23 @@ VALUES (
                 await insertTxnCmd.ExecuteNonQueryAsync();
             }
         }
+
+        public async Task<Wallet?> GetByIdAsync(Guid walletId)
+        {
+            return await _unitOfWork.GetRepository<Wallet>()
+                .FirstOrDefaultAsync(predicate: w => w.Id == walletId);
+        }
+
+        public async Task<Wallet?> GetByUserIdAsync(Guid userId)
+        {
+            return await _unitOfWork.GetRepository<Wallet>()
+                .FirstOrDefaultAsync(predicate: w => w.UserId == userId);
+        }
+
+        public async Task<ICollection<Wallet>> GetAllAsync()
+        {
+            return await _unitOfWork.GetRepository<Wallet>()
+                .GetListAsync();
+        }
     }
 }
