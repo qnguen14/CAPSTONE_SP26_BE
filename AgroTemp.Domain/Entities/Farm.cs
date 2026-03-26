@@ -47,7 +47,7 @@ public class Farm
 
     [Column("image_url")]
     [StringLength(1024)]
-    public string? ImageUrl { get; set; }
+    public List<string>? ImageUrl { get; set; }
 
     [Required]
     [Column("is_primary")]
