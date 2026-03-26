@@ -62,6 +62,7 @@ public class ApiEndpointConstants
         public const string JobPostEndpoint = JobEndpoint + "/post";
         public const string JobApplicationEndpoint = JobEndpoint + "/application";
         public const string JobDetailEndpoint = JobEndpoint + "/detail";
+        public const string GetJobApplicationsByJobPostEndpoint = JobApplicationEndpoint + "/by-job-post" + "/{jobPostId}";
 
         public const string GetAllJobCategoriesEndpoint = JobCategoryEndpoint;
         public const string GetAllJobPostsEndpoint = JobPostEndpoint;

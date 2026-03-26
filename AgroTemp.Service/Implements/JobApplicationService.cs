@@ -75,6 +75,35 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<List<JobApplicationDTO>> GetJobApplicationsByJobPostId(Guid jobPostId, Guid farmerProfileId, int? statusId, bool includeAll)
+        {
+            try
+            {
+                var statusFilter = statusId ?? (int)ApplicationStatus.Pending;
+
+                var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
+                    .GetListAsync(predicate: ja =>
+                                    ja.JobPostId == jobPostId &&
+                                    ja.JobPost.FarmerId == farmerProfileId &&
+                                    (includeAll || ja.StatusId == statusFilter),
+                                include: ja => ja.Include(j => j.Worker)
+                                                .Include(j => j.JobPost.Farmer)
+                                                .Include(j => j.JobPost.Farm),
+                                orderBy: ja => ja.OrderBy(x => x.AppliedAt));
+
+                if (jobApplications == null || !jobApplications.Any())
+                {
+                    return new List<JobApplicationDTO>();
+                }
+
+                return _mapper.JobApplicationsToJobApplicationDtos(jobApplications);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<JobApplicationDTO> CreateJobApplication(CreateJobApplicationRequest request)
         {
             try
