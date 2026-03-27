@@ -219,7 +219,7 @@ namespace AgroTemp.Service.Implements
                 var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == guid,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost));
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost).ThenInclude(jp => jp.Farmer));
                 if (existingJobApplication == null)
                 {
                     return null;
@@ -237,8 +237,6 @@ namespace AgroTemp.Service.Implements
                     {
                         existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Closed;
                     }
-
-                    _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobApplication.JobPost);
                 }
 
                 _unitOfWork.GetRepository<JobApplication>().UpdateAsync(existingJobApplication);
