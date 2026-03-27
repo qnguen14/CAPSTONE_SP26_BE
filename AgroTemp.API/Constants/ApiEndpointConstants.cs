@@ -95,7 +95,7 @@ public class ApiEndpointConstants
         public const string UpdateJobDetailStatusEndpoint = JobDetailEndpoint + "/update-status" + "/{id}";
 
         public const string RespondJobApplicationEndpoint = JobApplicationEndpoint + "/respond" + "/{id}";
-        public const string AutoAcceptUrgentJobApplicationsEndpoint = JobApplicationEndpoint + "/auto-accept/{jobPostId}";
+        public const string AutoAcceptUrgentJobApplicationsEndpoint = JobApplicationEndpoint + "/auto-accept";
 
         public const string GetFilteredJobPostsEndpoint = JobPostEndpoint + "/filter";
 

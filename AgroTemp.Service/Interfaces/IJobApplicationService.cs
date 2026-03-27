@@ -11,6 +11,6 @@ namespace AgroTemp.Service.Interfaces
         Task<bool> DeleteJobApplication(string id);
         Task<JobApplicationDTO> RespondJobApplication(string id, RespondJobApplicationRequest request);
         Task<List<JobApplicationDTO>> GetJobApplicationsByJobPostId(Guid jobPostId, Guid farmerProfileId, int? statusId, bool includeAll);
-        Task<List<JobApplicationDTO>> AutoAcceptUrgentJobApplicationsAsync(Guid jobPostId);
+        Task<List<JobApplicationDTO>> AutoAcceptUrgentJobApplicationsAsync(List<Guid> jobApplicationIds);
     }
 }

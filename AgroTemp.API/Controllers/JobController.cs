@@ -871,11 +871,11 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<JobApplicationDTO>>> AutoAcceptUrgentJobApplications([FromRoute] Guid jobPostId)
+    public async Task<ActionResult<IEnumerable<JobApplicationDTO>>> AutoAcceptUrgentJobApplications([FromBody] List<Guid> jobApplicationIds)
     {
         try
         {
-            var response = await _jobApplicationService.AutoAcceptUrgentJobApplicationsAsync(jobPostId);
+            var response = await _jobApplicationService.AutoAcceptUrgentJobApplicationsAsync(jobApplicationIds);
             return Ok(new ApiResponse<IEnumerable<JobApplicationDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
@@ -883,9 +883,19 @@ public class JobController : ControllerBase
                 Data = response
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid argument for auto-accept urgent job applications");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogWarning(ex, "Job post {JobPostId} not found for auto-accept", jobPostId);
+            _logger.LogWarning(ex, "Resource not found during auto-accept urgent job applications");
             return NotFound(new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status404NotFound,
@@ -895,7 +905,7 @@ public class JobController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            _logger.LogWarning(ex, "Unauthorized auto-accept attempt for job post {JobPostId}", jobPostId);
+            _logger.LogWarning(ex, "Unauthorized auto-accept attempt");
             return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status403Forbidden,
@@ -905,7 +915,7 @@ public class JobController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Invalid auto-accept operation for job post {JobPostId}", jobPostId);
+            _logger.LogWarning(ex, "Invalid auto-accept operation");
             return BadRequest(new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status400BadRequest,
@@ -915,7 +925,7 @@ public class JobController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error auto-accepting urgent job applications for job post {JobPostId}", jobPostId);
+            _logger.LogError(ex, "Error auto-accepting urgent job applications");
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
