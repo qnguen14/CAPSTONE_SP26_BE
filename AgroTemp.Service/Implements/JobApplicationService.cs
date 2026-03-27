@@ -124,12 +124,12 @@ namespace AgroTemp.Service.Implements
                 jobApplication.Id = Guid.NewGuid();
                 jobApplication.AppliedAt = DateTime.UtcNow;
                 jobApplication.RespondedAt = null;
+                jobApplication.ResponseMessage = null;
                 jobApplication.StatusId = (int)ApplicationStatus.Pending;
 
                 await _unitOfWork.GetRepository<JobApplication>().InsertAsync(jobApplication);
-                await _unitOfWork.SaveChangesAsync();
 
-                // Get the job post and farmer information
+                // Get the job post and farmer information for the notification
                 var jobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
                         predicate: jp => jp.Id == jobApplication.JobPostId,
@@ -137,7 +137,6 @@ namespace AgroTemp.Service.Implements
 
                 if (jobPost != null && jobPost.Farmer != null)
                 {
-                    // Send notification to the farmer
                     var notificationRequest = new CreateNotificationRequest
                     {
                         UserId = jobPost.Farmer.UserId,
@@ -149,6 +148,8 @@ namespace AgroTemp.Service.Implements
 
                     await _notificationService.CreateAsync(notificationRequest);
                 }
+
+                await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.JobApplicationToJobApplicationDto(jobApplication);
                 return result;
