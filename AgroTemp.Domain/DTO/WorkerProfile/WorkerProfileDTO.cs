@@ -5,7 +5,7 @@ public class WorkerProfileDTO
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public string FullName { get; set; }
-    public string Age { get; set; }
+    public string AgeRange { get; set; }
     public string PrimaryLocation { get; set; }
     public double? TravelRadiusKmPreference { get; set; }
     public int ExperienceLevelId { get; set; }
@@ -16,7 +16,4 @@ public class WorkerProfileDTO
     public string AvatarUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-
-    public string Email { get; set; }
-    public string PhoneNumber { get; set; }
 }
