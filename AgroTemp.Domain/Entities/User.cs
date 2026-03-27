@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
@@ -59,6 +59,12 @@ public class User
     [Column("is_verified")]
     public bool IsVerified { get; set; }
 
+    [Column("warning_count")]
+    public int WarningCount { get; set; } = 0;
+
+    [Column("last_warned_at")]
+    public DateTime? LastWarnedAt { get; set; }
+
     [Column("verification_token")]
     public string? VerificationToken { get; set; }
 
@@ -78,12 +84,10 @@ public class User
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public virtual ICollection<ChatMessage> SentMessages { get; set; } = new List<ChatMessage>();
     public virtual ICollection<ChatMessage> ReceivedMessages { get; set; } = new List<ChatMessage>();
+    public virtual ICollection<DeviceToken> DeviceTokens { get; set; } = new List<DeviceToken>();
     
     public virtual ICollection<Rating> GivenRatings { get; set; } = new List<Rating>();
     public virtual ICollection<Rating> ReceivedRatings { get; set; } = new List<Rating>();
 
     public virtual Wallet? Wallet { get; set; }
-
-    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
-    public virtual ICollection<WithdrawalRequest> WithdrawalRequests { get; set; } = new List<WithdrawalRequest>();
 }

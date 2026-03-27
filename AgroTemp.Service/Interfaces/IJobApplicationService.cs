@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.DTO.Job.JobApplication;
+using AgroTemp.Domain.DTO.Job.JobApplication;
 
 namespace AgroTemp.Service.Interfaces
 {
@@ -7,7 +7,10 @@ namespace AgroTemp.Service.Interfaces
         Task<List<JobApplicationDTO>> GetAllJobApplications();
         Task<JobApplicationDTO> GetJobApplicationById(string id);
         Task<JobApplicationDTO> CreateJobApplication(CreateJobApplicationRequest request);
-        Task<JobApplicationDTO> UpdateJobApplication(UpdateJobApplicationRequest request);
+        Task<JobApplicationDTO> UpdateJobApplication(Guid id, UpdateJobApplicationRequest request);
         Task<bool> DeleteJobApplication(string id);
+        Task<JobApplicationDTO> RespondJobApplication(string id, RespondJobApplicationRequest request);
+        Task<List<JobApplicationDTO>> GetJobApplicationsByJobPostId(Guid jobPostId, Guid farmerProfileId, int? statusId, bool includeAll);
+        Task<List<JobApplicationDTO>> AutoAcceptUrgentJobApplicationsAsync(Guid jobPostId);
     }
 }

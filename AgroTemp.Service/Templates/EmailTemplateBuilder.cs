@@ -96,8 +96,8 @@ public static class EmailTemplateBuilder
         sb.Append($@"
         </div>
         <div class=""footer"">
-            <p>&copy; {DateTime.Now.Year} AgroTemp. All rights reserved.</p>
-            <p>This is an automated message, please do not reply.</p>
+            <p>&copy; {DateTime.Now.Year} AgroTemp. Bảo lưu mọi quyền.</p>
+            <p>Đây là email tự động, vui lòng không trả lời email này.</p>
         </div>
     </div>
 </body>

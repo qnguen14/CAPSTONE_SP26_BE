@@ -3,19 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
 
-public enum WageType
+public enum JobType
 {
-    Daily = 1,
-    PerPlot = 2,
-    PerJob = 3
-}
-
-public enum PaymentMethod
-{
-    Cash = 1,
-    BankTransfer = 2,
-    EWallet = 3,
-    EscrowService = 4
+    PerJob = 1,
+    Daily = 2
 }
 
 public enum JobPostStatus
@@ -48,10 +39,6 @@ public class JobPost
     public Guid FarmId { get; set; }
     public virtual Farm Farm { get; set; }
 
-    public virtual ICollection<JobSkillRequirement> JobSkillRequirements { get; set; } = new List<JobSkillRequirement>();
-    public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
-    public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
-
     [Required]
     [ForeignKey(nameof(JobCategory))]
     [Column("job_category_id")]
@@ -71,19 +58,21 @@ public class JobPost
     [Column("address")]
     public string Address { get; set; }
 
-    [Required]
     [Column("start_date")]
-    public DateTime StartDate { get; set; }
+    public DateOnly? StartDate { get; set; }
 
-    [Required]
     [Column("end_date")]
-    public DateTime EndDate { get; set; }
+    public DateOnly? EndDate { get; set; }
 
-    [Required]
-    [Column("estimated_hours")]
-    public decimal EstimatedHours { get; set; }
+    [Column("selected_days")]
+    public List<DateOnly> SelectedDays { get; set; } = new List<DateOnly>();
 
-    [Required]
+    [Column("start_time")]
+    public TimeOnly StartTime { get; set; }
+    
+    [Column("end_time")]
+    public TimeOnly EndTime { get; set; }
+
     [Column("workers_needed")]
     public int WorkersNeeded { get; set; }
 
@@ -92,26 +81,20 @@ public class JobPost
     public int WorkersAccepted { get; set; }
 
     [Required]
-    [Column("wage_type")]
-    public int WageTypeId { get; set; }
-    public virtual WageType WageType { get; set; }
+    [Column("job_type")]
+    public int JobTypeId { get; set; }
 
     [Required]
     [Column("wage_amount")]
     public decimal WageAmount { get; set; }
 
     [Required]
-    [Column("payment_method")]
-    public int PaymentMethodId { get; set; }
-    public virtual PaymentMethod PaymentMethod { get; set; }
+    [Column("requirements")]
+    public List<string> Requirements { get; set; }
 
     [Required]
-    [Column("required_skills")]
-    public string RequiredSkills { get; set; }
-
-    [Required]
-    [Column("gender_preference")]
-    public string GenderPreference { get; set; }
+    [Column("privileges")]
+    public List<string> Privileges { get; set; }
 
     [Required]
     [Column("published_at")]
@@ -132,5 +115,9 @@ public class JobPost
     [Required]
     [Column("status")]
     public int StatusId { get; set; }
-    public virtual JobPostStatus Status { get; set; }
+
+    public virtual ICollection<JobSkillRequirement> JobSkillRequirements { get; set; } = new List<JobSkillRequirement>();
+    public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
+    public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+
 }

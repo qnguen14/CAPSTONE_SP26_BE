@@ -10,16 +10,16 @@ namespace AgroTemp.Domain.DTO.Job.JobApplication
     {
         public Guid JobPostId { get; set; }
 
-        public Guid WorkerId { get; set; }
-
         public int StatusId { get; set; }
 
         public string? CoverLetter { get; set; }
 
-        public DateTime AppliedAt { get; set; }
+        public DateTime? AppliedAt { get; set; }
 
-        public DateTime RespondedAt { get; set; }
+        public DateTime? RespondedAt { get; set; }
 
         public string? ResponseMessage { get; set; }
+
+        public List<DateTime> WorkDates { get; set; } = new List<DateTime>();
     }
 }

@@ -1,12 +1,17 @@
 using AgroTemp.Domain.DTO;
 using AgroTemp.Domain.DTO.Auth;
+using AgroTemp.Domain.DTO.DisputeReport;
 using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
+using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.DTO.Notification;
+using AgroTemp.Domain.DTO.Rating;
+using AgroTemp.Domain.DTO.Skill;
 using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
+using JobApplicationEntity = AgroTemp.Domain.Entities.JobApplication;
 
 namespace AgroTemp.Domain.Mapper;
 
@@ -15,7 +20,7 @@ public interface IMapperlyMapper
     // User
     UserDTO UserToUserDto(User user);
     List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
-    
+
     // Farmer
     FarmerProfileDTO FarmerToDto(Farmer farmer);
 
@@ -25,7 +30,7 @@ public interface IMapperlyMapper
 
     // Worker
     WorkerProfileDTO WorkerToDto(Worker worker);
-    
+
     LoginResponse UserToLoginResponse(User user);
     // User RegisterRequestToUser(RegisterRequest resquest);
     // User RequestDTOToUser(UserRequestDTO request);
@@ -40,20 +45,48 @@ public interface IMapperlyMapper
     // JobPost
     JobPostDTO JobPostToJobPostDto(JobPost jobPost);
     List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
+    JobDiscoveryDTO JobPostToJobDiscoveryDto(JobPost jobPost);
+    List<JobDiscoveryDTO> JobPostsToJobDiscoveryDtos(IEnumerable<JobPost> jobPosts);
     JobSkillRequirementSummaryDTO JobSkillRequirementToSummaryDto(JobSkillRequirement jobSkillRequirement);
     List<JobSkillRequirementSummaryDTO> JobSkillRequirementsToSummaryDtos(IEnumerable<JobSkillRequirement> jobSkillRequirements);
     JobPost CreateJobPostRequestToJobPost(CreateJobPostRequest request);
     void UpdateJobPostRequestToJobPost(UpdateJobPostRequest request, JobPost jobPost);
 
     // JobApplication
-    JobApplicationDTO JobApplicationToJobApplicationDto(JobApplication jobApplication);
-    List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplication> jobApplications);
-    JobApplication CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
-    void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplication jobApplication);
-    
+    JobApplicationDTO JobApplicationToJobApplicationDto(JobApplicationEntity jobApplication);
+    List<JobApplicationDTO> JobApplicationsToJobApplicationDtos(IEnumerable<JobApplicationEntity> jobApplications);
+    JobApplicationEntity CreateJobApplicationRequestToJobApplication(CreateJobApplicationRequest request);
+    void UpdateJobApplicationRequestToJobApplication(UpdateJobApplicationRequest request, JobApplicationEntity jobApplication);
+
+    // JobDetail
+    JobDetailDTO JobDetailToJobDetailDto(JobDetail jobDetail);
+    List<JobDetailDTO> JobDetailsToJobDetailDtos(IEnumerable<JobDetail> jobDetails);
+    JobDetailResponseDTO JobDetailToJobDetailResponseDto(JobDetail jobDetail);
+    List<JobDetailResponseDTO> JobDetailsToJobDetailResponseDtos(IEnumerable<JobDetail> jobDetails);
+    JobDetail CreateJobDetailRequestToJobDetail(CreateJobDetailRequest request);
+    void UpdateJobDetailRequestToJobDetail(UpdateJobDetailRequest request, JobDetail jobDetail);
+
     // Notification
     NotificationDTO NotificationToDto(Notification notification);
     List<NotificationDTO> NotificationsToDto(IEnumerable<Notification> notifications);
+
+    // Skill
+    SkillResponse SkillToSkillResponse(Skill skill);
+    List<SkillResponse> SkillsToSkillResponses(IEnumerable<Skill> skills);
+    Skill CreateSkillRequestToSkill(CreateSkillRequest request);
+    void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
+
+    // Rating
+    RatingDTO RatingToRatingDto(Rating rating);
+    List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings);
+    Rating CreateRatingRequestToRating(CreateRatingRequest request);
+    void UpdateRatingRequestToRating(UpdateRatingRequest request, Rating rating);
+
+    // Dispute
+    DisputeReportDTO DisputeReportToDisputeReportDto(DisputeReport disputeReport);
+    List<DisputeReportDTO> DisputeReportsToDisputeReportDtos(IEnumerable<DisputeReport> disputeReports);
+    DisputeReport CreateDisputeReportRequestToDisputeReport(CreateDisputeReportRequest request);
+    void UpdateDisputeReportRequestToDisputeReport(UpdateDisputeReportRequest request, DisputeReport disputeReport);
 
     // WorkerSession
     WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);

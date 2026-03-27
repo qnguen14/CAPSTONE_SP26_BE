@@ -8,9 +8,6 @@ namespace AgroTemp.Domain.DTO.WorkerAttendance
         [Required]
         public Guid AttendanceId { get; set; }
 
-        [Required]
-        public Guid ApprovedBy { get; set; }
-
         public decimal? AdjustedHours { get; set; }
     }
 }

@@ -32,4 +32,12 @@ namespace AgroTemp.Service.Config.ApiModels
         public static CloudinarySetting Instance { get; set; }
         public string CloudinaryUrl { get; set; }
     }
+
+    public class PayOSSetting
+    {
+        public static PayOSSetting Instance { get; set; }
+        public string ClientId { get; set; }
+        public string ApiKey { get; set; }
+        public string ChecksumKey { get; set; }
+    }
 }

@@ -21,6 +21,7 @@ public class AuthService : BaseService<User>, IAuthService
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly ILogger<AuthService> _logger;
+    private readonly IWalletService _walletService;
 
     public AuthService(
         IUnitOfWork<AgroTempDbContext> unitOfWork, 
@@ -28,11 +29,13 @@ public class AuthService : BaseService<User>, IAuthService
         IMapperlyMapper mapper,
         IConfiguration configuration,
         IEmailService emailService,
-        ILogger<AuthService> logger) : base(unitOfWork, httpContextAccessor, mapper)
+        ILogger<AuthService> logger,
+        IWalletService walletService) : base(unitOfWork, httpContextAccessor, mapper)
     {
         _configuration = configuration;
         _emailService = emailService;
         _logger = logger;
+        _walletService = walletService;
     }
 
     public async Task<LoginResponse> Login(LoginRequest request)
@@ -72,7 +75,7 @@ public class AuthService : BaseService<User>, IAuthService
         }
 
         // Generate JWT token
-        var token = GenerateJwtToken(user);
+        var token = await GenerateJwtToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
 
         return new LoginResponse
@@ -125,10 +128,11 @@ public class AuthService : BaseService<User>, IAuthService
             
 
         await _unitOfWork.GetRepository<User>().InsertAsync(user);
+                await _walletService.GetOrCreateWalletAsync(user.Id);
         await _unitOfWork.SaveChangesAsync();
 
         // Generate JWT token
-        var token = GenerateJwtToken(user);
+        var token = await GenerateJwtToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
 
         return new LoginResponse
@@ -188,6 +192,7 @@ public class AuthService : BaseService<User>, IAuthService
                 };
 
                 await _unitOfWork.GetRepository<User>().InsertAsync(user);
+                await _walletService.GetOrCreateWalletAsync(user.Id);
                 await _unitOfWork.SaveChangesAsync();
             }
             else if (!user.IsActive)
@@ -196,7 +201,7 @@ public class AuthService : BaseService<User>, IAuthService
             }
 
             // Generate JWT token
-            var token = GenerateJwtToken(user);
+            var token = await GenerateJwtToken(user);
             var expiresAt = DateTime.UtcNow.AddHours(24);
 
             return new LoginResponse
@@ -246,12 +251,12 @@ public class AuthService : BaseService<User>, IAuthService
         await _unitOfWork.SaveChangesAsync();
     }
 
-    private string GenerateJwtToken(User user)
+    private async Task<string> GenerateJwtToken(User user)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claimsList = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
@@ -259,10 +264,32 @@ public class AuthService : BaseService<User>, IAuthService
             new Claim("RoleId", user.RoleId.ToString())
         };
 
+        // Add FarmerProfileId or WorkerProfileId based on role
+        if (user.Role == UserRole.Farmer)
+        {
+            var farmer = await _unitOfWork.GetRepository<Farmer>()
+                .FirstOrDefaultAsync(predicate: f => f.UserId == user.Id);
+            
+            if (farmer != null)
+            {
+                claimsList.Add(new Claim("FarmerProfileId", farmer.Id.ToString()));
+            }
+        }
+        else if (user.Role == UserRole.Worker)
+        {
+            var worker = await _unitOfWork.GetRepository<Worker>()
+                .FirstOrDefaultAsync(predicate: w => w.UserId == user.Id);
+            
+            if (worker != null)
+            {
+                claimsList.Add(new Claim("WorkerProfileId", worker.Id.ToString()));
+            }
+        }
+
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
-            claims: claims,
+            claims: claimsList,
             expires: DateTime.UtcNow.AddHours(24),
             signingCredentials: credentials
         );
@@ -293,8 +320,14 @@ public class AuthService : BaseService<User>, IAuthService
         // Send password reset email
         try
         {
-            await _emailService.SendEmailAsync(user.Email, "AgroTemp Password Reset",
-                $"<div style=\"text-align: center;\"><h2>Password Reset Code</h2><h1>{user.PasswordResetToken}</h1><p>This code will expire in 15 minutes.</p><p>If you didn't request this, please ignore this email.</p></div>");
+            await _emailService.SendEmailAsync(user.Email, "AgroTemp - Đặt lại mật khẩu",
+                $@"<div style=""text-align: center;"">
+                    <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+                    <p>Mã xác nhận của bạn là:</p>
+                    <h1 style=""font-size: 48px; letter-spacing: 8px; color: #2E7D32;"">{user.PasswordResetToken}</h1>
+                    <p>Mã này sẽ hết hạn sau <strong>15 phút</strong>.</p>
+                    <p style=""color: #888888; font-size: 13px;"">Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+                </div>");
         }
         catch (Exception ex)
         {

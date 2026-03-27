@@ -8,22 +8,25 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
 {
     public class UpdateJobPostRequest
     {
-        public Guid Id { get; set; }
         public Guid FarmerProfileId { get; set; }
+        public string ContactName { get; set; }
+        public List<Guid> SkillIds { get; set; } = new();
         public Guid FarmId { get; set; }
         public Guid JobCategoryId { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
         public string Address { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-        public decimal EstimatedHours { get; set; }
+        public DateOnly? StartDate { get; set; }
+        public DateOnly? EndDate { get; set; }
+        public List<DateOnly> SelectedDays { get; set; } = new List<DateOnly>();
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
         public int WorkersNeeded { get; set; }
         public int WorkersAccepted { get; set; }
-        public int WageTypeId { get; set; }
+        public int JobTypeId { get; set; }
         public decimal WageAmount { get; set; }
-        public int PaymentMethodId { get; set; }
-        public string GenderPreference { get; set; }
+        public List<string> Requirements { get; set; } = new List<string>();
+        public List<string> Privileges { get; set; } = new List<string>();
         public DateTime PublishedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

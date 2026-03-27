@@ -12,13 +12,16 @@ namespace AgroTemp.Service.Implements;
 public class NotificationService : BaseService<Notification>, INotificationService
 {
     private readonly IMapperlyMapper _mapper;
+    private readonly IExpoPushService _expoPushService;
 
     public NotificationService(
         IUnitOfWork<AgroTempDbContext> unitOfWork,
         IHttpContextAccessor httpContextAccessor,
-        IMapperlyMapper mapper) : base(unitOfWork, httpContextAccessor, mapper)
+        IMapperlyMapper mapper,
+        IExpoPushService expoPushService) : base(unitOfWork, httpContextAccessor, mapper)
     {
         _mapper = mapper;
+        _expoPushService = expoPushService;
     }
 
     public async Task<NotificationDTO> CreateAsync(CreateNotificationRequest request)
@@ -89,7 +92,7 @@ public class NotificationService : BaseService<Notification>, INotificationServi
         }
     }
 
-    public async Task MarkAsReadAsync(Guid notificationId)
+    public async Task<NotificationDTO> MarkAsReadAsync(Guid notificationId)
     {
         try
         {
@@ -104,6 +107,8 @@ public class NotificationService : BaseService<Notification>, INotificationServi
 
             _unitOfWork.GetRepository<Notification>().UpdateAsync(notification);
             await _unitOfWork.SaveChangesAsync();
+
+            return _mapper.NotificationToDto(notification);
         }
         catch (Exception ex)
         {
@@ -111,7 +116,7 @@ public class NotificationService : BaseService<Notification>, INotificationServi
         }
     }
 
-    public async Task MarkAllAsReadAsync(Guid userId)
+    public async Task<List<NotificationDTO>> MarkAllAsReadAsync(Guid userId)
     {
         try
         {
@@ -119,7 +124,7 @@ public class NotificationService : BaseService<Notification>, INotificationServi
                 .GetListAsync(predicate: n => n.UserId == userId && !n.IsRead);
 
             if (notifications == null || !notifications.Any())
-                return;
+                return new List<NotificationDTO>();
 
             foreach (var notification in notifications)
             {
@@ -129,6 +134,8 @@ public class NotificationService : BaseService<Notification>, INotificationServi
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            return _mapper.NotificationsToDto(notifications);
         }
         catch (Exception ex)
         {
@@ -152,6 +159,100 @@ public class NotificationService : BaseService<Notification>, INotificationServi
         catch (Exception ex)
         {
             throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task RegisterDeviceTokenAsync(Guid userId, string token, string? deviceName = null)
+    {
+        try
+        {
+            var existing = await _unitOfWork.GetRepository<DeviceToken>()
+                .FirstOrDefaultAsync(
+                    predicate: dt => dt.UserId == userId && dt.ExpoPushToken == token);
+
+            if(existing != null)
+            {
+                existing.IsActive = true;
+                existing.LastUsedAt = DateTime.UtcNow;
+                if(deviceName != null)
+                {
+                    existing.DeviceName = deviceName;
+                }
+
+                _unitOfWork.GetRepository<DeviceToken>().UpdateAsync(existing);
+            }
+            else
+            {
+                var newToken = new DeviceToken
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    ExpoPushToken = token,
+                    Platform = DevicePlatform.Android,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    LastUsedAt = DateTime.UtcNow,
+                };
+
+                await _unitOfWork.GetRepository<DeviceToken>().InsertAsync(newToken);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error registering device token: {ex.Message}");
+        }
+    }
+
+    public async Task UnregisterDeviceTokenAsync(Guid userId, string token)
+    {
+        try
+        {
+            var deviceToken = await _unitOfWork
+            .GetRepository<DeviceToken>()
+            .FirstOrDefaultAsync(
+                predicate: dt => dt.UserId == userId && dt.ExpoPushToken == token
+            );
+
+            if(deviceToken != null)
+            {
+                deviceToken.IsActive = false;
+                _unitOfWork.GetRepository<DeviceToken>().UpdateAsync(deviceToken);
+                await _unitOfWork.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error unregistering device token: {ex.Message}");
+        }
+    }
+
+    public async Task<List<string>> GetActiveTokensByUserAsync(Guid userId)
+    {
+        try
+        {
+            var tokens = await _unitOfWork.GetRepository<DeviceToken>()
+            .GetListAsync(
+                predicate: dt => dt.UserId == userId && dt.IsActive);
+
+            return tokens?.Select(t => t.ExpoPushToken).ToList() ?? new List<string>();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error getting active tokens: {ex.Message}");
+        }
+    }
+
+    public async Task<bool> SendPushNotificationAsync(Guid userId, string title, string body, Dictionary<string, object>? data = null)
+    {
+        try
+        {
+            return await _expoPushService.SendPushNotificationAsync(userId, title, body, data);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error sending push notification: {ex.Message}");
         }
     }
 }

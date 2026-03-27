@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgroTemp.Domain.DTO.Job.JobPost;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +13,9 @@ namespace AgroTemp.Domain.DTO.Job.JobApplication
         
         public Guid JobPostId { get; set; }
         
-        public Guid WorkerId { get; set; }
+        public JobPostDTO? JobPost { get; set; }
+
+        public WorkerProfileDTO? Worker { get; set; }
         
         public int StatusId { get; set; }
         
@@ -20,8 +23,11 @@ namespace AgroTemp.Domain.DTO.Job.JobApplication
         
         public DateTime AppliedAt { get; set; }
         
-        public DateTime RespondedAt { get; set; }
+        public DateTime? RespondedAt { get; set; }
         
         public string? ResponseMessage { get; set; }
+
+        public List<DateTime>? WorkDates { get; set; } = new List<DateTime>();
+        public string? LocationName { get; set; }
     }
 }

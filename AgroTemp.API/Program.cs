@@ -1,4 +1,5 @@
 using AgroTemp.API.Configuration;
+using AgroTemp.API.Hubs;
 using AgroTemp.API.Middleware;
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.Mapper;
@@ -14,6 +15,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,9 +34,11 @@ builder.Configuration
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSignalR();
 builder.Services.AddServices(builder.Configuration);
 builder.Services.AddCorsConfiguration();
 builder.Services.AddSwaggerConfiguration();
+builder.Services.AddHttpClient();
 builder.Services.AddJwtAuthenticationService(builder.Configuration);
 builder.Services.AddAuthorizationPolicies();
 DatabaseConfiguration.ConfigureDatabase(builder.Services, builder.Configuration);
@@ -57,12 +62,25 @@ builder.Services.Configure<FormOptions>(options =>
     options.MultipartHeadersLengthLimit = int.MaxValue;
 });
 
+FirebaseApp.Create(new AppOptions()
+{
+    Credential = GoogleCredential.FromFile(Path.Combine(Directory.GetCurrentDirectory(), "agrotemp-push-firebase.json")),
+});
+
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    await AdminSeedConfiguration.EnsureAdminSeedAsync(app.Services, app.Configuration);
+}
+
+
+// Protect /swagger with Basic Auth (username/password from env vars)
+app.UseMiddleware<SwaggerBasicAuthMiddleware>();
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
@@ -86,6 +104,7 @@ app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();
 app.UseMiddleware<TokenBlacklistMiddleware>();
 
+app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization();
 app.MapControllers();
 
 app.Run();

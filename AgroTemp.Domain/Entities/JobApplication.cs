@@ -54,10 +54,13 @@ namespace AgroTemp.Domain.Entities
         public DateTime AppliedAt { get; set; }
 
         [Column("responded_at")]
-        public DateTime RespondedAt { get; set; }
+        public DateTime? RespondedAt { get; set; }
 
         [Column("response_message")]
         public string? ResponseMessage { get; set; }
+
+        [Column("work_dates")]
+        public List<DateTime>? WorkDates { get; set; }
 
         public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
     }

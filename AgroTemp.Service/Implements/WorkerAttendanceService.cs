@@ -65,7 +65,7 @@ namespace AgroTemp.Service.Implements
 
                 // Approve and optionally adjust hours
                 attendance.IsApproved = true;
-                attendance.ApprovedBy = request.ApprovedBy;
+                attendance.ApprovedBy = farmerProfileId;
                 attendance.ApprovedAt = DateTime.UtcNow;
 
                 if (request.AdjustedHours.HasValue)
@@ -105,6 +105,30 @@ namespace AgroTemp.Service.Implements
                     throw new Exception("Can only check in for accepted job");
                 }
 
+                // Validate check-in time is within job post date range
+                if (DateOnly.FromDateTime(request.CheckInTime.Date) < jobApplication.JobPost.StartDate)
+                {
+                    throw new Exception("Cannot check in before job start date");
+                }
+
+                if (DateOnly.FromDateTime(request.CheckInTime.Date) > jobApplication.JobPost.EndDate)
+                {
+                    throw new Exception("Cannot check in after job end date");
+                }
+
+                // Validate check-in time is not too far in the past (more than 24 hours)
+                var hoursSinceCheckIn = (DateTime.UtcNow - request.CheckInTime).TotalHours;
+                if (hoursSinceCheckIn > 24)
+                {
+                    throw new Exception("Cannot check in for a time more than 24 hours in the past");
+                }
+
+                // Validate check-in time is not in the future
+                if (request.CheckInTime > DateTime.UtcNow)
+                {
+                    throw new Exception("Cannot check in for a future time");
+                }
+
                 var workDate = request.CheckInTime.Date;
                 
                 // Get or create job detail for this application
@@ -123,7 +147,7 @@ namespace AgroTemp.Service.Implements
                         JobPostId = jobApplication.JobPostId,
                         WorkerId = workerProfileId,
                         StatusId = (int)JobStatus.InProgress,
-                        StartedAt = DateTime.UtcNow,
+                        WorkDate = request.CheckInTime.Date,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };
@@ -138,7 +162,20 @@ namespace AgroTemp.Service.Implements
 
                 if(existingCheckIn != null)
                 {
-                    throw new Exception("Already check in for job accepted");
+                    throw new Exception("Already checked in for this job today");
+                }
+
+                // Check if worker is currently checked in at another job (hasn't checked out yet)
+                var activeCheckIn = await _unitOfWork.GetRepository<WorkerSession>()
+                    .FirstOrDefaultAsync(
+                        predicate: w => w.JobDetail.WorkerId == workerProfileId &&
+                                       w.CheckOutTime == null &&
+                                       w.WorkDate == workDate,
+                        include: q => q.Include(w => w.JobDetail));
+
+                if (activeCheckIn != null)
+                {
+                    throw new Exception("You must check out from your current job before checking in to another job");
                 }
 
                 var attendance = new WorkerSession
@@ -192,6 +229,19 @@ namespace AgroTemp.Service.Implements
                 if (request.CheckOutTime <= attendance.CheckInTime)
                 {
                     throw new Exception("Check-out time must be after check-in time");
+                }
+
+                // Validate check-out time is not in the future
+                if (request.CheckOutTime > DateTime.UtcNow)
+                {
+                    throw new Exception("Cannot check out for a future time");
+                }
+
+                // Validate check-out time is not too far in the past (more than 24 hours from check-in)
+                var hoursSinceCheckIn = (request.CheckOutTime - attendance.CheckInTime).TotalHours;
+                if (hoursSinceCheckIn > 24)
+                {
+                    throw new Exception("Check-out time cannot be more than 24 hours after check-in time. Please contact support.");
                 }
 
                 attendance.CheckOutTime = request.CheckOutTime;

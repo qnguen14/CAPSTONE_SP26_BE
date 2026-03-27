@@ -1,4 +1,4 @@
-using AgroTemp.Domain.Entities;
+﻿using AgroTemp.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgroTemp.Domain.Context;
@@ -23,11 +23,18 @@ public class AgroTempDbContext : DbContext
     public DbSet<JobApplication> JobApplications { get; set; }
     public DbSet<WorkerSession> WorkerSessions { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<DeviceToken> DeviceTokens { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<JobDetail> JobAssignments { get; set; }
+    public DbSet<JobAttachment> JobAttachments { get; set; }
     public DbSet<Rating> Ratings { get; set; }
     public DbSet<BlacklistedToken> BlacklistedTokens { get; set; }
     public DbSet<Payment> Payments { get; set; }
+    public DbSet<PayOSOrder> PayOSOrders { get; set; }
+    public DbSet<PayOSOrderItem> PayOSOrderItems { get; set; }
+    public DbSet<PayOSTransaction> PayOSTransactions { get; set; }
+    public DbSet<PayOSInvoice> PayOSInvoices { get; set; }
+    public DbSet<PayOSWebhookLog> PayOSWebhookLogs { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
@@ -35,7 +42,7 @@ public class AgroTempDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasDefaultSchema("AgroTempV1");
+        modelBuilder.HasDefaultSchema("AgroTempV2");
         
         // Configure User-Worker one-to-one relationship
         modelBuilder.Entity<User>()
@@ -72,6 +79,12 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(m => m.RecipientId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<User>()
+            .HasMany(u => u.DeviceTokens)
+            .WithOne(dt => dt.User)
+            .HasForeignKey(dt => dt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // Configure Farmer-Farm one-to-many relationship
         modelBuilder.Entity<Farmer>()
             .HasMany(f => f.Farms)
@@ -95,11 +108,7 @@ public class AgroTempDbContext : DbContext
 
         // Configure enum conversions for JobPost
         modelBuilder.Entity<JobPost>()
-            .Property(jp => jp.WageTypeId)
-            .HasConversion<int>();
-
-        modelBuilder.Entity<JobPost>()
-            .Property(jp => jp.PaymentMethodId)
+            .Property(jp => jp.JobTypeId)
             .HasConversion<int>();
 
         modelBuilder.Entity<JobPost>()
@@ -122,11 +131,7 @@ public class AgroTempDbContext : DbContext
         modelBuilder.Entity<Farm>()
             .Property(f => f.Longitude)
             .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
-
-        modelBuilder.Entity<JobPost>()
-            .Property(jp => jp.EstimatedHours)
-            .HasPrecision(10, 2); // e.g., 12345678.90
-
+            
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.WageAmount)
             .HasPrecision(18, 2); // e.g., currency amounts
@@ -214,15 +219,6 @@ public class AgroTempDbContext : DbContext
             .Property(jd => jd.StatusId)
             .HasConversion<int>();
 
-        // Configure precision for JobAssignment decimal columns
-        modelBuilder.Entity<JobDetail>()
-            .Property(jd => jd.TotalHoursWorked)
-            .HasPrecision(10, 2);
-
-        // Configure JobAssignment TotalAmountDue precision
-        modelBuilder.Entity<JobDetail>()
-            .Property(jd => jd.TotalAmountDue)
-            .HasPrecision(18, 2);
 
         // Configure User-Rating (Rater) one-to-many relationship
         modelBuilder.Entity<User>()
@@ -258,53 +254,79 @@ public class AgroTempDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configure Wallet-WalletTransaction one-to-many relationship
-        // Configure Wallet-WalletTransaction one-to-many relationship
         modelBuilder.Entity<Wallet>()
-            .HasMany(w => w.Transactions)
+            .HasMany(w => w.WalletTransactions)
             .WithOne(t => t.Wallet)
             .HasForeignKey(t => t.WalletId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure User-Payment one-to-many relationship
-        modelBuilder.Entity<User>()
-            .HasMany(u => u.Payments)
-            .WithOne(p => p.User)
-            .HasForeignKey(p => p.UserId)
+        modelBuilder.Entity<WalletTransaction>()
+            .Property(t => t.Type)
+            .HasConversion<int>();
+
+        modelBuilder.Entity<Wallet>()
+            .HasMany(w => w.WithdrawalRequests)
+            .WithOne(t => t.Wallet)
+            .HasForeignKey(t => t.WalletId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Wallet>()
+            .HasMany(w => w.Payments)
+            .WithOne(t => t.Wallet)
+            .HasForeignKey(t => t.WalletId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasMany(o => o.Items)
+            .WithOne(i => i.Order)
+            .HasForeignKey(i => i.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasMany(o => o.Transactions)
+            .WithOne(t => t.Order)
+            .HasForeignKey(t => t.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasMany(o => o.Invoices)
+            .WithOne(i => i.Order)
+            .HasForeignKey(i => i.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasIndex(o => o.OrderCode)
+            .IsUnique();
+
+        modelBuilder.Entity<PayOSOrder>()
+            .HasIndex(o => o.PaymentLinkId);
+
+        modelBuilder.Entity<PayOSWebhookLog>()
+            .HasIndex(l => l.OrderCode);
+
+        modelBuilder.Entity<PayOSWebhookLog>()
+            .HasIndex(l => l.Reference);
+
+        modelBuilder.Entity<PayOSWebhookLog>()
+            .HasIndex(l => l.ReceivedAt);
+
+        modelBuilder.Entity<DeviceToken>()
+            .HasIndex(dt => new { dt.UserId, dt.ExpoPushToken })
+            .IsUnique();
 
         // Configure User-WithdrawalRequest one-to-many relationship
-        modelBuilder.Entity<User>()
-            .HasMany(u => u.WithdrawalRequests)
-            .WithOne(wr => wr.User)
-            .HasForeignKey(wr => wr.UserId)
+        modelBuilder.Entity<JobDetail>()
+            .HasMany(u => u.WalletTransactions)
+            .WithOne(wr => wr.JobDetail)
+            .HasForeignKey(wr => wr.JobDetailId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure DisputeReport relationships
-        modelBuilder.Entity<DisputeReport>(entity =>
-        {
-            entity.HasOne(d => d.Farmer)
-                .WithMany()
-                .HasForeignKey(d => d.FarmerId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(d => d.Worker)
-                .WithMany()
-                .HasForeignKey(d => d.WorkerId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(d => d.JobPost)
-                .WithMany()
-                .HasForeignKey(d => d.JobPostId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(d => d.ResolvedBy)
-                .WithMany()
-                .HasForeignKey(d => d.ResolvedById)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.Property(d => d.StatusId).HasConversion<int>();
-            entity.Property(d => d.DisputeTypeId).HasConversion<int>();
-        });
+        modelBuilder.Entity<JobDetail>()
+            .HasMany(u => u.JobAttachments)
+            .WithOne(wr => wr.JobDetail)
+            .HasForeignKey(wr => wr.JobDetailId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         base.OnModelCreating(modelBuilder);
     }
