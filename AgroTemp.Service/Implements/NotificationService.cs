@@ -44,6 +44,15 @@ public class NotificationService : BaseService<Notification>, INotificationServi
             await _unitOfWork.GetRepository<Notification>().InsertAsync(entity);
             await _unitOfWork.SaveChangesAsync();
 
+            await _expoPushService.SendPushNotificationAsync(
+                request.UserId,
+                request.Title,
+                request.Message,
+                request.RelatedEntityId.HasValue
+                    ? new Dictionary<string, object> { { "relatedEntityId", request.RelatedEntityId.Value.ToString() }, { "type", request.Type.ToString() } }
+                    : new Dictionary<string, object> { { "type", request.Type.ToString() } }
+            );
+
             return _mapper.NotificationToDto(entity);
         }
         catch (Exception ex)
