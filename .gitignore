@@ -16,3 +16,4 @@ REAPPLY-COMPLETE.md
 /AgroTemp.API/appsettings.json
 PLAN_PUSH_NOTIFICATION.md
 *.md
+AgroTemp.API/secrets.json

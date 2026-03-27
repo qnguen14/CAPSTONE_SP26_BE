@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -75,6 +76,41 @@ namespace AgroTemp.Service.Implements
                     return null;
                 }
                 var result = _mapper.JobPostToJobPostDto(jobPost);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobPostDTO>> GetJobPostsByFarmerId(Guid farmerId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == userId);
+                if (farmer == null || farmer.Id != farmerId)
+                {
+                    throw new UnauthorizedAccessException("User is not authorized to view these job posts.");
+                }
+
+                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.FarmerId == farmer.Id,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
+
+                if (jobPosts == null || !jobPosts.Any())
+                {
+                    return new List<JobPostDTO>();
+                }
+
+                var result = _mapper.JobPostsToJobPostDtos(jobPosts);
                 return result;
             }
             catch (Exception ex)
