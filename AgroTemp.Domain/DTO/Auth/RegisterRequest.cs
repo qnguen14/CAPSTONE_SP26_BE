@@ -18,9 +18,6 @@ public class RegisterRequest
     public string PhoneNumber { get; set; }
     
     [Required]
-    public string Address { get; set; }
-    
-    [Required]
     [Range(1, 3)]
     public int RoleId { get; set; }
 }

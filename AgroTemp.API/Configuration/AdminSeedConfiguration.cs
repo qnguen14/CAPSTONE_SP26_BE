@@ -22,12 +22,10 @@ public static class AdminSeedConfiguration
         var email = configuration["AdminSeed:Email"]?.Trim();
         var phone = configuration["AdminSeed:PhoneNumber"]?.Trim();
         var password = configuration["AdminSeed:Password"];
-        var address = configuration["AdminSeed:Address"]?.Trim();
 
         if (string.IsNullOrWhiteSpace(email) ||
             string.IsNullOrWhiteSpace(phone) ||
-            string.IsNullOrWhiteSpace(password) ||
-            string.IsNullOrWhiteSpace(address))
+            string.IsNullOrWhiteSpace(password))
         {
             logger.LogWarning("Admin seed is enabled but missing required values.");
             return;

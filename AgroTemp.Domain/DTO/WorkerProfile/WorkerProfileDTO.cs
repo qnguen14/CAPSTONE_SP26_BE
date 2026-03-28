@@ -5,7 +5,7 @@ public class WorkerProfileDTO
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public string FullName { get; set; }
-    public string Age { get; set; }
+    public string Date_of_birth { get; set; }
     public string PrimaryLocation { get; set; }
     public double? TravelRadiusKmPreference { get; set; }
     public int ExperienceLevelId { get; set; }

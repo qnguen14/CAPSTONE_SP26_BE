@@ -103,6 +103,7 @@ app.UseCors("AllowAll"); // Enable CORS
 app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();
 app.UseMiddleware<TokenBlacklistMiddleware>();
+app.UseMiddleware<EmailVerificationMiddleware>();
 
 app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization();
 app.MapControllers();

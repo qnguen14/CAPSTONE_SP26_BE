@@ -17,6 +17,8 @@ public class ApiEndpointConstants
         public const string ResetPasswordEndpoint = ApiEndpoint + "/reset";
         public const string ForgetPasswordEndpoint = ApiEndpoint + "/forget";
         public const string LogoutEndpoint = ApiEndpoint + "/logout";
+        public const string VerifyEmailEndpoint = ApiEndpoint + "/verify-email";
+        public const string ResendVerificationEndpoint = ApiEndpoint + "/resend-verification";
     }
 
     public static class User

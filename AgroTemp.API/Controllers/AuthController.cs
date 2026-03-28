@@ -25,6 +25,7 @@ public class AuthController : Controller
     [HttpPost(ApiEndpointConstants.Auth.LoginEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
@@ -39,6 +40,15 @@ public class AuthController : Controller
                 Data = response
             };
             return Ok(apiResponse);
+        }
+        catch (InvalidOperationException ex) when (ex.Message == "EMAIL_NOT_VERIFIED")
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = "Email not verified. Please check your inbox for the verification code.",
+                Data = null
+            });
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -65,47 +75,114 @@ public class AuthController : Controller
     }
 
     /// <summary>
-    /// Register
+    /// Register — sends a verification OTP to the provided email
     /// </summary>
     [HttpPost(ApiEndpointConstants.Auth.RegisterEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<LoginResponse>> Register([FromBody] RegisterRequest request)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         try
         {
-            var response = await _authService.Register(request);
+            await _authService.Register(request);
 
-            var apiResponse = new ApiResponse<LoginResponse>
+            return StatusCode(StatusCodes.Status201Created, new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status201Created,
-                Message = "Registration successful",
-                Data = response
-            };
-            return StatusCode(StatusCodes.Status201Created, apiResponse);
+                Message = "Registration successful. Please check your email for the verification code.",
+                Data = null
+            });
         }
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex.Message);
-            var apiResponse = new ApiResponse<object>
+            return BadRequest(new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status400BadRequest,
                 Message = ex.Message,
                 Data = null
-            };
-            return BadRequest(apiResponse);
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during registration");
-            var apiResponse = new ApiResponse<object>
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = "An error occurred during registration",
                 Data = null
-            };
-            return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
+            });
+        }
+    }
+
+    [HttpPost(ApiEndpointConstants.Auth.VerifyEmailEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    {
+        try
+        {
+            var response = await _authService.VerifyEmail(request);
+            return Ok(new ApiResponse<LoginResponse>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Email verified successfully.",
+                Data = response
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex.Message);
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during email verification");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred during email verification",
+                Data = null
+            });
+        }
+    }
+
+    [HttpPost(ApiEndpointConstants.Auth.ResendVerificationEndpoint)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> ResendVerification([FromBody] ForgotPasswordRequest request)
+    {
+        try
+        {
+            await _authService.ResendVerificationEmail(request.Email);
+            return Ok(new { Message = "If the email is registered and unverified, a new code has been sent." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during resend verification");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while resending the verification email",
+                Data = null
+            });
         }
     }
 
