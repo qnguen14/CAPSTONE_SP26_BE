@@ -29,6 +29,9 @@ public class WorkerAttendanceController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Ghi nhan check in.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang check in.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WorkerAttendanceCheckIn")]
     public async Task<ActionResult<WorkerAttendanceDTO>> CheckIn([FromBody] CheckInRequest request)
     {
         try
@@ -89,6 +92,9 @@ public class WorkerAttendanceController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Ghi nhan check out.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang check out.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WorkerAttendanceCheckOut")]
     public async Task<ActionResult<WorkerAttendanceDTO>> CheckOut([FromBody] CheckOutRequest request)
     {
         try
@@ -148,6 +154,9 @@ public class WorkerAttendanceController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<WorkerAttendanceDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin attendance by id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get attendance by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WorkerAttendanceGetAttendanceById")]
     public async Task<ActionResult<WorkerAttendanceDTO>> GetAttendanceById([FromRoute] Guid id)
     {
         try
@@ -193,6 +202,9 @@ public class WorkerAttendanceController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<List<WorkerAttendanceDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin worker attendance history.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get worker attendance history.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WorkerAttendanceGetWorkerAttendanceHistory")]
     public async Task<ActionResult<List<WorkerAttendanceDTO>>> GetWorkerAttendanceHistory(
         [FromRoute] Guid workerProfileId,
         [FromQuery] DateTime? startDate = null,
@@ -247,6 +259,9 @@ public class WorkerAttendanceController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Phe duyet attendance.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang approve attendance.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WorkerAttendanceApproveAttendance")]
     public async Task<ActionResult<WorkerAttendanceDTO>> ApproveAttendance([FromBody] ApproveAttendanceRequest request)
     {
         try
@@ -305,6 +320,9 @@ public class WorkerAttendanceController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<List<WorkerAttendanceDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin farm attendance records.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get farm attendance records.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WorkerAttendanceGetFarmAttendanceRecords")]
     public async Task<ActionResult<List<WorkerAttendanceDTO>>> GetFarmAttendanceRecords(
         [FromRoute] Guid farmerProfileId,
         [FromQuery] Guid? jobPostId = null,
@@ -362,6 +380,9 @@ public class WorkerAttendanceController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin worker attendance by farmer.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get worker attendance by farmer.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WorkerAttendanceGetWorkerAttendanceByFarmer")]
     public async Task<ActionResult<List<WorkerAttendanceDTO>>> GetWorkerAttendanceByFarmer(
     [FromRoute] Guid farmerProfileId,
     [FromRoute] Guid workerProfileId,

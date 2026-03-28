@@ -31,6 +31,9 @@ public class WeatherController : Controller
     [ProducesResponseType(typeof(ApiResponse<WeatherDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin weather by coordinates.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get weather by coordinates.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WeatherGetWeatherByCoordinates")]
     public async Task<ActionResult<WeatherDTO>> GetWeatherByCoordinates(
         [FromQuery] double lat,
         [FromQuery] double lon)
@@ -73,6 +76,9 @@ public class WeatherController : Controller
     [ProducesResponseType(typeof(ApiResponse<WeatherDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin weather by city.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get weather by city.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WeatherGetWeatherByCity")]
     public async Task<ActionResult<WeatherDTO>> GetWeatherByCity([FromQuery] string city)
     {
         try
@@ -114,6 +120,9 @@ public class WeatherController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin weather by current user address.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get weather by current user address.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WeatherGetWeatherByCurrentUserAddress")]
     public async Task<ActionResult<WeatherDTO>> GetWeatherByCurrentUserAddress()
     {
         try

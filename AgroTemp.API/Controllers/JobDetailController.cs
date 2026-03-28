@@ -26,6 +26,9 @@ public class JobDetailController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<JobDetailResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job detail by id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job detail by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobDetailGetJobDetailById")]
     public async Task<ActionResult<JobDetailResponseDTO>> GetJobDetailById([FromRoute] string id)
     {
         try
@@ -64,6 +67,9 @@ public class JobDetailController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<JobDetailResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Bao cao cong viec hang ngay.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang report daily work.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobDetailReportDailyWork")]
     public async Task<ActionResult<JobDetailResponseDTO>> ReportDailyWork([FromBody] CreateDailyReportRequest request)
     {
         try
@@ -92,6 +98,9 @@ public class JobDetailController : ControllerBase
     [HttpGet("worker/{workerId}")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobDetailResponseDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job details by worker id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job details by worker id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobDetailGetJobDetailsByWorkerId")]
     public async Task<ActionResult<IEnumerable<JobDetailResponseDTO>>> GetJobDetailsByWorkerId([FromRoute] Guid workerId)
     {
         try
@@ -120,6 +129,9 @@ public class JobDetailController : ControllerBase
     [HttpGet("job-post/{jobPostId}")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobDetailResponseDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job details by job post id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job details by job post id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobDetailGetJobDetailsByJobPostId")]
     public async Task<ActionResult<IEnumerable<JobDetailResponseDTO>>> GetJobDetailsByJobPostId([FromRoute] Guid jobPostId)
     {
         try
@@ -150,6 +162,9 @@ public class JobDetailController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Phe duyet job detail.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang approve job detail.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobDetailApproveJobDetail")]
     public async Task<ActionResult<JobDetailResponseDTO>> ApproveJobDetail([FromRoute] Guid id, [FromBody] ApproveJobDetailRequest request)
     {
         try

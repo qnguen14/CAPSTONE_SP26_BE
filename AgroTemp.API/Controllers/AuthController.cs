@@ -27,6 +27,9 @@ public class AuthController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Dang nhap he thong.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang login.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("AuthLogin")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
         try
@@ -75,12 +78,15 @@ public class AuthController : Controller
     }
 
     /// <summary>
-    /// Register — sends a verification OTP to the provided email
+    /// Register Ã¢â‚¬â€ sends a verification OTP to the provided email
     /// </summary>
     [HttpPost(ApiEndpointConstants.Auth.RegisterEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Dang ky tai khoan moi.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang register tai khoan va gui ma xac minh email.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("AuthRegister")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         try
@@ -120,6 +126,9 @@ public class AuthController : Controller
     [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xac minh email.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang verify email.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("AuthVerifyEmail")]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
     {
         try
@@ -158,6 +167,9 @@ public class AuthController : Controller
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Gui lai verification.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang resend verification.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("AuthResendVerification")]
     public async Task<IActionResult> ResendVerification([FromBody] ForgotPasswordRequest request)
     {
         try
@@ -193,6 +205,9 @@ public class AuthController : Controller
     [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Dang nhap bang tai khoan Google.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang google login.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("AuthGoogleLogin")]
     public async Task<ActionResult<LoginResponse>> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
         try
@@ -238,6 +253,9 @@ public class AuthController : Controller
     [HttpPost(ApiEndpointConstants.Auth.ForgetPasswordEndpoint)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xu ly quen password.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang forgot password.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("AuthForgotPassword")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         try
@@ -264,6 +282,9 @@ public class AuthController : Controller
     [HttpPost(ApiEndpointConstants.Auth.ResetPasswordEndpoint)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Dat lai password.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang reset password.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("AuthResetPassword")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
         var result = await _authService.ResetPassword(request);
@@ -279,6 +300,9 @@ public class AuthController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Dang xuat he thong.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang logout.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("AuthLogout")]
     public async Task<ActionResult> Logout()
     {
         try{

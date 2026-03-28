@@ -25,6 +25,9 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PayOSOrderResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin order thanh toan theo id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get payment order by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("PaymentGet")]
     public async Task<ActionResult<PayOSOrderResponse>> Get([FromRoute] Guid id)
     {
         try
@@ -64,6 +67,9 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PayOSOrderResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi payment.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create payment.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("PaymentCreatePayment")]
     public async Task<ActionResult<PayOSOrderResponse>> CreatePayment([FromBody] CreatePayOSOrderRequest request)
     {
         if (request == null)
@@ -112,6 +118,9 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PaymentLink>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Huy payment.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang cancel payment.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("PaymentCancelPayment")]
     public async Task<ActionResult<PaymentLink>> CancelPayment([FromRoute] Guid id, [FromQuery] string? cancellationReason)
     {
         try
@@ -150,6 +159,9 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PayOSInvoicesInfoResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin invoices.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get invoices.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("PaymentGetInvoices")]
     public async Task<ActionResult<PayOSInvoicesInfoResponse>> GetInvoices([FromRoute] Guid id)
     {
         try
@@ -188,6 +200,9 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tai xuong invoice.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang download invoice.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("PaymentDownloadInvoice")]
     public async Task<ActionResult> DownloadInvoice([FromRoute] Guid id, [FromRoute] string invoiceId)
     {
         try
@@ -221,6 +236,9 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PayOSOrderResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin payment callback.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get payment callback.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("PaymentGetPaymentCallback")]
     public async Task<ActionResult<PayOSOrderResponse>> GetPaymentCallback([FromQuery] PaymentCallbackRequest request)
     {
         try
@@ -259,6 +277,9 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xac minh payment.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang verify payment.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("PaymentVerifyPayment")]
     public async Task<ActionResult> VerifyPayment([FromBody] Webhook webhook)
     {
         if (webhook == null)

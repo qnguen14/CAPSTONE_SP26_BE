@@ -29,6 +29,9 @@ public class DisputeReportController : ControllerBase
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<DisputeReportDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach disputes.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all disputes.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("DisputeReportGetAllDisputes")]
     public async Task<ActionResult<IEnumerable<DisputeReportDTO>>> GetAllDisputes()
     {
         try
@@ -57,6 +60,9 @@ public class DisputeReportController : ControllerBase
     [Authorize(Roles = "Farmer,Worker")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<DisputeReportDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin disputes cua nguoi dung hien tai.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get my disputes.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("DisputeReportGetMyDisputes")]
     public async Task<ActionResult<IEnumerable<DisputeReportDTO>>> GetMyDisputes()
     {
         try
@@ -87,6 +93,9 @@ public class DisputeReportController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin dispute by id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get dispute by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("DisputeReportGetDisputeById")]
     public async Task<ActionResult<DisputeReportDTO>> GetDisputeById([FromRoute] Guid id)
     {
         try
@@ -139,6 +148,9 @@ public class DisputeReportController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi dispute.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create dispute.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("DisputeReportCreateDispute")]
     public async Task<ActionResult<DisputeReportDTO>> CreateDispute([FromBody] CreateDisputeReportRequest request)
     {
         if (!ModelState.IsValid)
@@ -201,6 +213,9 @@ public class DisputeReportController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat dispute.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update dispute.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("DisputeReportUpdateDispute")]
     public async Task<ActionResult<DisputeReportDTO>> UpdateDispute([FromRoute] Guid id, [FromBody] UpdateDisputeReportRequest request)
     {
         try
@@ -260,6 +275,9 @@ public class DisputeReportController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xoa dispute.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang delete dispute.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("DisputeReportDeleteDispute")]
     public async Task<ActionResult> DeleteDispute([FromRoute] Guid id)
     {
         try
@@ -319,6 +337,9 @@ public class DisputeReportController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xem xet dispute.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang review dispute.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("DisputeReportReviewDispute")]
     public async Task<ActionResult<DisputeReportDTO>> ReviewDispute([FromRoute] Guid id, [FromBody] ReviewDisputeReportRequest request)
     {
         if (!ModelState.IsValid)
@@ -378,6 +399,9 @@ public class DisputeReportController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xu ly dispute.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang resolve dispute.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("DisputeReportResolveDispute")]
     public async Task<ActionResult<DisputeReportDTO>> ResolveDispute([FromRoute] Guid id, [FromBody] ResolveDisputeRequest request)
     {
         if (!ModelState.IsValid)
