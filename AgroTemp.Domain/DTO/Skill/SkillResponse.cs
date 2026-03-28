@@ -14,7 +14,7 @@ namespace AgroTemp.Domain.DTO.Skill
 
         public string Description { get; set; }
 
-        public int CategoryId { get; set; }
+        public Guid CategoryId { get; set; }
 
         public bool IsActive { get; set; }
     }

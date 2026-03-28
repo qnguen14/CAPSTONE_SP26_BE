@@ -10,7 +10,7 @@ public class UpdateWorkerProfileRequest
     
     [Required]
     [StringLength(50)]
-    public string AgeRange { get; set; }
+    public string DateOfBirth { get; set; }
     
     [Required]
     public string PrimaryLocation { get; set; }

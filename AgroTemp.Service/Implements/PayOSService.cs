@@ -86,7 +86,6 @@ public class PayOSService : IPayOSService
         var buyerCompanyName = primaryFarm?.LocationName;
         var buyerEmail = farmer.User?.Email;
         var buyerPhone = farmer.User?.PhoneNumber;
-        var buyerAddress = farmer.User?.Address;
 
         var orderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var returnUrl = "https://your-domain.com/success";
@@ -115,7 +114,7 @@ public class PayOSService : IPayOSService
             BuyerCompanyName = buyerCompanyName,
             BuyerEmail = buyerEmail,
             //BuyerPhone = buyerPhone,
-            BuyerAddress = buyerAddress,
+            // BuyerAddress = buyerAddress,
             ExpiredAt = expiredAt.ToUnixTimeSeconds(),
             Items = new List<PaymentLinkItem> { hardcodedItem }
         };
@@ -153,7 +152,7 @@ public class PayOSService : IPayOSService
             BuyerCompanyName = buyerCompanyName,
             BuyerEmail = buyerEmail,
             //BuyerPhone = buyerPhone,
-            BuyerAddress = buyerAddress,
+            // BuyerAddress = buyerAddress,
             ExpiredAt = expiredAt.UtcDateTime,
             BuyerNotGetInvoice = buyerNotGetInvoice,
             TaxPercentage = taxPercentage,

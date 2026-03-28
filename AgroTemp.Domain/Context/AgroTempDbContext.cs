@@ -43,7 +43,7 @@ public class AgroTempDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("AgroTempV2");
-        
+
         // Configure User-Worker one-to-one relationship
         modelBuilder.Entity<User>()
             .HasOne(u => u.Worker)
@@ -99,6 +99,12 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(jp => jp.JobCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<JobCategory>()
+            .HasMany(jc => jc.Skills)
+            .WithOne(s => s.Category)
+            .HasForeignKey(s => s.JobCategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Configure Farmer-JobPost one-to-many relationship
         modelBuilder.Entity<Farmer>()
             .HasMany<JobPost>()
@@ -131,7 +137,7 @@ public class AgroTempDbContext : DbContext
         modelBuilder.Entity<Farm>()
             .Property(f => f.Longitude)
             .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
-            
+
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.WageAmount)
             .HasPrecision(18, 2); // e.g., currency amounts
@@ -177,6 +183,12 @@ public class AgroTempDbContext : DbContext
             .HasMany(s => s.WorkerSkills)
             .WithOne(ws => ws.Skill)
             .HasForeignKey(ws => ws.SkillId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Skill>()
+            .HasOne(s => s.Category)
+            .WithMany(jc => jc.Skills)
+            .HasForeignKey(s => s.JobCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Configure JobPost-JobSkillRequirement one-to-many relationship

@@ -117,7 +117,6 @@ public class AuthService : BaseService<User>, IAuthService
             Id = Guid.NewGuid(),
             Email = request.Email,
             PhoneNumber = request.PhoneNumber,
-            Address = request.Address,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             RoleId = request.RoleId,
             Role = (UserRole)request.RoleId,
@@ -182,7 +181,6 @@ public class AuthService : BaseService<User>, IAuthService
                     Id = newUserId,
                     Email = payload.Email,
                     PhoneNumber = uniquePhone,   // Unique per user — update later via profile
-                    Address = "Not specified",   // Placeholder — user can update later
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
                     RoleId = request.RoleId ?? 2, // Default to Farmer role if not specified
                     Role = (UserRole)(request.RoleId ?? 2),

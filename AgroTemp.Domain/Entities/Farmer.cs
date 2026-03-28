@@ -23,6 +23,14 @@ public class Farmer
     public string ContactName { get; set; }
 
     [Required]
+    [Column("address")]
+    public string Address { get; set; }
+
+    [Required]
+    [Column("date_of_birth")]
+    public DateOnly DateOfBirth { get; set; }
+
+    [Required]
     [Column("average_rating")]
     public decimal AverageRating { get; set; }
 

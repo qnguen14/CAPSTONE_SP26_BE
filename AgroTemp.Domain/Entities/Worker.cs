@@ -30,9 +30,12 @@ public class Worker
     public string FullName { get; set; }
 
     [Required]
-    [Column("age_range")]
-    [StringLength(50)]
-    public string AgeRange { get; set; }
+    [Column("date_of_birth")]
+    public DateOnly DateOfBirth { get; set; }
+
+    [Required]
+    [Column("address")]
+    public string Address { get; set; }
 
     [Required]
     [Column("primary_location")]
