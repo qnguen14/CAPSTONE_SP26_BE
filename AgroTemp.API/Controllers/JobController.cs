@@ -1,4 +1,4 @@
-﻿using AgroTemp.API.Constants;
+using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobDetail;
@@ -41,6 +41,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach job categories.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all job categories.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetAllJobCategories")]
     public async Task<ActionResult<IEnumerable<JobCategoryDTO>>> GetAllJobCategories()
     {
         try
@@ -72,6 +75,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job category by id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job category by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetJobCategoryById")]
     public async Task<ActionResult<JobCategoryDTO>> GetJobCategoryById([FromRoute] string id)
     {
         try
@@ -112,6 +118,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job applications by job post id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job applications by job post id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetJobApplicationsByJobPostId")]
     public async Task<ActionResult<IEnumerable<JobApplicationDTO>>> GetJobApplicationsByJobPostId([FromRoute] Guid jobPostId, [FromQuery] bool? includeAll, [FromQuery] int? statusId)
     {
         try
@@ -154,6 +163,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi job category.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create job category.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobCreateJobCategory")]
     public async Task<ActionResult<JobCategoryDTO>> CreateJobCategory([FromBody] CreateJobCategoryRequest request)
     {
         try
@@ -184,6 +196,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat job category.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update job category.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobUpdateJobCategory")]
     public async Task<ActionResult<JobCategoryDTO>> UpdateJobCategory([FromRoute] Guid id, [FromBody] UpdateJobCategoryRequest request)
     {
         try
@@ -214,6 +229,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xoa job category.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang delete job category.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobDeleteJobCategory")]
     public async Task<ActionResult> DeleteJobCategory([FromRoute] string id)
     {
         try
@@ -254,6 +272,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach job posts.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all job posts.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetAllJobPosts")]
     public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetAllJobPosts()
     {
         try
@@ -285,6 +306,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job post by id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job post by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetJobPostById")]
     public async Task<ActionResult<JobPostDTO>> GetJobPostById([FromRoute] string id)
     {
         try
@@ -324,6 +348,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job posts by farmer.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job posts by farmer.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetJobPostsByFarmer")]
     public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetJobPostsByFarmer([FromRoute] Guid farmerId)
     {
         try
@@ -354,6 +381,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi job post.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create job post.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobCreateJobPost")]
     public async Task<ActionResult<JobPostDTO>> CreateJobPost([FromBody] CreateJobPostRequest request)
     {
         try
@@ -404,6 +434,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat job post.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update job post.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobUpdateJobPost")]
     public async Task<ActionResult<JobPostDTO>> UpdateJobPost([FromRoute] Guid id, [FromBody] UpdateJobPostRequest request)
     {
         try
@@ -434,6 +467,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xoa job post.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang delete job post.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobDeleteJobPost")]
     public async Task<ActionResult> DeleteJobPost([FromRoute] string id)
     {
         try
@@ -472,6 +508,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat job post status.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update job post status.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobUpdateJobPostStatus")]
     public async Task<ActionResult<JobPostDTO>> UpdateJobPostStatus([FromRoute] string id, [FromQuery] string status)
     {
         try
@@ -511,6 +550,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat job post urgency.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update job post urgency.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobUpdateJobPostUrgency")]
     public async Task<ActionResult<JobPostDTO>> UpdateJobPostUrgency([FromRoute] string id, [FromQuery] bool isUrgent)
     {
         try
@@ -550,6 +592,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin filtered job posts.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get filtered job posts.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetFilteredJobPosts")]
     public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFilteredJobPosts([FromQuery] string? title, [FromQuery] string? category, [FromQuery] string? address, [FromQuery] string? skill)
     {
         try
@@ -581,6 +626,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Luu job post draft.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang save job post draft.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobSaveJobPostDraft")]
     public async Task<ActionResult<JobPostDTO>> SaveJobPostDraft([FromBody] CreateJobPostRequest request)
     {
         try
@@ -631,6 +679,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin farmer drafts.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get farmer drafts.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetFarmerDrafts")]
     public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFarmerDrafts()
     {
         try
@@ -673,6 +724,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach job applications.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all job applications.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetAllJobApplications")]
     public async Task<ActionResult<IEnumerable<JobApplicationDTO>>> GetAllJobApplications()
     {
         try
@@ -703,6 +757,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job application by id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job application by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetJobApplicationById")]
     public async Task<ActionResult<JobApplicationDTO>> GetJobApplicationById([FromRoute] string id)
     {
         try
@@ -742,6 +799,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi job application.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create job application.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobCreateJobApplication")]
     public async Task<ActionResult<JobApplicationDTO>> CreateJobApplication([FromBody] CreateJobApplicationRequest request)
     {
         try
@@ -772,6 +832,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat job application.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update job application.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobUpdateJobApplication")]
     public async Task<ActionResult<JobApplicationDTO>> UpdateJobApplication([FromRoute] Guid id, [FromBody] UpdateJobApplicationRequest request)
     {
         try
@@ -802,6 +865,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xoa job application.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang delete job application.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobDeleteJobApplication")]
     public async Task<ActionResult> DeleteJobApplication([FromRoute] string id)
     {
         try
@@ -840,6 +906,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Phan hoi job application.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang respond job application.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobRespondJobApplication")]
     public async Task<ActionResult<JobApplicationDTO>> RespondJobApplication([FromRoute] string id, [FromBody] RespondJobApplicationRequest request)
     {
         try
@@ -871,6 +940,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tu dong chap nhan urgent job applications.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang auto accept urgent job applications.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobAutoAcceptUrgentJobApplications")]
     public async Task<ActionResult<IEnumerable<JobApplicationDTO>>> AutoAcceptUrgentJobApplications([FromBody] List<Guid> jobApplicationIds)
     {
         try
@@ -942,6 +1014,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach job details.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all job details.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetAllJobDetails")]
     public async Task<ActionResult<IEnumerable<JobDetailDTO>>> GetAllJobDetails()
     {
         try
@@ -973,6 +1048,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job detail by id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job detail by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetJobDetailById")]
     public async Task<ActionResult<JobDetailDTO>> GetJobDetailById([FromRoute] string id)
     {
         try
@@ -1012,6 +1090,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi job detail.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create job detail.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobCreateJobDetail")]
     public async Task<ActionResult<JobDetailDTO>> CreateJobDetail([FromBody] CreateJobDetailRequest request)
     {
         try
@@ -1042,6 +1123,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat job detail.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update job detail.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobUpdateJobDetail")]
     public async Task<ActionResult<JobDetailDTO>> UpdateJobDetail([FromRoute] Guid id, [FromBody] UpdateJobDetailRequest request)
     {
         try
@@ -1072,6 +1156,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xoa job detail.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang delete job detail.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobDeleteJobDetail")]
     public async Task<ActionResult> DeleteJobDetail([FromRoute] string id)
     {
         try
@@ -1110,6 +1197,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat job detail status.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update job detail status.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobUpdateJobDetailStatus")]
     public async Task<ActionResult<JobDetailDTO>> UpdateJobDetailStatus([FromRoute] string id, [FromQuery] string status)
     {
         try
@@ -1151,6 +1241,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tim kiem jobs.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang search jobs.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobSearchJobs")]
     public async Task<ActionResult<ApiResponse<PaginatedJobDiscoveryResponse>>> SearchJobs([FromBody] JobSearchFilterRequest filter)
     {
         try
@@ -1181,6 +1274,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin nearby jobs.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get nearby jobs.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetNearbyJobs")]
     public async Task<ActionResult<ApiResponse<IEnumerable<JobDiscoveryDTO>>>> GetNearbyJobs(
         [FromQuery] decimal latitude, 
         [FromQuery] decimal longitude, 
@@ -1224,6 +1320,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin jobs by date.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get jobs by date.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetJobsByDate")]
     public async Task<ActionResult<ApiResponse<IEnumerable<JobDiscoveryDTO>>>> GetJobsByDate([FromQuery] string dateFilter)
     {
         try
@@ -1264,6 +1363,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin jobs by skill.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get jobs by skill.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetJobsBySkill")]
     public async Task<ActionResult<ApiResponse<IEnumerable<JobDiscoveryDTO>>>> GetJobsBySkill([FromQuery] string skills)
     {
         try
@@ -1305,6 +1407,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin jobs by wage range.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get jobs by wage range.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetJobsByWageRange")]
     public async Task<ActionResult<ApiResponse<IEnumerable<JobDiscoveryDTO>>>> GetJobsByWageRange(
         [FromQuery] decimal minWage, 
         [FromQuery] decimal? maxWage = null)
@@ -1348,6 +1453,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin jobs by type.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get jobs by type.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetJobsByType")]
     public async Task<ActionResult<ApiResponse<IEnumerable<JobDiscoveryDTO>>>> GetJobsByType([FromQuery] int jobTypeId)
     {
         try
@@ -1389,6 +1497,9 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin urgent jobs.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get urgent jobs.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("JobGetUrgentJobs")]
     public async Task<ActionResult<ApiResponse<IEnumerable<JobDiscoveryDTO>>>> GetUrgentJobs(
         [FromQuery] decimal latitude, 
         [FromQuery] decimal longitude, 

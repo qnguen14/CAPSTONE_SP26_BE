@@ -15,6 +15,9 @@ public class TestEmailController : Controller
     }
 
     [HttpPost]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Gui test email.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang send test email.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("TestEmailSendTestEmail")]
     public async Task<IActionResult> SendTestEmail([FromBody] TestEmailRequest request)
     {
         await _emailService.SendEmailAsync(request.To, request.Subject, request.Body);

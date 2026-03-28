@@ -23,6 +23,9 @@ public class SkillController : ControllerBase
     [HttpGet(ApiEndpointConstants.Skill.GetAllSkillsEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<SkillResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach skills.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all skills.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("SkillGetAllSkills")]
     public async Task<ActionResult<IEnumerable<SkillResponse>>> GetAllSkills()
     {
         try
@@ -49,6 +52,9 @@ public class SkillController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<SkillResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin skill by id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get skill by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("SkillGetSkillById")]
     public async Task<ActionResult<SkillResponse>> GetSkillById([FromRoute] Guid id)
     {
         try
@@ -85,6 +91,9 @@ public class SkillController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     [Authorize(Roles = "Admin")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi skill.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create skill.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("SkillCreateSkill")]
     public async Task<ActionResult<SkillResponse>> CreateSkill([FromBody] CreateSkillRequest request)
     {
         try
@@ -123,6 +132,9 @@ public class SkillController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     [Authorize(Roles = "Admin")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat skill.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update skill.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("SkillUpdateSkill")]
     public async Task<ActionResult<SkillResponse>> UpdateSkill([FromRoute] Guid id, [FromBody] UpdateSkillRequest request)
     {
         try
@@ -170,6 +182,9 @@ public class SkillController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     [Authorize(Roles = "Admin")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xoa skill.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang delete skill.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("SkillDeleteSkill")]
     public async Task<ActionResult> DeleteSkill([FromRoute] Guid id)
     {
         try
