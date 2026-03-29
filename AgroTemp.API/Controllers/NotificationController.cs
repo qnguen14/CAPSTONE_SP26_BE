@@ -25,9 +25,6 @@ public class NotificationController : ControllerBase
     [HttpGet(ApiEndpointConstants.Notification.GetNotificationsEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<NotificationDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin notifications cua nguoi dung hien tai.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get my notifications.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("NotificationGetMyNotifications")]
     public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetMyNotifications()
     {
         try
@@ -57,9 +54,6 @@ public class NotificationController : ControllerBase
     [HttpGet(ApiEndpointConstants.Notification.GetUnreadNotificationsEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<NotificationDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin unread notifications.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get unread notifications.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("NotificationGetUnreadNotifications")]
     public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetUnreadNotifications()
     {
         try
@@ -89,9 +83,6 @@ public class NotificationController : ControllerBase
     [HttpGet(ApiEndpointConstants.Notification.GetMyActiveTokensEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<string>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin active tokens cua nguoi dung hien tai.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get my active tokens.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("NotificationGetMyActiveTokens")]
     public async Task<ActionResult<IEnumerable<string>>> GetMyActiveTokens()
     {
         try
@@ -122,9 +113,6 @@ public class NotificationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Danh dau as read.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang mark as read.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("NotificationMarkAsRead")]
     public async Task<IActionResult> MarkAsRead([FromBody] MarkNotificationReadRequest request)
     {
         try
@@ -156,9 +144,6 @@ public class NotificationController : ControllerBase
     [HttpPatch(ApiEndpointConstants.Notification.MarkAllAsReadEndpoint)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Danh dau all as read.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang mark all as read.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("NotificationMarkAllAsRead")]
     public async Task<IActionResult> MarkAllAsRead()
     {
         try
@@ -184,9 +169,6 @@ public class NotificationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Xoa notification theo id.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang delete notification by id.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("NotificationDelete")]
     public async Task<IActionResult> Delete([FromRoute] Guid id)
     {
         try
@@ -218,9 +200,6 @@ public class NotificationController : ControllerBase
     [HttpPost(ApiEndpointConstants.Notification.RegisterTokenEndpoint)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Dang ky device token.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang register device token.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("NotificationRegisterDeviceToken")]
     public async Task<IActionResult> RegisterDeviceToken([FromBody] RegisterDeviceTokenRequest request)
     {
         try
@@ -253,9 +232,6 @@ public class NotificationController : ControllerBase
 
     [HttpPost(ApiEndpointConstants.Notification.UnregisterTokenEndpoint)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Huy dang ky device token.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang unregister device token.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("NotificationUnregisterDeviceToken")]
     public async Task<IActionResult> UnregisterDeviceToken([FromBody] RegisterDeviceTokenRequest request)
     {
         try
@@ -286,9 +262,6 @@ public class NotificationController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Gui push notification.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang send push notification.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("NotificationSendPushNotification")]
     public async Task<IActionResult> SendPushNotification([FromBody] SendPushNotificationRequest request)
     {
         try

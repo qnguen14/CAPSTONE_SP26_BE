@@ -23,9 +23,6 @@ public class MessagesController : ControllerBase
     [HttpGet(ApiEndpointConstants.Messages.GetMessagesEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<MessageDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin messages.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get messages.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("MessagesGetMessages")]
     public async Task<ActionResult<ApiResponse<PaginatedResponse<MessageDTO>>>> GetMessages(
         [FromQuery] Guid userId,
         [FromQuery] int page = 1,
@@ -57,9 +54,6 @@ public class MessagesController : ControllerBase
     [HttpPost(ApiEndpointConstants.Messages.SendMessageEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<MessageDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Gui message.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang send message.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("MessagesSendMessage")]
     public async Task<ActionResult<ApiResponse<MessageDTO>>> SendMessage([FromBody] CreateMessageRequest request)
     {
         try
@@ -98,9 +92,6 @@ public class MessagesController : ControllerBase
     [HttpPatch(ApiEndpointConstants.Messages.MarkConversationAsReadEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Danh dau conversation as read.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang mark conversation as read.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("MessagesMarkConversationAsRead")]
     public async Task<ActionResult<ApiResponse<int>>> MarkConversationAsRead([FromBody] MarkConversationAsReadRequest request)
     {
         try

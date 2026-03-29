@@ -24,9 +24,6 @@ namespace AgroTemp.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach ratings.")]
-        [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all ratings.")]
-        [Microsoft.AspNetCore.Routing.EndpointName("RatingGetAllRatings")]
         public async Task<ActionResult<IEnumerable<RatingDTO>>> GetAllRatings()
         {
             try
@@ -58,9 +55,6 @@ namespace AgroTemp.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin rating by id.")]
-        [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get rating by id.")]
-        [Microsoft.AspNetCore.Routing.EndpointName("RatingGetRatingById")]
         public async Task<ActionResult<RatingDTO>> GetRatingById([FromRoute] Guid id)
         {
             try
@@ -100,9 +94,6 @@ namespace AgroTemp.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi rating.")]
-        [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create rating.")]
-        [Microsoft.AspNetCore.Routing.EndpointName("RatingCreateRating")]
         public async Task<ActionResult<RatingDTO>> CreateRating([FromBody] CreateRatingRequest request)
         {
             try
@@ -133,9 +124,6 @@ namespace AgroTemp.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat rating.")]
-        [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update rating.")]
-        [Microsoft.AspNetCore.Routing.EndpointName("RatingUpdateRating")]
         public async Task<ActionResult<RatingDTO>> UpdateRating([FromRoute] Guid id, [FromBody] UpdateRatingRequest request)
         {
             try
@@ -175,9 +163,6 @@ namespace AgroTemp.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        [Microsoft.AspNetCore.Http.EndpointSummary("Xoa rating.")]
-        [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang delete rating.")]
-        [Microsoft.AspNetCore.Routing.EndpointName("RatingDeleteRating")]
         public async Task<ActionResult> DeleteRating([FromRoute] Guid id)
         {
             try
@@ -216,9 +201,6 @@ namespace AgroTemp.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin specific rating by user id.")]
-        [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get specific rating by user id.")]
-        [Microsoft.AspNetCore.Routing.EndpointName("RatingGetSpecificRatingByUserId")]
         public async Task<ActionResult<RatingDTO>> GetSpecificRatingByUserId([FromRoute] Guid id)
         {
             try
@@ -258,9 +240,6 @@ namespace AgroTemp.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach ratings by user id.")]
-        [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all ratings by user id.")]
-        [Microsoft.AspNetCore.Routing.EndpointName("RatingGetAllRatingsByUserId")]
         public async Task<ActionResult<IEnumerable<RatingDTO>>> GetAllRatingsByUserId([FromRoute] Guid userId)
         {
             try
@@ -300,9 +279,6 @@ namespace AgroTemp.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin average rating by user id.")]
-        [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get average rating by user id.")]
-        [Microsoft.AspNetCore.Routing.EndpointName("RatingGetAverageRatingByUserId")]
         public async Task<ActionResult<decimal?>> GetAverageRatingByUserId([FromRoute] Guid userId)
         {
             try

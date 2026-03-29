@@ -489,9 +489,9 @@ public class PayOSService : IPayOSService
             ReferenceId = withdrawalId.ToString(),
             Amount = (long)request.Amount,
             Description = request.Description ?? $"withdrawal-{withdrawalId}",
-            ToBin = request.ToBin,
+            ToBin = ((int)request.ToBin).ToString(),
             ToAccountNumber = request.ToAccountNumber,
-            Category = request.Category ?? new List<string>()
+            Category = request.Category
         };
 
         var payout = await _transferClient.Payouts.CreateAsync(payoutRequest);
@@ -506,7 +506,7 @@ public class PayOSService : IPayOSService
             WalletId = wallet.Id,
             Amount = request.Amount,
             BankAccountNumber = request.ToAccountNumber,
-            BankName = string.IsNullOrWhiteSpace(request.BankName) ? request.ToBin : request.BankName,
+            BankName = string.Empty,// string.IsNullOrWhiteSpace(request.BankName) ? request.ToBin.ToString() : request.BankName,
             AccountHolderName = string.IsNullOrWhiteSpace(request.AccountHolderName)
                 ? payout.Transactions.FirstOrDefault()?.ToAccountName ?? "Unknown"
                 : request.AccountHolderName,

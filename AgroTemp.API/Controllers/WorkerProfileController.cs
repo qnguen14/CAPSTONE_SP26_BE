@@ -28,9 +28,6 @@ public class WorkerProfileController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin worker profile.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get worker profile.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("WorkerProfileGetWorkerProfile")]
     public async Task<ActionResult<WorkerProfileDTO>> GetWorkerProfile()
     {
         try
@@ -69,9 +66,6 @@ public class WorkerProfileController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat worker profile.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update worker profile.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("WorkerProfileUpdateWorkerProfile")]
     public async Task<ActionResult<WorkerProfileDTO>> UpdateWorkerProfile(
         [FromBody] UpdateWorkerProfileRequest request)
     {
@@ -119,9 +113,6 @@ public class WorkerProfileController : Controller
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tai len avatar.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang upload avatar.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("WorkerProfileUploadAvatar")]
     public async Task<ActionResult<string>> UploadAvatar(IFormFile image)
     {
         try
