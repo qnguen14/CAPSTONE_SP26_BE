@@ -70,6 +70,7 @@ public partial class MapperlyMapper : IMapperlyMapper
     }
 
     [MapProperty(nameof(User.Role), nameof(LoginResponse.Role))]
+    [MapProperty(nameof(User.IsVerified), nameof(LoginResponse.IsVerified))]
     public partial LoginResponse UserToLoginResponse(User user);
 
     // Custom mapping for ExperienceLevel enum to string
