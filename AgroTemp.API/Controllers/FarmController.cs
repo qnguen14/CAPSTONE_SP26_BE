@@ -29,9 +29,6 @@ public class FarmController : Controller
     [HttpGet(ApiEndpointConstants.Farm.GetFarmsEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<FarmDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin farms cua nguoi dung hien tai.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get my farms.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("FarmGetMyFarms")]
     public async Task<ActionResult<IEnumerable<FarmDTO>>> GetMyFarms()
     {
         try
@@ -65,9 +62,6 @@ public class FarmController : Controller
     [ProducesResponseType(typeof(ApiResponse<FarmDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin farm by id.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get farm by id.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("FarmGetFarmById")]
     public async Task<ActionResult<FarmDTO>> GetFarmById([FromRoute] Guid id)
     {
         try
@@ -99,9 +93,6 @@ public class FarmController : Controller
     [ProducesResponseType(typeof(ApiResponse<FarmDTO>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi farm.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create farm.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("FarmCreateFarm")]
     public async Task<ActionResult<FarmDTO>> CreateFarm([FromBody] CreateFarmRequest request)
     {
         try
@@ -148,9 +139,6 @@ public class FarmController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat farm.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update farm.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("FarmUpdateFarm")]
     public async Task<ActionResult<FarmDTO>> UpdateFarm([FromRoute] Guid id, [FromBody] UpdateFarmRequest request)
     {
         try
@@ -205,9 +193,6 @@ public class FarmController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Xoa farm.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang delete farm.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("FarmDeleteFarm")]
     public async Task<ActionResult<bool>> DeleteFarm([FromRoute] Guid id)
     {
         try
@@ -253,9 +238,6 @@ public class FarmController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tai len farm image.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang upload farm image.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("FarmUploadFarmImage")]
     public async Task<ActionResult<string>> UploadFarmImage([FromRoute] Guid id, [FromForm] UploadFarmImageRequest request)
     {
         try

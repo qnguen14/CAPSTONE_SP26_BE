@@ -1,4 +1,4 @@
-using AgroTemp.API.Constants;
+﻿using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Payment;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
@@ -25,8 +25,8 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PayOSOrderResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin order thanh toan theo id.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get payment order by id.")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin nap tien theo id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang ay thong tin nap tien id.")]
     [Microsoft.AspNetCore.Routing.EndpointName("PaymentGet")]
     public async Task<ActionResult<PayOSOrderResponse>> Get([FromRoute] Guid id)
     {
@@ -67,8 +67,8 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PayOSOrderResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi payment.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create payment.")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi nap tien.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang nap tien.")]
     [Microsoft.AspNetCore.Routing.EndpointName("PaymentCreatePayment")]
     public async Task<ActionResult<PayOSOrderResponse>> CreatePayment([FromBody] CreatePayOSOrderRequest request)
     {
@@ -118,8 +118,8 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PaymentLink>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Huy payment.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang cancel payment.")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Huy nap tien.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang huy nap tien.")]
     [Microsoft.AspNetCore.Routing.EndpointName("PaymentCancelPayment")]
     public async Task<ActionResult<PaymentLink>> CancelPayment([FromRoute] Guid id, [FromQuery] string? cancellationReason)
     {
@@ -155,89 +155,12 @@ public class PaymentController : ControllerBase
         }
     }
 
-    [HttpGet(ApiEndpointConstants.Payment.GetOrderInvoicesEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<PayOSInvoicesInfoResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin invoices.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get invoices.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("PaymentGetInvoices")]
-    public async Task<ActionResult<PayOSInvoicesInfoResponse>> GetInvoices([FromRoute] Guid id)
-    {
-        try
-        {
-            var invoices = await _payOSService.GetInvoicesAsync(id);
-            if (invoices == null)
-            {
-                return NotFound(new ApiResponse<object>
-                {
-                    StatusCode = StatusCodes.Status404NotFound,
-                    Message = "Order not found",
-                    Data = null
-                });
-            }
-
-            return Ok(new ApiResponse<PayOSInvoicesInfoResponse>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Invoices retrieved successfully",
-                Data = invoices
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to retrieve invoices for order {OrderId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = $"Failed to retrieve invoices for order {id}",
-                Data = ex.Message
-            });
-        }
-    }
-
-    [HttpGet(ApiEndpointConstants.Payment.DownloadOrderInvoiceEndpoint)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tai xuong invoice.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang download invoice.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("PaymentDownloadInvoice")]
-    public async Task<ActionResult> DownloadInvoice([FromRoute] Guid id, [FromRoute] string invoiceId)
-    {
-        try
-        {
-            var file = await _payOSService.DownloadInvoiceAsync(id, invoiceId);
-            if (file == null)
-            {
-                return NotFound(new ApiResponse<object>
-                {
-                    StatusCode = StatusCodes.Status404NotFound,
-                    Message = "Invoice not found for this order",
-                    Data = null
-                });
-            }
-
-            return File(file.Value.Content, file.Value.ContentType, file.Value.FileName);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to download invoice {InvoiceId} for order {OrderId}", invoiceId, id);
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = $"Failed to download invoice {invoiceId}",
-                Data = ex.Message
-            });
-        }
-    }
-
     [HttpGet(ApiEndpointConstants.Payment.CallbackEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<PayOSOrderResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin payment callback.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get payment callback.")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin nap tien khi payos callback")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang lấy thông tin nap tien khi payos callback.")]
     [Microsoft.AspNetCore.Routing.EndpointName("PaymentGetPaymentCallback")]
     public async Task<ActionResult<PayOSOrderResponse>> GetPaymentCallback([FromQuery] PaymentCallbackRequest request)
     {
@@ -277,8 +200,8 @@ public class PaymentController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Xac minh payment.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang verify payment.")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xac minh nap tien.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang verify nap tien dành cho payos.")]
     [Microsoft.AspNetCore.Routing.EndpointName("PaymentVerifyPayment")]
     public async Task<ActionResult> VerifyPayment([FromBody] Webhook webhook)
     {

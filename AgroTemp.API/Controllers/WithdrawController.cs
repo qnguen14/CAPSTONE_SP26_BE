@@ -1,4 +1,4 @@
-using AgroTemp.API.Constants;
+﻿using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Payment;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
@@ -26,7 +26,7 @@ public class WithdrawController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi withdrawal.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create withdrawal.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create withdrawal. Lưu ý: phải add IP public vào payos thì mới thao tác được các API liên rút tiền( https://checkip.com.vn )")]
     [Microsoft.AspNetCore.Routing.EndpointName("WithdrawCreateWithdrawal")]
     public async Task<ActionResult<WithdrawalResponse>> CreateWithdrawal([FromBody] CreateWithdrawalRequest request)
     {

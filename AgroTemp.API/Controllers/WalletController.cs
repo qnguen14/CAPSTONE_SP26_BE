@@ -23,8 +23,8 @@ public class WalletController : ControllerBase
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach wallets.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all wallets.")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach wallets danh cho admin.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all wallets danh cho admin.")]
     [Microsoft.AspNetCore.Routing.EndpointName("WalletGetAllWallets")]
     public async Task<ActionResult> GetAllWallets()
     {

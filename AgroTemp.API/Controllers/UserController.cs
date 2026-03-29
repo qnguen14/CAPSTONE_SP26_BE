@@ -24,9 +24,6 @@ public class UserController : Controller
     [HttpGet(ApiEndpointConstants.User.GetAllUsersEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<UserDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach users.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all users.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("UserGetAllUsers")]
     public async Task<ActionResult<IEnumerable<UserDTO>>> GetAllUsers()
     {
         try
@@ -58,9 +55,6 @@ public class UserController : Controller
     [ProducesResponseType(typeof(ApiResponse<UserDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin user by id.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get user by id.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("UserGetUserById")]
     public async Task<ActionResult<UserDTO>> GetUserById([FromRoute] Guid id)
     {
         try
@@ -92,9 +86,6 @@ public class UserController : Controller
     [ProducesResponseType(typeof(ApiResponse<UserDTO>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi user.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create user.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("UserCreateUser")]
     public async Task<ActionResult<UserDTO>> CreateUser([FromBody] CreateUserRequest request)
     {
         try
@@ -138,9 +129,6 @@ public class UserController : Controller
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Cap nhat user.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang update user.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("UserUpdateUser")]
     public async Task<ActionResult<UserDTO>> UpdateUser([FromRoute] Guid id, [FromBody] UpdateUserRequest request)
     {
         try
@@ -192,9 +180,6 @@ public class UserController : Controller
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Xoa user.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang delete user.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("UserDeleteUser")]
     public async Task<ActionResult<bool>> DeleteUser([FromRoute] Guid id)
     {
         try
