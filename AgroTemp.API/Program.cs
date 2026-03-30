@@ -17,6 +17,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using AspNetCore.Swagger.Themes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -83,8 +84,9 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<SwaggerBasicAuthMiddleware>();
 
 app.UseSwagger();
-app.UseSwaggerUI(c =>
+app.UseSwaggerUI(ModernStyle.Dark , c =>
 {
+    c.EnableAllAdvancedOptions();
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
     c.RoutePrefix = "swagger"; // Swagger at /swagger
 });

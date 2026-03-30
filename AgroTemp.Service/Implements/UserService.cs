@@ -274,6 +274,8 @@ public class UserService : BaseService<User>, IUserService
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     ContactName = request.ContactName,
+                    Address = request.Address,
+                    DateOfBirth = request.DateOfBirth,
                     AverageRating = 0,
                     TotalJobsPosted = 0,
                     TotalJobsCompleted = 0,

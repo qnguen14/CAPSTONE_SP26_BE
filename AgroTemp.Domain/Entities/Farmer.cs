@@ -50,7 +50,6 @@ public class Farmer
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; }
 
-    [Required]
     [Column("avatar_url")]
     public string AvatarUrl { get; set; }
     // Navigation property for farms owned by this farmer

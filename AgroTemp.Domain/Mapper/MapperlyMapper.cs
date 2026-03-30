@@ -31,6 +31,8 @@ public partial class MapperlyMapper : IMapperlyMapper
             Id = farmer.Id,
             UserId = farmer.UserId,
             ContactName = farmer.ContactName,
+            Address = farmer.Address,
+            DateOfBirth = farmer.DateOfBirth,
             AverageRating = farmer.AverageRating,
             TotalJobsPosted = farmer.TotalJobsPosted,
             TotalJobsCompleted = farmer.TotalJobsCompleted,

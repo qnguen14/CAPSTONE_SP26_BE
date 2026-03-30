@@ -77,12 +77,18 @@ public class FarmService : BaseService<Farm>, IFarmService
                 throw new Exception("Farmer profile not found");
             }
 
-            // Validate farm type specific fields
-            if (request.FarmType == FarmType.Livestock && (request.LivestockCount == null || request.LivestockCount <= 0))
-                throw new Exception("Livestock count is required and must be greater than 0 for livestock farms.");
 
-            if (request.FarmType == FarmType.Crop && (request.AreaSize == null || request.AreaSize <= 0))
-                throw new Exception("Area size is required and must be greater than 0 for crop farms.");
+            // Validate farm type specific fields
+            if (request.FarmType == FarmType.Livestock)
+            {
+                if (request.LivestockCount == null || request.LivestockCount <= 0)
+                    throw new Exception("Livestock count is required and must be greater than 0 for livestock farms.");
+            }
+            else if (request.FarmType == FarmType.Crop || request.FarmType == FarmType.Aquaculture)
+            {
+                if (request.AreaSize == null || request.AreaSize <= 0)
+                    throw new Exception($"Area size is required and must be greater than 0 for {request.FarmType.ToString().ToLower()} farms.");
+            }
 
             if (request.isPrimary)
             {
@@ -108,7 +114,7 @@ public class FarmService : BaseService<Farm>, IFarmService
                 ImageUrl = request.ImageUrl,
                 FarmType = request.FarmType,
                 LivestockCount = request.FarmType == FarmType.Livestock ? request.LivestockCount : null,
-                AreaSize = request.FarmType == FarmType.Crop ? request.AreaSize : null,
+                AreaSize = (request.FarmType == FarmType.Crop || request.FarmType == FarmType.Aquaculture) ? request.AreaSize : null,
                 IsPrimary = request.isPrimary,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -184,15 +190,20 @@ public class FarmService : BaseService<Farm>, IFarmService
             {
                 var newFarmType = request.FarmType.Value;
 
-                if (newFarmType == FarmType.Livestock && (request.LivestockCount == null || request.LivestockCount <= 0))
-                    throw new Exception("Livestock count is required and must be greater than 0 for livestock farms.");
-
-                if (newFarmType == FarmType.Crop && (request.AreaSize == null || request.AreaSize <= 0))
-                    throw new Exception("Area size is required and must be greater than 0 for crop farms.");
+                if (newFarmType == FarmType.Livestock)
+                {
+                    if (request.LivestockCount == null || request.LivestockCount <= 0)
+                        throw new Exception("Livestock count is required and must be greater than 0 for livestock farms.");
+                }
+                else if (newFarmType == FarmType.Crop || newFarmType == FarmType.Aquaculture)
+                {
+                    if (request.AreaSize == null || request.AreaSize <= 0)
+                        throw new Exception($"Area size is required and must be greater than 0 for {newFarmType.ToString().ToLower()} farms.");
+                }
 
                 farm.FarmType = newFarmType;
                 farm.LivestockCount = newFarmType == FarmType.Livestock ? request.LivestockCount : null;
-                farm.AreaSize = newFarmType == FarmType.Crop ? request.AreaSize : null;
+                farm.AreaSize = (newFarmType == FarmType.Crop || newFarmType == FarmType.Aquaculture) ? request.AreaSize : null;
             }
             else
             {
@@ -204,7 +215,7 @@ public class FarmService : BaseService<Farm>, IFarmService
                     farm.LivestockCount = request.LivestockCount.Value;
                 }
 
-                if (farm.FarmType == FarmType.Crop && request.AreaSize.HasValue)
+                if ((farm.FarmType == FarmType.Crop || farm.FarmType == FarmType.Aquaculture) && request.AreaSize.HasValue)
                 {
                     if (request.AreaSize <= 0)
                         throw new Exception("Area size must be greater than 0.");
