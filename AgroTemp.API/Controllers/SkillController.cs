@@ -109,7 +109,7 @@ public class SkillController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<SkillResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public async Task<ActionResult<SkillResponse>> CreateSkill([FromBody] CreateSkillRequest request)
     {
         try
