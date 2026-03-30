@@ -213,9 +213,12 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial void UpdateJobDetailRequestToJobDetail(UpdateJobDetailRequest request, JobDetail jobDetail);
 
     // Skill
+    [MapProperty(nameof(Skill.JobCategoryId), nameof(SkillResponse.CategoryId))]
     public partial SkillResponse SkillToSkillResponse(Skill skill);
     public partial List<SkillResponse> SkillsToSkillResponses(IEnumerable<Skill> skills);
+    [MapProperty(nameof(CreateSkillRequest.CategoryId), nameof(Skill.JobCategoryId))]
     public partial Skill CreateSkillRequestToSkill(CreateSkillRequest request);
+    [MapProperty(nameof(UpdateSkillRequest.CategoryId), nameof(Skill.JobCategoryId))]
     public partial void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
 
     // Rating
