@@ -550,7 +550,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFilteredJobPosts([FromQuery] string? title, [FromQuery] string? category, [FromQuery] string? address, [FromQuery] string? skill)
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFilteredJobPosts([FromQuery] string? title, [FromQuery] string? category, [FromQuery] string? address, [FromQuery] List<string>? skill)
     {
         try
         {

@@ -377,7 +377,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, string? skill)
+        public async Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, List<string?> skill)
         {
             try
             {
@@ -387,7 +387,7 @@ namespace AgroTemp.Service.Implements
                             (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
                             (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&
                             (string.IsNullOrEmpty(address) || jp.Address.Contains(address)) &&
-                            (string.IsNullOrEmpty(skill) || jp.JobSkillRequirements.Any(jsr => jsr.Skill.Name == skill)),
+                            (skill == null || skill.Count == 0 || jp.JobSkillRequirements.Any(jsr => skill.Contains(jsr.Skill.Name))),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
