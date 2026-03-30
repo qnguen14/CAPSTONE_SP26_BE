@@ -179,6 +179,7 @@ public class ApiEndpointConstants
     {
         public const string SkillEndpoint = ApiEndpoint + "/skills";
         public const string GetAllSkillsEndpoint = SkillEndpoint;
+        public const string GetSkillsByCategoryPagedEndpoint = SkillEndpoint + "/category/{categoryId}";
         public const string GetSkillByIdEndpoint = SkillEndpoint + "/{id}";
         public const string CreateSkillEndpoint = SkillEndpoint;
         public const string UpdateSkillEndpoint = SkillEndpoint + "/{id}";

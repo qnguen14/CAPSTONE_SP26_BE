@@ -45,6 +45,31 @@ public class SkillController : ControllerBase
         }
     }
 
+    [HttpGet(ApiEndpointConstants.Skill.GetSkillsByCategoryPagedEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<SkillResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PaginatedResponse<SkillResponse>>> GetSkillsByCategoryPaged([FromRoute] Guid categoryId, [FromQuery] int page = 1, [FromQuery] int limit = 20)
+    {
+        try
+        {
+            var response = await _skillService.GetSkillsByCategoryPagedAsync(categoryId, page, limit);
+
+            var apiResponse = new ApiResponse<PaginatedResponse<SkillResponse>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Skills by category retrieved successfully",
+                Data = response
+            };
+
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving skills for category {CategoryId}", categoryId);
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
     [HttpGet(ApiEndpointConstants.Skill.GetSkillByIdEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<SkillResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]

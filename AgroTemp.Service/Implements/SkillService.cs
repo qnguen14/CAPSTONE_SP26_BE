@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Skill;
 using AgroTemp.Domain.Entities;
@@ -6,6 +7,8 @@ using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using AgroTemp.Domain.Metadata;
 
 namespace AgroTemp.Service.Implements
 {
@@ -39,6 +42,45 @@ namespace AgroTemp.Service.Implements
                 }
 
                 return _mapper.SkillsToSkillResponses(skills);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<PaginatedResponse<SkillResponse>> GetSkillsByCategoryPagedAsync(Guid categoryId, int page, int limit)
+        {
+            try
+            {
+                page = page < 1 ? 1 : page;
+                limit = limit <= 0 ? 20 : limit;
+                limit = Math.Min(limit, 100);
+                var skip = (page - 1) * limit;
+
+                Expression<Func<Skill, bool>> predicate = s => s.JobCategoryId == categoryId;
+    
+                var total = await _unitOfWork.GetRepository<Skill>().CountAsync(predicate);
+
+                var query = _unitOfWork.GetRepository<Skill>().CreateBaseQuery(
+                    predicate: predicate,
+                    orderBy: q => q.OrderBy(s => s.Name),
+                    include: null,
+                    asNoTracking: true);
+
+                var items = await query.Skip(skip).Take(limit).ToListAsync();
+
+                return new PaginatedResponse<SkillResponse>
+                {
+                    Data = _mapper.SkillsToSkillResponses(items),
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit)
+                    }
+                };
             }
             catch (Exception ex)
             {
