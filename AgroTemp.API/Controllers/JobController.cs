@@ -1426,4 +1426,66 @@ public class JobController : ControllerBase
             });
         }
     }
+
+    [HttpPut(ApiEndpointConstants.Job.CancelJobApplication)]
+    [Authorize(Roles = "Worker")]
+    [ProducesResponseType(typeof(ApiResponse<JobApplicationDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobApplicationDTO>> CancelJobApplication([FromRoute] Guid id)
+    {
+        try
+        {
+            var response = await _jobApplicationService.CancelJobApplication(id);
+            
+            return Ok(new ApiResponse<JobApplicationDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job application cancelled successfully",
+                Data = response
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application: Not found");
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application: Unauthorized");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application: Invalid state");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling job application");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while cancelling the job application",
+                Data = null
+            });
+        }
+    }
 }
