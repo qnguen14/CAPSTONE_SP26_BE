@@ -1,5 +1,6 @@
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Job.JobPost;
+using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Interfaces;
@@ -21,17 +22,20 @@ namespace AgroTemp.Service.Implements
     {
         private readonly IMapperlyMapper _mapper;
         private readonly IWalletService _walletService;
+        private readonly INotificationService _notificationService;
 
         public JobPostService(
             IUnitOfWork<AgroTempDbContext> unitOfWork,
             IHttpContextAccessor httpContextAccessor,
             IMapperlyMapper mapper,
-            IWalletService walletService) : base(unitOfWork, httpContextAccessor, mapper)
+            IWalletService walletService,
+            INotificationService notificationService) : base(unitOfWork, httpContextAccessor, mapper)
         {
             _unitOfWork = unitOfWork;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
             _walletService = walletService;
+            _notificationService = notificationService;
         }
 
         public async Task<List<JobPostDTO>> GetAllJobPosts()
@@ -304,6 +308,69 @@ namespace AgroTemp.Service.Implements
                 _unitOfWork.GetRepository<JobPost>().DeleteAsync(existingJobPost);
                 await _unitOfWork.SaveChangesAsync();
                 return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<JobPostDTO> CancelJobPost(Guid id)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+
+                var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == id,
+                        include: q => q.Include(jp => jp.Farmer));
+
+                if (existingJobPost == null)
+                    throw new KeyNotFoundException("Job post not found.");
+
+                if (existingJobPost.Farmer.UserId != currentUserId)
+                    throw new UnauthorizedAccessException("You are only authorized to cancel your own job posts.");
+
+                if (existingJobPost.StatusId == (int)JobPostStatus.Cancelled || existingJobPost.StatusId == (int)JobPostStatus.Completed
+                        || existingJobPost.StatusId == (int)JobPostStatus.InProgress || existingJobPost.StatusId == (int)JobPostStatus.Closed)
+                    throw new InvalidOperationException("Job post cannot be cancelled in its current status.");
+
+                if (existingJobPost.StartDate.HasValue && existingJobPost.StartDate.Value < DateOnly.FromDateTime(DateTime.UtcNow))
+                    throw new InvalidOperationException("Cannot cancel a job post that has already started.");
+
+                existingJobPost.StatusId = (int)JobPostStatus.Cancelled;
+                _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
+
+                var applicants = await _unitOfWork.GetRepository<JobApplication>()
+                .GetListAsync(
+                    predicate: ja => ja.JobPostId == id &&
+                                     ja.StatusId != (int)ApplicationStatus.Cancelled &&
+                                     ja.StatusId != (int)ApplicationStatus.Rejected,
+                    include: q => q.Include(ja => ja.Worker));
+
+                if (applicants != null && applicants.Any())
+                {
+                    foreach (var application in applicants)
+                    {
+                        if (application.Worker != null)
+                        {
+                            await _notificationService.CreateAsync(new CreateNotificationRequest
+                            {
+                                UserId = application.Worker.UserId,
+                                Type = NotificationType.JobAcceptance,
+                                Title = "Bài đăng công việc đã bị hủy",
+                                Message = $"Bài đăng công việc \"{existingJobPost.Title}\" mà bạn đã ứng tuyển đã bị hủy bởi chủ tuyển dụng.",
+                                RelatedEntityId = existingJobPost.Id
+                            });
+                        }
+                    }
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                var result = _mapper.JobPostToJobPostDto(existingJobPost);
+                return result;
             }
             catch (Exception ex)
             {

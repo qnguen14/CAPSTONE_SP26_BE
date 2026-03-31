@@ -112,7 +112,8 @@ public class ApiEndpointConstants
         public const string GetJobsByTypeEndpoint = JobPostEndpoint + "/by-type";
         public const string GetUrgentJobsEndpoint = JobPostEndpoint + "/urgent";
 
-        public const string CancelJobApplication = JobApplicationEndpoint + "/cancel" + "/{id}";
+        public const string CancelJobPostEndpoint = JobPostEndpoint + "/cancel" + "/{id}";
+        public const string CancelJobApplicationEndpoint = JobApplicationEndpoint + "/cancel" + "/{id}";
     }
 
     public static class WorkerAttendance
