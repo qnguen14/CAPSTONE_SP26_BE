@@ -88,8 +88,8 @@ public class PayOSService : IPayOSService
         var buyerPhone = farmer.User?.PhoneNumber;
 
         var orderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var returnUrl = "https://your-domain.com/success";
-        var cancelUrl = "https://your-domain.com/cancel";
+        var returnUrl = "http://localhost:3000/farmer/payments/success";
+        var cancelUrl = "http://localhost:3000/farmer/payments/cancel";
         var expiredAt = DateTimeOffset.UtcNow.AddHours(2);
         var buyerNotGetInvoice = false;
         int? taxPercentage = null;

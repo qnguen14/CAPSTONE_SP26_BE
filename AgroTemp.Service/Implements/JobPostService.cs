@@ -164,8 +164,21 @@ namespace AgroTemp.Service.Implements
                 jobPost.UpdatedAt = DateTime.UtcNow;
                 jobPost.PublishedAt = default;
 
-                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
-                await _unitOfWork.SaveChangesAsync();
+                var totalDays = (request.StartDate.HasValue && request.EndDate.HasValue)
+                    ? (request.EndDate.Value.ToDateTime(TimeOnly.MinValue) - request.StartDate.Value.ToDateTime(TimeOnly.MinValue)).TotalDays
+                    : 0;
+                var lockAmount = request.JobTypeId == JobType.PerJob
+                    ? request.WageAmount
+                    : request.WageAmount * request.WorkersNeeded * (decimal)totalDays;
+                try
+                {
+                    await _walletService.LockAmountForJobPostAsync(farmer.UserId, jobPost.Id, lockAmount);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new Exception("Insufficient wallet balance to create job post. Please top up your wallet.", ex);
+                }
+
 
                 if (skills.Any())
                 {
@@ -179,8 +192,11 @@ namespace AgroTemp.Service.Implements
                     }).ToList();
 
                     await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
-                    await _unitOfWork.SaveChangesAsync();
                 }
+
+                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
+                await _unitOfWork.SaveChangesAsync();
+
 
                 var createdJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
