@@ -51,7 +51,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobApplicationDTO>> GetJobApplicationsByWorkerId()
+        public async Task<List<JobApplicationDTO>> GetJobApplicationsByWorker()
         {
             try
             {

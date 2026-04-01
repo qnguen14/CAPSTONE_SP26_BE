@@ -349,6 +349,47 @@ public class JobController : ControllerBase
         }
     }
 
+    [HttpGet(ApiEndpointConstants.Job.GetFarmerJobHistoryEndpoint)]
+    [Authorize(Roles = "Farmer")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFarmerJobHistory()
+    {
+        try
+        {
+            var response = await _jobPostService.GetFarmerJobHistory();
+            var apiResponse = new ApiResponse<IEnumerable<JobPostDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Farmer job history retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to farmer job history");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving farmer job history");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving farmer job history",
+                Data = null
+            });
+        }
+    }
+
     [HttpPost(ApiEndpointConstants.Job.CreateJobPostEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -772,6 +813,7 @@ public class JobController : ControllerBase
     }
 
     [HttpGet(ApiEndpointConstants.Job.GetJobApplicationsByWorkerEndpoint)]
+    [Authorize(Roles = "Worker")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobApplicationDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -780,7 +822,7 @@ public class JobController : ControllerBase
     {
         try
         {
-            var response = await _jobApplicationService.GetJobApplicationsByWorkerId();
+            var response = await _jobApplicationService.GetJobApplicationsByWorker();
             var apiResponse = new ApiResponse<IEnumerable<JobApplicationDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
