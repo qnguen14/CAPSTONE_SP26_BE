@@ -1,5 +1,6 @@
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Job.JobPost;
+using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Interfaces;
@@ -21,17 +22,20 @@ namespace AgroTemp.Service.Implements
     {
         private readonly IMapperlyMapper _mapper;
         private readonly IWalletService _walletService;
+        private readonly INotificationService _notificationService;
 
         public JobPostService(
             IUnitOfWork<AgroTempDbContext> unitOfWork,
             IHttpContextAccessor httpContextAccessor,
             IMapperlyMapper mapper,
-            IWalletService walletService) : base(unitOfWork, httpContextAccessor, mapper)
+            IWalletService walletService,
+            INotificationService notificationService) : base(unitOfWork, httpContextAccessor, mapper)
         {
             _unitOfWork = unitOfWork;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
             _walletService = walletService;
+            _notificationService = notificationService;
         }
 
         public async Task<List<JobPostDTO>> GetAllJobPosts()
@@ -164,8 +168,21 @@ namespace AgroTemp.Service.Implements
                 jobPost.UpdatedAt = DateTime.UtcNow;
                 jobPost.PublishedAt = default;
 
-                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
-                await _unitOfWork.SaveChangesAsync();
+                var totalDays = (request.StartDate.HasValue && request.EndDate.HasValue)
+                    ? (request.EndDate.Value.ToDateTime(TimeOnly.MinValue) - request.StartDate.Value.ToDateTime(TimeOnly.MinValue)).TotalDays
+                    : 0;
+                var lockAmount = request.JobTypeId == JobType.PerJob
+                    ? request.WageAmount
+                    : request.WageAmount * request.WorkersNeeded * (decimal)totalDays;
+                try
+                {
+                    await _walletService.LockAmountForJobPostAsync(farmer.UserId, jobPost.Id, lockAmount);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new Exception("Insufficient wallet balance to create job post. Please top up your wallet.", ex);
+                }
+
 
                 if (skills.Any())
                 {
@@ -179,8 +196,11 @@ namespace AgroTemp.Service.Implements
                     }).ToList();
 
                     await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
-                    await _unitOfWork.SaveChangesAsync();
                 }
+
+                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
+                await _unitOfWork.SaveChangesAsync();
+
 
                 var createdJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
@@ -295,6 +315,69 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<JobPostDTO> CancelJobPost(Guid id)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+
+                var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == id,
+                        include: q => q.Include(jp => jp.Farmer));
+
+                if (existingJobPost == null)
+                    throw new KeyNotFoundException("Job post not found.");
+
+                if (existingJobPost.Farmer.UserId != currentUserId)
+                    throw new UnauthorizedAccessException("You are only authorized to cancel your own job posts.");
+
+                if (existingJobPost.StatusId == (int)JobPostStatus.Cancelled || existingJobPost.StatusId == (int)JobPostStatus.Completed
+                        || existingJobPost.StatusId == (int)JobPostStatus.InProgress || existingJobPost.StatusId == (int)JobPostStatus.Closed)
+                    throw new InvalidOperationException("Job post cannot be cancelled in its current status.");
+
+                if (existingJobPost.StartDate.HasValue && existingJobPost.StartDate.Value < DateOnly.FromDateTime(DateTime.UtcNow))
+                    throw new InvalidOperationException("Cannot cancel a job post that has already started.");
+
+                existingJobPost.StatusId = (int)JobPostStatus.Cancelled;
+                _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
+
+                var applicants = await _unitOfWork.GetRepository<JobApplication>()
+                .GetListAsync(
+                    predicate: ja => ja.JobPostId == id &&
+                                     ja.StatusId != (int)ApplicationStatus.Cancelled &&
+                                     ja.StatusId != (int)ApplicationStatus.Rejected,
+                    include: q => q.Include(ja => ja.Worker));
+
+                if (applicants != null && applicants.Any())
+                {
+                    foreach (var application in applicants)
+                    {
+                        if (application.Worker != null)
+                        {
+                            await _notificationService.CreateAsync(new CreateNotificationRequest
+                            {
+                                UserId = application.Worker.UserId,
+                                Type = NotificationType.JobAcceptance,
+                                Title = "Bài đăng công việc đã bị hủy",
+                                Message = $"Bài đăng công việc \"{existingJobPost.Title}\" mà bạn đã ứng tuyển đã bị hủy bởi chủ tuyển dụng.",
+                                RelatedEntityId = existingJobPost.Id
+                            });
+                        }
+                    }
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                var result = _mapper.JobPostToJobPostDto(existingJobPost);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<JobPostDTO> UpdateJobPostUrgency(string id, bool isUrgent)
         {
             try
@@ -377,7 +460,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, string? skill)
+        public async Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, List<string?> skill)
         {
             try
             {
@@ -387,7 +470,7 @@ namespace AgroTemp.Service.Implements
                             (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
                             (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&
                             (string.IsNullOrEmpty(address) || jp.Address.Contains(address)) &&
-                            (string.IsNullOrEmpty(skill) || jp.JobSkillRequirements.Any(jsr => jsr.Skill.Name == skill)),
+                            (skill == null || skill.Count == 0 || jp.JobSkillRequirements.Any(jsr => skill.Contains(jsr.Skill.Name))),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)

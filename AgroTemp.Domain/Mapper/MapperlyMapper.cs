@@ -31,6 +31,8 @@ public partial class MapperlyMapper : IMapperlyMapper
             Id = farmer.Id,
             UserId = farmer.UserId,
             ContactName = farmer.ContactName,
+            Address = farmer.Address,
+            DateOfBirth = farmer.DateOfBirth,
             AverageRating = farmer.AverageRating,
             TotalJobsPosted = farmer.TotalJobsPosted,
             TotalJobsCompleted = farmer.TotalJobsCompleted,
@@ -53,7 +55,7 @@ public partial class MapperlyMapper : IMapperlyMapper
             Id = worker.Id,
             UserId = worker.UserId,
             FullName = worker.FullName,
-            Age = worker.AgeRange,
+            Date_of_birth = worker.DateOfBirth.ToString(),
             PrimaryLocation = worker.PrimaryLocation,
             TravelRadiusKmPreference = worker.TravelRadiusKmPreference,
             ExperienceLevelId = worker.ExperienceLevelId,
@@ -70,6 +72,7 @@ public partial class MapperlyMapper : IMapperlyMapper
     }
 
     [MapProperty(nameof(User.Role), nameof(LoginResponse.Role))]
+    [MapProperty(nameof(User.IsVerified), nameof(LoginResponse.IsVerified))]
     public partial LoginResponse UserToLoginResponse(User user);
 
     // Custom mapping for ExperienceLevel enum to string
@@ -210,9 +213,12 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial void UpdateJobDetailRequestToJobDetail(UpdateJobDetailRequest request, JobDetail jobDetail);
 
     // Skill
+    [MapProperty(nameof(Skill.JobCategoryId), nameof(SkillResponse.CategoryId))]
     public partial SkillResponse SkillToSkillResponse(Skill skill);
     public partial List<SkillResponse> SkillsToSkillResponses(IEnumerable<Skill> skills);
+    [MapProperty(nameof(CreateSkillRequest.CategoryId), nameof(Skill.JobCategoryId))]
     public partial Skill CreateSkillRequestToSkill(CreateSkillRequest request);
+    [MapProperty(nameof(UpdateSkillRequest.CategoryId), nameof(Skill.JobCategoryId))]
     public partial void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
 
     // Rating

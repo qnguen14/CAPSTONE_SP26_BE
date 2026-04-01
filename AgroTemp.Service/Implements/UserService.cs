@@ -127,7 +127,6 @@ public class UserService : BaseService<User>, IUserService
                 Id = userId,
                 Email = request.Email,
                 PhoneNumber = request.PhoneNumber,
-                Address = request.Address,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 RoleId = (int)request.RoleId,
                 Role = request.RoleId,
@@ -182,11 +181,6 @@ public class UserService : BaseService<User>, IUserService
                     throw new Exception("Phone number already exists");
                 }
                 user.PhoneNumber = request.PhoneNumber;
-            }
-
-            if (!string.IsNullOrEmpty(request.Address))
-            {
-                user.Address = request.Address;
             }
 
             if (request.RoleId.HasValue)
@@ -280,6 +274,8 @@ public class UserService : BaseService<User>, IUserService
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     ContactName = request.ContactName,
+                    Address = request.Address,
+                    DateOfBirth = request.DateOfBirth,
                     AverageRating = 0,
                     TotalJobsPosted = 0,
                     TotalJobsCompleted = 0,
@@ -364,7 +360,7 @@ public class UserService : BaseService<User>, IUserService
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     FullName = request.FullName,
-                    AgeRange = request.AgeRange,
+                    DateOfBirth = DateOnly.Parse(request.DateOfBirth),
                     PrimaryLocation = request.PrimaryLocation,
                     TravelRadiusKmPreference = request.TravelRadiusKmPreference,
                     ExperienceLevelId = request.ExperienceLevelId,
@@ -392,7 +388,7 @@ public class UserService : BaseService<User>, IUserService
             {
                 // Profile exists - update it
                 workerProfile.FullName = request.FullName;
-                workerProfile.AgeRange = request.AgeRange;
+                workerProfile.DateOfBirth = DateOnly.Parse(request.DateOfBirth);
                 workerProfile.PrimaryLocation = request.PrimaryLocation;
                 workerProfile.TravelRadiusKmPreference = request.TravelRadiusKmPreference;
                 workerProfile.ExperienceLevelId = request.ExperienceLevelId;

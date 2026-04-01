@@ -22,12 +22,10 @@ public static class AdminSeedConfiguration
         var email = configuration["AdminSeed:Email"]?.Trim();
         var phone = configuration["AdminSeed:PhoneNumber"]?.Trim();
         var password = configuration["AdminSeed:Password"];
-        var address = configuration["AdminSeed:Address"]?.Trim();
 
         if (string.IsNullOrWhiteSpace(email) ||
             string.IsNullOrWhiteSpace(phone) ||
-            string.IsNullOrWhiteSpace(password) ||
-            string.IsNullOrWhiteSpace(address))
+            string.IsNullOrWhiteSpace(password))
         {
             logger.LogWarning("Admin seed is enabled but missing required values.");
             return;
@@ -45,7 +43,7 @@ public static class AdminSeedConfiguration
             existingByEmail.RoleId = (int)UserRole.Admin;
             existingByEmail.IsActive = true;
             existingByEmail.IsVerified = true;
-            existingByEmail.Address = address;
+            // existingByEmail.Address = address;
             existingByEmail.PhoneNumber = phone;
 
             if (!BCrypt.Net.BCrypt.Verify(password, existingByEmail.PasswordHash))
@@ -78,7 +76,7 @@ public static class AdminSeedConfiguration
             existingByPhone.RoleId = (int)UserRole.Admin;
             existingByPhone.IsActive = true;
             existingByPhone.IsVerified = true;
-            existingByPhone.Address = address;
+            // existingByPhone.Address = address;
             existingByPhone.Email = email;
 
             if (!BCrypt.Net.BCrypt.Verify(password, existingByPhone.PasswordHash))
@@ -111,7 +109,7 @@ public static class AdminSeedConfiguration
             Id = userId,
             Email = email,
             PhoneNumber = phone,
-            Address = address,
+            // Address = address,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             RoleId = (int)UserRole.Admin,
             CreatedAt = DateTime.UtcNow,

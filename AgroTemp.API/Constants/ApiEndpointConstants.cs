@@ -17,6 +17,8 @@ public class ApiEndpointConstants
         public const string ResetPasswordEndpoint = ApiEndpoint + "/reset";
         public const string ForgetPasswordEndpoint = ApiEndpoint + "/forget";
         public const string LogoutEndpoint = ApiEndpoint + "/logout";
+        public const string VerifyEmailEndpoint = ApiEndpoint + "/verify-email";
+        public const string ResendVerificationEndpoint = ApiEndpoint + "/resend-verification";
     }
 
     public static class User
@@ -110,6 +112,9 @@ public class ApiEndpointConstants
         public const string GetJobsByWageRangeEndpoint = JobPostEndpoint + "/by-wage";
         public const string GetJobsByTypeEndpoint = JobPostEndpoint + "/by-type";
         public const string GetUrgentJobsEndpoint = JobPostEndpoint + "/urgent";
+
+        public const string CancelJobPostEndpoint = JobPostEndpoint + "/cancel" + "/{id}";
+        public const string CancelJobApplicationEndpoint = JobApplicationEndpoint + "/cancel" + "/{id}";
     }
 
     public static class WorkerAttendance
@@ -178,6 +183,7 @@ public class ApiEndpointConstants
     {
         public const string SkillEndpoint = ApiEndpoint + "/skills";
         public const string GetAllSkillsEndpoint = SkillEndpoint;
+        public const string GetSkillsByCategoryPagedEndpoint = SkillEndpoint + "/category/{categoryId}";
         public const string GetSkillByIdEndpoint = SkillEndpoint + "/{id}";
         public const string CreateSkillEndpoint = SkillEndpoint;
         public const string UpdateSkillEndpoint = SkillEndpoint + "/{id}";

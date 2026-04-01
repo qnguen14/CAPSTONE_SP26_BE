@@ -1,4 +1,4 @@
-﻿using AgroTemp.API.Constants;
+using AgroTemp.API.Constants;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;

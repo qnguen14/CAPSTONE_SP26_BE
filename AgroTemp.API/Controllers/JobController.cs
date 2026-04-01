@@ -1,4 +1,4 @@
-﻿using AgroTemp.API.Constants;
+using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobDetail;
@@ -389,6 +389,17 @@ public class JobController : ControllerBase
         }
         catch (Exception ex)
         {
+            // Check for insufficient wallet balance error
+            if (ex.Message != null && ex.Message.Contains("Insufficient wallet balance to create job post"))
+            {
+                _logger.LogWarning(ex, "Insufficient wallet balance for job post");
+                return BadRequest(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Message = ex.Message,
+                    Data = null
+                });
+            }
             _logger.LogError(ex, "Error creating job post");
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
             {
@@ -462,6 +473,68 @@ public class JobController : ControllerBase
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = "An error occurred while deleting the job post",
+                Data = null
+            });
+        }
+    }
+
+    [HttpPost(ApiEndpointConstants.Job.CancelJobPostEndpoint)]
+    [Authorize(Roles = "Farmer")]
+    [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobPostDTO>> CancelJobPost([FromRoute] Guid id)
+    {
+        try
+        {
+            var response = await _jobPostService.CancelJobPost(id);
+
+            var apiResponse = new ApiResponse<JobPostDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job post cancelled successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job post: Not found");
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job post: Unauthorized");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job post: Invalid state");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling job post");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while cancelling the job post",
                 Data = null
             });
         }
@@ -550,7 +623,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFilteredJobPosts([FromQuery] string? title, [FromQuery] string? category, [FromQuery] string? address, [FromQuery] string? skill)
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFilteredJobPosts([FromQuery] string? title, [FromQuery] string? category, [FromQuery] string? address, [FromQuery] List<string>? skill)
     {
         try
         {
@@ -1452,6 +1525,68 @@ public class JobController : ControllerBase
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = "An error occurred while retrieving urgent jobs",
+                Data = null
+            });
+        }
+    }
+
+    [HttpPut(ApiEndpointConstants.Job.CancelJobApplicationEndpoint)]
+    [Authorize(Roles = "Worker")]
+    [ProducesResponseType(typeof(ApiResponse<JobApplicationDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobApplicationDTO>> CancelJobApplication([FromRoute] Guid id)
+    {
+        try
+        {
+            var response = await _jobApplicationService.CancelJobApplication(id);
+            
+            return Ok(new ApiResponse<JobApplicationDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job application cancelled successfully",
+                Data = response
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application: Not found");
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application: Unauthorized");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application: Invalid state");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling job application");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while cancelling the job application",
                 Data = null
             });
         }
