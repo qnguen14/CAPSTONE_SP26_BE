@@ -1,3 +1,5 @@
+using AgroTemp.Domain.DTO.Skill;
+
 namespace AgroTemp.Domain.DTO;
 
 public class WorkerProfileDTO
@@ -19,4 +21,5 @@ public class WorkerProfileDTO
 
     public string Email { get; set; }
     public string PhoneNumber { get; set; }
+    public List<SkillResponse> Skills { get; set; } = new List<SkillResponse>();
 }

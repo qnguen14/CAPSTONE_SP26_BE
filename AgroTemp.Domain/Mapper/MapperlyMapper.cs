@@ -68,6 +68,10 @@ public partial class MapperlyMapper : IMapperlyMapper
             UpdatedAt = worker.UpdatedAt,
             Email = worker.User?.Email ?? string.Empty,
             PhoneNumber = worker.User?.PhoneNumber ?? string.Empty,
+            Skills = worker.WorkerSkills?
+                .Where(ws => ws.Skill != null)
+                .Select(ws => SkillToSkillResponse(ws.Skill))
+                .ToList() ?? new List<SkillResponse>()
         };
     }
 
