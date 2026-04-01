@@ -102,6 +102,7 @@ public class ApiEndpointConstants
         public const string AutoAcceptUrgentJobApplicationsEndpoint = JobApplicationEndpoint + "/auto-accept";
 
         public const string GetFilteredJobPostsEndpoint = JobPostEndpoint + "/filter";
+        public const string GetFilteredJobPostsByFarmerEndpoint = JobPostEndpoint + "/filter/farmer";
 
         public const string SaveJobPostDraftEndpoint = JobPostEndpoint + "/draft";
         public const string GetFarmerDraftsEndpoint = JobPostEndpoint + "/drafts";

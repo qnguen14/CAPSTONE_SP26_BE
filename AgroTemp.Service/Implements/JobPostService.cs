@@ -498,7 +498,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, List<string?> skill)
+        public async Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true)
         {
             try
             {
@@ -513,7 +513,44 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill),
-                        orderBy: jp => jp.OrderBy(x => x.Title));
+                        orderBy: jp => sortByDateDesc ? jp.OrderByDescending(x => x.CreatedAt) : jp.OrderBy(x => x.CreatedAt));
+                if (jobPosts == null || !jobPosts.Any())
+                {
+                    return null;
+                }
+                var result = _mapper.JobPostsToJobPostDtos(jobPosts);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
+                if (farmer == null) {
+                    throw new UnauthorizedAccessException("No farmer profile created to view these job posts.");
+                }
+
+                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp =>
+                            jp.FarmerId == farmer.Id &&
+                            (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
+                            (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&
+                            (string.IsNullOrEmpty(address) || jp.Address.Contains(address)) &&
+                            (skill == null || skill.Count == 0 || jp.JobSkillRequirements.Any(jsr => skill.Contains(jsr.Skill.Name))),
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => sortByDateDesc ? jp.OrderByDescending(x => x.CreatedAt) : jp.OrderBy(x => x.CreatedAt));
                 if (jobPosts == null || !jobPosts.Any())
                 {
                     return null;
