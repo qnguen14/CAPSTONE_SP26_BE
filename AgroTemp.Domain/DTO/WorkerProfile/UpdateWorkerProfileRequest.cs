@@ -26,4 +26,6 @@ public class UpdateWorkerProfileRequest
     
     [Required]
     public string AvatarUrl { get; set; }
+
+    public List<Guid>? SkillIds { get; set; }
 }
