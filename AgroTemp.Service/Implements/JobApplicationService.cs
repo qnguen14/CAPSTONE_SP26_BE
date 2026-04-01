@@ -51,6 +51,39 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<List<JobApplicationDTO>> GetJobApplicationsByWorkerId()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.UserId == userId);
+
+                if (worker == null)
+                    throw new KeyNotFoundException("Worker profile not found for the current user.");
+
+                var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
+                    .GetListAsync(
+                        predicate: ja => ja.WorkerId == worker.Id,
+                        include: ja => ja
+                            .Include(j => j.Worker)
+                            .Include(j => j.JobPost.Farmer)
+                            .Include(j => j.JobPost.Farm),
+                        orderBy: ja => ja.OrderByDescending(x => x.AppliedAt));
+
+                if (jobApplications == null || !jobApplications.Any())
+                    return new List<JobApplicationDTO>();
+
+                var result = _mapper.JobApplicationsToJobApplicationDtos(jobApplications);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<JobApplicationDTO> GetJobApplicationById(string id)
         {
             try
