@@ -2,6 +2,7 @@ using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
+using AgroTemp.Domain.Metadata;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
@@ -74,6 +75,40 @@ public class NotificationService : BaseService<Notification>, INotificationServi
                 return new List<NotificationDTO>();
 
             return _mapper.NotificationsToDto(notifications);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<PaginatedResponse<NotificationDTO>> GetPaginatedByUserAsync(Guid userId, NotificationFilterRequest filter)
+    {
+        try
+        {
+            var query = _unitOfWork.GetRepository<Notification>().GetListAsync(
+                predicate: n => n.UserId == userId && (filter.IsRead == null || n.IsRead == filter.IsRead),
+                orderBy: n => n.OrderByDescending(x => x.SentAt));
+            
+            var notifications = await query;
+            var totalCount = notifications.Count();
+            
+            var paginatedData = notifications
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToList();
+
+            return new PaginatedResponse<NotificationDTO>
+            {
+                Data = _mapper.NotificationsToDto(paginatedData),
+                Pagination = new PaginationMetadata
+                {
+                    Page = filter.PageNumber,
+                    Limit = filter.PageSize,
+                    Total = totalCount,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)filter.PageSize)
+                }
+            };
         }
         catch (Exception ex)
         {
