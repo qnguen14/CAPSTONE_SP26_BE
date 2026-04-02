@@ -368,6 +368,7 @@ public class UserService : BaseService<User>, IUserService
                     AvatarUrl = request.AvatarUrl,
                     AverageRating = 0,
                     TotalJobsCompleted = 0,
+                    GenderId = request.GenderId,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -405,6 +406,7 @@ public class UserService : BaseService<User>, IUserService
                 workerProfile.ExperienceLevelId = request.ExperienceLevelId;
                 workerProfile.AvailabilitySchedule = request.AvailabilitySchedule;
                 workerProfile.AvatarUrl = request.AvatarUrl;
+                workerProfile.GenderId = request.GenderId;
                 workerProfile.UpdatedAt = DateTime.UtcNow;
 
                 if (request.SkillIds != null)
