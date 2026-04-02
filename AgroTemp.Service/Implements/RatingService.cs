@@ -75,6 +75,15 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
+                var existingRating = await _unitOfWork.GetRepository<Rating>()
+                    .FirstOrDefaultAsync(predicate: r =>
+                        r.RaterId == request.RaterId &&
+                        r.RateeId == request.RateeId &&
+                        r.JobPostId == request.JobPostId);
+
+                if (existingRating != null)
+                    throw new InvalidOperationException("You have already submitted a rating for this user on this job post.");
+
                 var rating = _mapper.CreateRatingRequestToRating(request);
                 if (rating.Id == Guid.Empty)
                 {
