@@ -197,6 +197,32 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<List<RatingDTO>> GetGivenRatingsByUser()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var ratings = await _unitOfWork.GetRepository<Rating>()
+                    .GetListAsync(
+                        predicate: r => r.RaterId == userId,
+                        include: q => q
+                            .Include(r => r.Rater)
+                            .Include(r => r.Ratee)
+                            .Include(r => r.JobPost));
+
+                if (ratings == null || !ratings.Any())
+                    throw new KeyNotFoundException("No ratings found for the current user.");
+
+                var result = _mapper.RatingsToRatingDtos(ratings);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<decimal?> GetAverageRatingByUserId(Guid userId)
         {
             try
