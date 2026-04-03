@@ -469,6 +469,7 @@ namespace AgroTemp.Service.Implements
                         {
                             farmer.TotalJobsPosted += 1;
                             existingJobPost.PublishedAt = DateTime.UtcNow;
+                            await NotifyMatchingWorkersAsync(existingJobPost);
                         }
 
                         // First transition to Completed
@@ -953,6 +954,47 @@ namespace AgroTemp.Service.Implements
             catch (Exception ex)
             {
                 throw new Exception($"Error getting urgent jobs: {ex.Message}");
+            }
+        }
+
+        private async Task NotifyMatchingWorkersAsync(JobPost jobPost)
+        {
+            var jobSkillIds = await _unitOfWork.GetRepository<JobSkillRequirement>()
+                .GetListAsync(
+                    predicate: jsr => jsr.JobPostId == jobPost.Id,
+                    include: null,
+                    orderBy: null);
+
+            if (jobSkillIds == null || !jobSkillIds.Any())
+                return;
+
+            var requiredSkillIds = jobSkillIds.Select(jsr => jsr.SkillId).ToHashSet();
+
+            var matchingWorkerSkills = await _unitOfWork.GetRepository<WorkerSkill>()
+                .GetListAsync(
+                    predicate: ws => requiredSkillIds.Contains(ws.SkillId),
+                    include: q => q.Include(ws => ws.Worker),
+                    orderBy: null);
+
+            if (matchingWorkerSkills == null || !matchingWorkerSkills.Any())
+                return;
+
+            var distinctWorkers = matchingWorkerSkills
+                .Where(ws => ws.Worker != null)
+                .GroupBy(ws => ws.WorkerId)
+                .Select(g => g.First().Worker)
+                .ToList();
+
+            foreach (var worker in distinctWorkers)
+            {
+                await _notificationService.CreateAsync(new CreateNotificationRequest
+                {
+                    UserId = worker.UserId,
+                    Type = NotificationType.NearbyJobOpening,
+                    Title = "Công việc mới phù hợp với kỹ năng của bạn",
+                    Message = $"Một công việc mới \"{jobPost.Title}\" vừa được đăng và phù hợp với kỹ năng của bạn. Hãy xem ngay!",
+                    RelatedEntityId = jobPost.Id
+                });
             }
         }
     }
