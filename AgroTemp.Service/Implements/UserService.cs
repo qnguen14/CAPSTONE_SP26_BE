@@ -32,7 +32,9 @@ public class UserService : BaseService<User>, IUserService
         try
         {
             var user = await _unitOfWork.GetRepository<User>()
-                .FirstOrDefaultAsync(predicate: u => u.Email == email);
+                .FirstOrDefaultAsync(
+                    predicate: u => u.Email == email,
+                    include: u => u.Include(x => x.Farmer).Include(x => x.Worker));
 
             if (user == null)
             {
@@ -54,7 +56,7 @@ public class UserService : BaseService<User>, IUserService
             var users = await _unitOfWork.GetRepository<User>()
                 .GetListAsync(
                     predicate: null,
-                    include: null,
+                    include: u => u.Include(x => x.Farmer).Include(x => x.Worker),
                     orderBy: u => u.OrderBy(x => x.Email));
 
             if (users == null || !users.Any())
@@ -76,7 +78,9 @@ public class UserService : BaseService<User>, IUserService
         try
         {
             var user = await _unitOfWork.GetRepository<User>()
-                .FirstOrDefaultAsync(predicate: u => u.Id == id);
+                .FirstOrDefaultAsync(
+                    predicate: u => u.Id == id,
+                    include: u => u.Include(x => x.Farmer).Include(x => x.Worker));
 
             if (user == null)
             {
@@ -152,7 +156,9 @@ public class UserService : BaseService<User>, IUserService
         try
         {
             var user = await _unitOfWork.GetRepository<User>()
-                .FirstOrDefaultAsync(predicate: u => u.Id == id);
+                .FirstOrDefaultAsync(
+                    predicate: u => u.Id == id,
+                    include: u => u.Include(x => x.Farmer).Include(x => x.Worker));
 
             if (user == null)
             {

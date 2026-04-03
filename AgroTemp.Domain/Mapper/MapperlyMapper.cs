@@ -20,7 +20,24 @@ namespace AgroTemp.Domain.Mapper;
 public partial class MapperlyMapper : IMapperlyMapper
 {
     [MapProperty(nameof(User.Role), nameof(UserDTO.Role))]
-    public partial UserDTO UserToUserDto(User user);
+    public partial UserDTO UserToUserDtoManual(User user);
+
+    public UserDTO UserToUserDto(User user)
+    {
+        if (user == null) return null;
+        var dto = UserToUserDtoManual(user);
+        
+        if (user.Farmer != null)
+        {
+            dto.Address = user.Farmer.Address;
+        }
+        else if (user.Worker != null)
+        {
+            dto.Address = user.Worker.PrimaryLocation;
+        }
+        
+        return dto;
+    }
 
     public partial List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
 
