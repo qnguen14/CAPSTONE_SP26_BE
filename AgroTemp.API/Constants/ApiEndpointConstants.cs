@@ -267,4 +267,10 @@ public class ApiEndpointConstants
         public const string GetWalletTransactionByIdEndpoint = WalletTransactionEndpoint + "/{id}";
         public const string GetWalletTransactionsByWalletIdEndpoint = WalletTransactionEndpoint + "/wallet/{walletId}";
     }
+
+    public static class Dashboard
+    {
+        public const string DashboardEndpoint = ApiEndpoint + "/dashboard";
+        public const string FarmerDashboardEndpoint = DashboardEndpoint + "/farmer";
+    }
 }

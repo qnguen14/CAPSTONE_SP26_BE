@@ -89,7 +89,7 @@ public class Worker
     public DateTime UpdatedAt { get; set; }
 
     [Required]
-    [Column("gender_id")]
+    [Column("gender")]
     public int GenderId { get; set; }
     
     [NotMapped]
