@@ -93,6 +93,36 @@ namespace AgroTemp.Service.Implements
                 await _unitOfWork.GetRepository<Rating>().InsertAsync(rating);
                 await _unitOfWork.SaveChangesAsync();
 
+                var allRatingsForRatee = await _unitOfWork.GetRepository<Rating>()
+                    .GetListAsync(predicate: r => r.RateeId == request.RateeId);
+
+                var newAverage = (decimal)allRatingsForRatee.Average(r => r.RatingScore);
+
+                if (request.TypeId == (int)RatingType.FarmerToWorker)
+                {
+                    var worker = await _unitOfWork.GetRepository<Worker>()
+                        .FirstOrDefaultAsync(predicate: w => w.UserId == request.RateeId);
+
+                    if (worker != null)
+                    {
+                        worker.AverageRating = newAverage;
+                        _unitOfWork.GetRepository<Worker>().UpdateAsync(worker);
+                    }
+                }
+                else if (request.TypeId == (int)RatingType.WorkerToFarmer)
+                {
+                    var farmer = await _unitOfWork.GetRepository<Farmer>()
+                        .FirstOrDefaultAsync(predicate: f => f.UserId == request.RateeId);
+
+                    if (farmer != null)
+                    {
+                        farmer.AverageRating = newAverage;
+                        _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmer);
+                    }
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
                 var createdRating = await _unitOfWork.GetRepository<Rating>()
                     .FirstOrDefaultAsync(
                         predicate: r => r.Id == rating.Id,
