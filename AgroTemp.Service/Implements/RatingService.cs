@@ -75,6 +75,15 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
+                var existingRating = await _unitOfWork.GetRepository<Rating>()
+                    .FirstOrDefaultAsync(predicate: r =>
+                        r.RaterId == request.RaterId &&
+                        r.RateeId == request.RateeId &&
+                        r.JobPostId == request.JobPostId);
+
+                if (existingRating != null)
+                    throw new InvalidOperationException("You have already submitted a rating for this user on this job post.");
+
                 var rating = _mapper.CreateRatingRequestToRating(request);
                 if (rating.Id == Guid.Empty)
                 {
@@ -82,6 +91,36 @@ namespace AgroTemp.Service.Implements
                 }
 
                 await _unitOfWork.GetRepository<Rating>().InsertAsync(rating);
+                await _unitOfWork.SaveChangesAsync();
+
+                var allRatingsForRatee = await _unitOfWork.GetRepository<Rating>()
+                    .GetListAsync(predicate: r => r.RateeId == request.RateeId);
+
+                var newAverage = (decimal)allRatingsForRatee.Average(r => r.RatingScore);
+
+                if (request.TypeId == (int)RatingType.FarmerToWorker)
+                {
+                    var worker = await _unitOfWork.GetRepository<Worker>()
+                        .FirstOrDefaultAsync(predicate: w => w.UserId == request.RateeId);
+
+                    if (worker != null)
+                    {
+                        worker.AverageRating = newAverage;
+                        _unitOfWork.GetRepository<Worker>().UpdateAsync(worker);
+                    }
+                }
+                else if (request.TypeId == (int)RatingType.WorkerToFarmer)
+                {
+                    var farmer = await _unitOfWork.GetRepository<Farmer>()
+                        .FirstOrDefaultAsync(predicate: f => f.UserId == request.RateeId);
+
+                    if (farmer != null)
+                    {
+                        farmer.AverageRating = newAverage;
+                        _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmer);
+                    }
+                }
+
                 await _unitOfWork.SaveChangesAsync();
 
                 var createdRating = await _unitOfWork.GetRepository<Rating>()
@@ -188,6 +227,32 @@ namespace AgroTemp.Service.Implements
                 {
                     return null;
                 }
+                var result = _mapper.RatingsToRatingDtos(ratings);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<RatingDTO>> GetGivenRatingsByUser()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var ratings = await _unitOfWork.GetRepository<Rating>()
+                    .GetListAsync(
+                        predicate: r => r.RaterId == userId,
+                        include: q => q
+                            .Include(r => r.Rater)
+                            .Include(r => r.Ratee)
+                            .Include(r => r.JobPost));
+
+                if (ratings == null || !ratings.Any())
+                    throw new KeyNotFoundException("No ratings found for the current user.");
+
                 var result = _mapper.RatingsToRatingDtos(ratings);
                 return result;
             }

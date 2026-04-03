@@ -77,6 +77,7 @@ public class ApiEndpointConstants
         public const string GetFarmerJobHistoryEndpoint = JobPostEndpoint + "/farmer" + "/history";
         public const string GetJobApplicationByIdEndpoint = JobApplicationEndpoint + "/{id}";
         public const string GetJobApplicationsByWorkerEndpoint = JobApplicationEndpoint + "/worker";
+        public const string GetWorkerApplicationStatsEndpoint = JobApplicationEndpoint + "/worker/stats";
         public const string GetJobDetailByIdEndpoint = JobDetailEndpoint + "/{id}";
 
         public const string CreateJobCategoryEndpoint = JobCategoryEndpoint;
@@ -102,6 +103,7 @@ public class ApiEndpointConstants
         public const string AutoAcceptUrgentJobApplicationsEndpoint = JobApplicationEndpoint + "/auto-accept";
 
         public const string GetFilteredJobPostsEndpoint = JobPostEndpoint + "/filter";
+        public const string GetFilteredJobPostsByFarmerEndpoint = JobPostEndpoint + "/filter/farmer";
 
         public const string SaveJobPostDraftEndpoint = JobPostEndpoint + "/draft";
         public const string GetFarmerDraftsEndpoint = JobPostEndpoint + "/drafts";
@@ -202,6 +204,7 @@ public class ApiEndpointConstants
 
         public const string GetSpecificRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}";
         public const string GetAllRatingsByUserIdEndpoint = RatingEndpoint + "/user/{userId}/all";
+        public const string GetGivenRatingsByUserEndpoint = RatingEndpoint + "/user/given";
         public const string GetAverageRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}/average";
     }
 
@@ -263,5 +266,11 @@ public class ApiEndpointConstants
         public const string GetAllWalletTransactionsEndpoint = WalletTransactionEndpoint;
         public const string GetWalletTransactionByIdEndpoint = WalletTransactionEndpoint + "/{id}";
         public const string GetWalletTransactionsByWalletIdEndpoint = WalletTransactionEndpoint + "/wallet/{walletId}";
+    }
+
+    public static class Dashboard
+    {
+        public const string DashboardEndpoint = ApiEndpoint + "/dashboard";
+        public const string FarmerDashboardEndpoint = DashboardEndpoint + "/farmer";
     }
 }

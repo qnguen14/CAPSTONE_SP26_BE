@@ -23,20 +23,20 @@ public class NotificationController : ControllerBase
     }
 
     [HttpGet(ApiEndpointConstants.Notification.GetNotificationsEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<NotificationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<NotificationDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetMyNotifications()
+    public async Task<ActionResult<IEnumerable<NotificationDTO>>> GetMyNotifications([FromQuery] NotificationFilterRequest filter)
     {
         try
         {
             var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-            var list = await _notificationService.GetByUserAsync(userId);
+            var paginatedResponse = await _notificationService.GetPaginatedByUserAsync(userId, filter);
 
-            return Ok(new ApiResponse<IEnumerable<NotificationDTO>>
+            return Ok(new ApiResponse<PaginatedResponse<NotificationDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
                 Message = "Notifications retrieved successfully",
-                Data = list
+                Data = paginatedResponse
             });
         }
         catch (Exception ex)

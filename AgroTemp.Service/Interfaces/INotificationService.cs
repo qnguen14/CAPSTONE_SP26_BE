@@ -1,4 +1,5 @@
 using AgroTemp.Domain.DTO.Notification;
+using AgroTemp.Domain.Metadata;
 
 namespace AgroTemp.Service.Interfaces;
 
@@ -6,6 +7,7 @@ public interface INotificationService
 {
     Task<NotificationDTO> CreateAsync(CreateNotificationRequest request);
     Task<List<NotificationDTO>> GetByUserAsync(Guid userId);
+    Task<PaginatedResponse<NotificationDTO>> GetPaginatedByUserAsync(Guid userId, NotificationFilterRequest filter);
     Task<List<NotificationDTO>> GetUnreadByUserAsync(Guid userId);
     Task<NotificationDTO> MarkAsReadAsync(Guid notificationId);
     Task<List<NotificationDTO>> MarkAllAsReadAsync(Guid userId);

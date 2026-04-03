@@ -6,6 +6,7 @@ namespace AgroTemp.Service.Interfaces
     {
         Task<List<JobApplicationDTO>> GetAllJobApplications();
         Task<List<JobApplicationDTO>> GetJobApplicationsByWorker();
+        Task<WorkerApplicationStatsDTO> GetWorkerApplicationStats();
         Task<JobApplicationDTO> GetJobApplicationById(string id);
         Task<JobApplicationDTO> CreateJobApplication(CreateJobApplicationRequest request);
         Task<JobApplicationDTO> UpdateJobApplication(Guid id, UpdateJobApplicationRequest request);

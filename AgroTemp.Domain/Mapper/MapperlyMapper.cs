@@ -68,6 +68,12 @@ public partial class MapperlyMapper : IMapperlyMapper
             UpdatedAt = worker.UpdatedAt,
             Email = worker.User?.Email ?? string.Empty,
             PhoneNumber = worker.User?.PhoneNumber ?? string.Empty,
+            Skills = worker.WorkerSkills?
+                .Where(ws => ws.Skill != null)
+                .Select(ws => SkillToSkillResponse(ws.Skill))
+                .ToList() ?? new List<SkillResponse>(),
+            GenderId = worker.GenderId,
+            Gender = MapGender((Gender)worker.GenderId)
         };
     }
 
@@ -77,6 +83,8 @@ public partial class MapperlyMapper : IMapperlyMapper
 
     // Custom mapping for ExperienceLevel enum to string
     private string MapExperienceLevel(ExperienceLevel level) => level.ToString();
+
+    private string MapGender(Gender gender) => gender.ToString();
 
     private string MapUserRole(UserRole role) => role.ToString();
 
