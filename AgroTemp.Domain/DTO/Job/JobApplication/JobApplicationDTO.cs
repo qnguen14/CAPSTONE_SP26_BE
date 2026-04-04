@@ -29,5 +29,9 @@ namespace AgroTemp.Domain.DTO.Job.JobApplication
 
         public List<DateTime>? WorkDates { get; set; } = new List<DateTime>();
         public string? LocationName { get; set; }
+        public decimal? WorkerRating { get; set; }
+        public string? WorkerEmail { get; set; }
+        public string? WorkerPhoneNumber { get; set; }
+
     }
 }
