@@ -34,7 +34,11 @@ namespace AgroTemp.Service.Implements
                 var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
                     .GetListAsync(
                         predicate: null,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost.Farmer).Include(j => j.JobPost.Farm),
+                        include: ja => ja
+                            .Include(j => j.Worker)
+                                .ThenInclude(w => w.User)
+                            .Include(j => j.JobPost.Farmer)
+                            .Include(j => j.JobPost.Farm),
                         orderBy: ja => ja.OrderBy(x => x.AppliedAt));
 
                 if (jobApplications == null || !jobApplications.Any())
@@ -68,6 +72,7 @@ namespace AgroTemp.Service.Implements
                         predicate: ja => ja.WorkerId == worker.Id,
                         include: ja => ja
                             .Include(j => j.Worker)
+                                .ThenInclude(w => w.User)
                             .Include(j => j.JobPost.Farmer)
                             .Include(j => j.JobPost.Farm),
                         orderBy: ja => ja.OrderByDescending(x => x.AppliedAt));
@@ -137,7 +142,11 @@ namespace AgroTemp.Service.Implements
                 var jobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == guid,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost.Farmer).Include(j => j.JobPost.Farm));
+                        include: ja => ja
+                            .Include(j => j.Worker)
+                                .ThenInclude(w => w.User)
+                            .Include(j => j.JobPost.Farmer)
+                            .Include(j => j.JobPost.Farm));
 
                 if (jobApplication == null)
                 {
@@ -164,7 +173,9 @@ namespace AgroTemp.Service.Implements
                                     ja.JobPostId == jobPostId &&
                                     ja.JobPost.FarmerId == farmerProfileId &&
                                     (includeAll || ja.StatusId == statusFilter),
-                                include: ja => ja.Include(j => j.Worker)
+                                include: ja => ja
+                                                .Include(j => j.Worker)
+                                                    .ThenInclude(w => w.User)
                                                 .Include(j => j.JobPost.Farmer)
                                                 .Include(j => j.JobPost.Farm),
                                 orderBy: ja => ja.OrderBy(x => x.AppliedAt));
