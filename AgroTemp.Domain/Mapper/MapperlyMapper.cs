@@ -218,9 +218,6 @@ public partial class MapperlyMapper : IMapperlyMapper
             ResponseMessage = jobApplication.ResponseMessage,
             WorkDates = jobApplication.WorkDates,
             LocationName = jobApplication.JobPost?.Farm?.LocationName,
-            WorkerRating = jobApplication.Worker?.AverageRating,
-            WorkerPhoneNumber = jobApplication.Worker?.User?.PhoneNumber,
-            WorkerEmail = jobApplication.Worker?.User?.Email
         };
         return dto;
     }
