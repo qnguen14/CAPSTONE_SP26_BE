@@ -40,10 +40,6 @@ public class Worker
     public DateOnly DateOfBirth { get; set; }
 
     [Required]
-    [Column("address")]
-    public string Address { get; set; }
-
-    [Required]
     [Column("primary_location")]
     public string PrimaryLocation { get; set; }
 

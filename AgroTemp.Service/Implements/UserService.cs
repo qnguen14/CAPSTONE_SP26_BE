@@ -335,7 +335,6 @@ public class UserService : BaseService<User>, IUserService
                 throw new Exception("Worker profile not found");
             }
 
-            // DEBUG: Check if User is loaded
             if (workerProfile.User == null)
             {
                 throw new Exception($"User not loaded! WorkerId: {workerProfile.Id}, UserId: {workerProfile.UserId}");
@@ -354,13 +353,15 @@ public class UserService : BaseService<User>, IUserService
         try
         {
             var userId = GetCurrentUserId();
+            Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Processing UserId: {userId}");
+
             var workerProfile = await _unitOfWork.GetRepository<Worker>()
                 .FirstOrDefaultAsync(
-                    predicate: wp => wp.UserId == userId,
-                    include: query => query.Include(w => w.User).Include(w => w.WorkerSkills));
+                    predicate: wp => wp.UserId == userId);
 
             if (workerProfile == null)
             {
+                Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Profile not found, creating new for UserId: {userId}");
                 workerProfile = new Worker
                 {
                     Id = Guid.NewGuid(),
@@ -376,78 +377,81 @@ public class UserService : BaseService<User>, IUserService
                     TotalJobsCompleted = 0,
                     GenderId = request.GenderId,
                     CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = DateTime.UtcNow,
+                    WorkerSkills = request.SkillIds?.Distinct().Select(skillId => new WorkerSkill
+                    {
+                        Id = Guid.NewGuid(),
+                        SkillId = skillId,
+                        ProficiencyLevelId = (int)ProficiencyLevel.Beginner,
+                        YearsExperience = 0
+                    }).ToList() ?? new List<WorkerSkill>()
                 };
 
                 await _unitOfWork.GetRepository<Worker>().InsertAsync(workerProfile);
                 await _unitOfWork.SaveChangesAsync();
-
-                if (request.SkillIds != null && request.SkillIds.Any())
-                {
-                    workerProfile.WorkerSkills = request.SkillIds.Distinct().Select(skillId => new WorkerSkill
-                    {
-                        WorkerId = workerProfile.Id,
-                        SkillId = skillId
-                    }).ToList();
-                    _unitOfWork.GetRepository<Worker>().UpdateAsync(workerProfile);
-                    await _unitOfWork.SaveChangesAsync();
-                }
-
-                workerProfile = await _unitOfWork.GetRepository<Worker>()
-                    .FirstOrDefaultAsync(
-                        predicate: wp => wp.Id == workerProfile.Id,
-                        include: query => query
-                            .Include(w => w.User)
-                            .Include(w => w.WorkerSkills)
-                                .ThenInclude(ws => ws.Skill)
-                                );
             }
             else
             {
-                // Profile exists - update it
-                workerProfile.FullName = request.FullName;
-                workerProfile.DateOfBirth = DateOnly.Parse(request.DateOfBirth);
-                workerProfile.PrimaryLocation = request.PrimaryLocation;
-                workerProfile.TravelRadiusKmPreference = request.TravelRadiusKmPreference;
-                workerProfile.ExperienceLevelId = request.ExperienceLevelId;
-                workerProfile.AvailabilitySchedule = request.AvailabilitySchedule;
-                workerProfile.AvatarUrl = request.AvatarUrl;
-                workerProfile.GenderId = request.GenderId;
-                workerProfile.UpdatedAt = DateTime.UtcNow;
+                Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Found profile for UserId: {userId}. WorkerId: {workerProfile.Id}");
+                
+                await _unitOfWork.ExecuteInTransactionAsync(async () => {
+                    workerProfile.FullName = request.FullName;
+                    workerProfile.DateOfBirth = DateOnly.Parse(request.DateOfBirth);
+                    workerProfile.PrimaryLocation = request.PrimaryLocation;
+                    workerProfile.TravelRadiusKmPreference = request.TravelRadiusKmPreference;
+                    workerProfile.ExperienceLevelId = request.ExperienceLevelId;
+                    workerProfile.AvailabilitySchedule = request.AvailabilitySchedule;
+                    workerProfile.AvatarUrl = request.AvatarUrl;
+                    workerProfile.GenderId = request.GenderId;
+                    workerProfile.UpdatedAt = DateTime.UtcNow;
 
-                if (request.SkillIds != null)
-                {
-                    if (workerProfile.WorkerSkills.Any())
+                    if (request.SkillIds != null)
                     {
-                        _unitOfWork.GetRepository<WorkerSkill>().DeleteRangeAsync(workerProfile.WorkerSkills.ToList());
-                    }
-                    
-                    workerProfile.WorkerSkills.Clear();
+                        var requestedSkillIds = request.SkillIds.Distinct().ToList();
+                        var existingSkills = await _unitOfWork.GetRepository<WorkerSkill>()
+                            .GetListAsync(predicate: ws => ws.WorkerId == workerProfile.Id);
 
-                    foreach (var skillId in request.SkillIds.Distinct())
-                    {
-                        workerProfile.WorkerSkills.Add(new WorkerSkill
+                        var toRemove = existingSkills.Where(es => !requestedSkillIds.Contains(es.SkillId)).ToList();
+                        if (toRemove.Any())
                         {
-                            WorkerId = workerProfile.Id,
-                            SkillId = skillId
-                        });
+                            Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Removing {toRemove.Count} skills for WorkerId: {workerProfile.Id}");
+                            _unitOfWork.GetRepository<WorkerSkill>().DeleteRangeAsync(toRemove);
+                        }
+
+                        // Identify skills to add
+                        var currentSkillIds = existingSkills.Select(es => es.SkillId).ToList();
+                        var toAdd = requestedSkillIds.Where(id => !currentSkillIds.Contains(id)).ToList();
+
+                        if (toAdd.Any())
+                        {
+                            Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Adding {toAdd.Count} new skills for WorkerId: {workerProfile.Id}");
+                            var newSkills = toAdd.Select(skillId => new WorkerSkill
+                            {
+                                Id = Guid.NewGuid(),
+                                WorkerId = workerProfile.Id,
+                                SkillId = skillId,
+                                ProficiencyLevelId = (int)ProficiencyLevel.Beginner,
+                                YearsExperience = 0
+                            }).ToList();
+                            await _unitOfWork.GetRepository<WorkerSkill>().InsertRangeAsync(newSkills);
+                        }
                     }
-                }
 
-                _unitOfWork.GetRepository<Worker>().UpdateAsync(workerProfile);
-                await _unitOfWork.SaveChangesAsync();
-
-                workerProfile = await _unitOfWork.GetRepository<Worker>()
-                    .FirstOrDefaultAsync(
-                        predicate: wp => wp.Id == workerProfile.Id,
-                        include: query => query
-                            .Include(w => w.User)
-                            .Include(w => w.WorkerSkills)
-                                .ThenInclude(ws => ws.Skill)
-                                );
+                    await _unitOfWork.SaveChangesAsync();
+                    Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Atomic Transaction committed for WorkerId: {workerProfile.Id}");
+                });
             }
 
-            return _mapper.WorkerToDto(workerProfile);
+            var finalProfile = await _unitOfWork.GetRepository<Worker>()
+                .FirstOrDefaultAsync(
+                    predicate: wp => wp.Id == workerProfile.Id,
+                    include: query => query
+                        .Include(w => w.User)
+                        .Include(w => w.WorkerSkills)
+                            .ThenInclude(ws => ws.Skill)
+                            );
+
+            return _mapper.WorkerToDto(finalProfile ?? workerProfile);
         }
         catch (Exception ex)
         {
