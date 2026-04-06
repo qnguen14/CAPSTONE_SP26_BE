@@ -310,7 +310,7 @@ namespace AgroTemp.Service.Implements
                 var refund = jobDetail.JobPrice - workerPayment;
 
                 var worker = await _unitOfWork.GetRepository<Worker>()
-                    .FirstOrDefaultAsync(w => w.Id == jobDetail.WorkerId);
+                    .FirstOrDefaultAsync(predicate: w => w.Id == jobDetail.WorkerId);
 
                 if(worker != null)
                 {
