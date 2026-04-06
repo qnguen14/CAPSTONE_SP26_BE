@@ -324,7 +324,7 @@ namespace AgroTemp.Service.Implements
 
                     if (existingJobApplication.JobPost.WorkersAccepted == existingJobApplication.JobPost.WorkersNeeded)
                     {
-                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Closed;
+                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.InProgress;
                     }
                 }
 
