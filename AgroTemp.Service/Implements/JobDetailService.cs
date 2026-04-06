@@ -340,26 +340,26 @@ namespace AgroTemp.Service.Implements
             }
         }
    
-         public async Task<JobDetailResponseDTO> GetById(string id)
-        {
-            try
-            {
-                var guid = Guid.Parse(id);
-                var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
-                    .FirstOrDefaultAsync(
-                        predicate: jd => jd.Id == guid,
-                        include: null);
-                if (jobDetail == null)
-                {
-                    return null;
-                }
-                var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-        }
+        //  public async Task<JobDetailResponseDTO> GetById(string id)
+        // {
+        //     try
+        //     {
+        //         var guid = Guid.Parse(id);
+        //         var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
+        //             .FirstOrDefaultAsync(
+        //                 predicate: jd => jd.Id == guid,
+        //                 include: null);
+        //         if (jobDetail == null)
+        //         {
+        //             return null;
+        //         }
+        //         var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
+        //         return result;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         throw new Exception(ex.Message);
+        //     }
+        // }
     }
 }
