@@ -11,7 +11,6 @@ using System.ComponentModel.Design;
 using Resend;
 using AgroTemp.Service.Config.ApiModels;
 using PayOS;
-using AgroTemp.Service.Helpers;
 
 namespace AgroTemp.API.Configuration
 {
@@ -80,7 +79,7 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IPayOSService, PayOSService>();
             services.AddScoped<ISkillService, SkillService>();
             services.AddScoped<IRatingService, RatingService>();
-            services.AddHostedService<JobPostExpiryBackgroundService>();
+            services.AddHostedService<JobPostStatusBackgroundService>();
             services.AddScoped<IDisputeReportService, DisputeReportService>();
             services.AddScoped<IWalletService, WalletService>();
             services.AddScoped<IWalletTransactionService, WalletTransactionService>();
