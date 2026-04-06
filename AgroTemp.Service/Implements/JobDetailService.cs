@@ -156,9 +156,25 @@ namespace AgroTemp.Service.Implements
                     return null;
                 }
 
+                var oldStatusId = existingJobDetail.StatusId;
+
                 if (Enum.TryParse(status, out JobStatus jobStatus))
                 {
                     existingJobDetail.StatusId = (int)jobStatus;
+
+                    if (oldStatusId != (int)JobStatus.Completed &&
+                        existingJobDetail.StatusId == (int)JobStatus.Completed)
+                    {
+                        var worker = await _unitOfWork.GetRepository<Worker>()
+                            .FirstOrDefaultAsync(predicate: w => w.Id == existingJobDetail.WorkerId);
+                        
+                        if (worker != null)
+                        {
+                            worker.TotalJobsCompleted += 1;
+                            worker.UpdatedAt = DateTime.UtcNow;
+                            _unitOfWork.GetRepository<Worker>().UpdateAsync(worker);
+                        }
+                    }
                 }
                 else
                 {
@@ -178,13 +194,12 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        /////////////////////////////////////////////////////
         public async Task<JobDetailResponseDTO> ReportDailyWork(CreateDailyReportRequest request)
         {
             try
             {
                 var id = request.JobApplicationId;
-                // Check if application exists and is accepted
+
                 var application = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(ja => ja.Id.ToString() == id.ToString(),null,null);
                 if (application == null || application.Status != ApplicationStatus.Accepted)
@@ -192,7 +207,6 @@ namespace AgroTemp.Service.Implements
                     throw new Exception("Job application not found or not accepted");
                 }
 
-                // Check if already reported today
                 var today = DateTime.UtcNow.Date;
                 var existingReport = await _unitOfWork.GetRepository<JobDetail>()
                     .FirstOrDefaultAsync(jd => jd.JobApplicationId == request.JobApplicationId && jd.WorkDate == today,null,null);
@@ -202,7 +216,6 @@ namespace AgroTemp.Service.Implements
                 }
                 var jobPost = await _unitOfWork.GetRepository<JobPost>().FirstOrDefaultAsync(jp => jp.Id == application.JobPostId, null, null);
 
-                // Create new JobDetail
                 var jobDetail = new JobDetail
                 {
                     Id = Guid.NewGuid(),
@@ -215,8 +228,6 @@ namespace AgroTemp.Service.Implements
                     WorkerDescription = request.WorkerDescription,
                     CreatedAt = DateTime.UtcNow
                 };
-
-                // JobAttachment is temporarily disabled because the current database does not have this table yet.
 
                 await _unitOfWork.GetRepository<JobDetail>().InsertAsync(jobDetail);
                 await _unitOfWork.SaveChangesAsync();
@@ -295,9 +306,17 @@ namespace AgroTemp.Service.Implements
                     throw new Exception("Job detail is not in reported status");
                 }
 
-                // Calculate payments
                 var workerPayment = jobDetail.JobPrice * request.FarmerApprovedPercent / 100;
                 var refund = jobDetail.JobPrice - workerPayment;
+
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.Id == jobDetail.WorkerId);
+
+                if(worker != null)
+                {
+                    worker.TotalJobsCompleted += 1;
+                    _unitOfWork.GetRepository<Worker>().UpdateAsync(worker);
+                }
 
                 jobDetail.FarmerApprovedPercent = request.FarmerApprovedPercent;
                 jobDetail.FarmerFeedback = request.FarmerFeedback;
