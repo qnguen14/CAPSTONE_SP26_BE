@@ -484,6 +484,15 @@ public class PayOSService : IPayOSService
         }
 
         var withdrawalId = Guid.NewGuid();
+        
+        /* XỬ LÝ:
+         * - Description: API Payout của PayOS yêu cầu tối đa 25 ký tự và KHÔNG được có dấu/ký tự đặc biệt.
+         * - Category: Bỏ qua danh sách trống (đặt thành null) để tránh lỗi "Mã kiểm tra không hợp lệ" (Invalid Signature) 
+         *   do sự sai lệch khi tính toán chữ ký với mảng rỗng trong SDK PayOS.
+         * - ReferenceId: Sử dụng định dạng Guid "N" (32 ký tự) để đảm bảo luôn nằm trong giới hạn 50 ký tự của PayOS.
+         */
+         
+        /* CODE CŨ (Gây lỗi "Invalid Signature" hoặc "Description too long"): 
         var payoutRequest = new PayoutRequest
         {
             ReferenceId = withdrawalId.ToString(),
@@ -492,6 +501,17 @@ public class PayOSService : IPayOSService
             ToBin = ((int)request.ToBin).ToString(),
             ToAccountNumber = request.ToAccountNumber,
             Category = request.Category
+        };
+        */
+
+        var payoutRequest = new PayoutRequest
+        {
+            ReferenceId = withdrawalId.ToString("N"),
+            Amount = (long)request.Amount,
+            Description = NormalizeDescription(request.Description, $"AgroTemp RT {withdrawalId.ToString("N").Substring(28)}"),
+            ToBin = ((int)request.ToBin).ToString(),
+            ToAccountNumber = request.ToAccountNumber,
+            Category = request.Category?.Any() == true ? request.Category : null
         };
 
         var payout = await _transferClient.Payouts.CreateAsync(payoutRequest);
@@ -869,5 +889,26 @@ public class PayOSService : IPayOSService
                 ? new DateTimeOffset(DateTime.SpecifyKind(withdrawal.ProcessedAt.Value, DateTimeKind.Utc))
                 : null
         };
+    }
+    private static string NormalizeDescription(string? description, string fallback)
+    {
+        var source = string.IsNullOrWhiteSpace(description) ? fallback : description;
+        var normalizedString = source.Normalize(System.Text.NormalizationForm.FormD);
+        var stringBuilder = new System.Text.StringBuilder();
+
+        foreach (var c in normalizedString)
+        {
+            var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                if (char.IsLetterOrDigit(c) || c == ' ')
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+        }
+
+        var result = stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC).Trim();
+        return result.Length > 25 ? result.Substring(0, 25).Trim() : result;
     }
 }

@@ -1,3 +1,5 @@
+using AgroTemp.Domain.Entities;
+
 namespace AgroTemp.API.Constants;
 
 public class ApiEndpointConstants
@@ -118,6 +120,11 @@ public class ApiEndpointConstants
 
         public const string CancelJobPostEndpoint = JobPostEndpoint + "/cancel" + "/{id}";
         public const string CancelJobApplicationEndpoint = JobApplicationEndpoint + "/cancel" + "/{id}";
+
+        public const string GetJobDetailByJobPost = JobDetailEndpoint + "/post" + "/{id}";
+        public const string GetJobDetailByWorker = JobDetailEndpoint + "/worker" + "/{id}";
+        public const string ReportDailyWorkerEndpoint = JobDetailEndpoint + "/report" + "/{id}";
+        public const string ApproveJobDetailEndpoint = JobDetailEndpoint + "/approve" + "/{id}";
     }
 
     public static class WorkerAttendance
