@@ -309,11 +309,11 @@ public class JobDetailController : ControllerBase
     [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job details by worker id.")]
     [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job details by worker id.")]
     [Microsoft.AspNetCore.Routing.EndpointName("JobDetailGetJobDetailsByWorkerId")]
-    public async Task<ActionResult<IEnumerable<JobDetailResponseDTO>>> GetJobDetailsByWorkerId([FromRoute] Guid workerId)
+    public async Task<ActionResult<IEnumerable<JobDetailResponseDTO>>> GetJobDetailsByWorkerId([FromRoute] Guid id)
     {
         try
         {
-            var response = await _jobDetailService.GetJobDetailsByWorkerId(workerId);
+            var response = await _jobDetailService.GetJobDetailsByWorkerId(id);
             var apiResponse = new ApiResponse<IEnumerable<JobDetailResponseDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
@@ -340,11 +340,11 @@ public class JobDetailController : ControllerBase
     [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job details by job post id.")]
     [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job details by job post id.")]
     [Microsoft.AspNetCore.Routing.EndpointName("JobDetailGetJobDetailsByJobPostId")]
-    public async Task<ActionResult<IEnumerable<JobDetailResponseDTO>>> GetJobDetailsByJobPostId([FromRoute] Guid jobPostId)
+    public async Task<ActionResult<IEnumerable<JobDetailResponseDTO>>> GetJobDetailsByJobPostId([FromRoute] Guid id)
     {
         try
         {
-            var response = await _jobDetailService.GetJobDetailsByJobPostId(jobPostId);
+            var response = await _jobDetailService.GetJobDetailsByJobPostId(id);
             var apiResponse = new ApiResponse<IEnumerable<JobDetailResponseDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
