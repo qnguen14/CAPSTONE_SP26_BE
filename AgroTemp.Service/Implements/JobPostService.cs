@@ -440,13 +440,23 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<JobPostDTO> UpdateJobPostStatus(string id, string status)
+        public async Task<JobPostDTO> UpdateJobPostStatus(string id, JobPostStatus status)
         {
             try
             {
+                if (!Guid.TryParse(id, out var jobPostId))
+                {
+                    throw new ArgumentException("Invalid job post id.");
+                }
+
+                if (!Enum.IsDefined(typeof(JobPostStatus), status))
+                {
+                    throw new Exception("Invalid status value");
+                }
+
                 var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
-                        predicate: jp => jp.Id == Guid.Parse(id),
+                        predicate: jp => jp.Id == jobPostId,
                         include: q => q.Include(jp => jp.Farmer));
                 if (existingJobPost == null)
                 {
@@ -454,37 +464,36 @@ namespace AgroTemp.Service.Implements
                 }
 
                 var oldStatusId = existingJobPost.StatusId;
+                var newStatusId = (int)status;
+                var now = DateTime.UtcNow;
 
-                if (Enum.TryParse(status, out JobPostStatus jobPostStatus))
+                existingJobPost.StatusId = newStatusId;
+                existingJobPost.UpdatedAt = now;
+
+                var farmer = existingJobPost.Farmer;
+                if (farmer != null)
                 {
-                    existingJobPost.StatusId = (int)jobPostStatus;
-                    existingJobPost.UpdatedAt = DateTime.UtcNow;
+                    var isFirstPublishedTransition =
+                        oldStatusId != (int)JobPostStatus.Published &&
+                        newStatusId == (int)JobPostStatus.Published;
 
-                    var farmer = existingJobPost.Farmer;
-                    if (farmer != null)
+                    var isFirstCompletedTransition =
+                        oldStatusId != (int)JobPostStatus.Completed &&
+                        newStatusId == (int)JobPostStatus.Completed;
+
+                    if (isFirstPublishedTransition)
                     {
-                        // First transition to Published: count posted job + set PublishedAt
-                        if (oldStatusId != (int)JobPostStatus.Published &&
-                            existingJobPost.StatusId == (int)JobPostStatus.Published)
-                        {
-                            farmer.TotalJobsPosted += 1;
-                            existingJobPost.PublishedAt = DateTime.UtcNow;
-                            await NotifyMatchingWorkersAsync(existingJobPost);
-                        }
-
-                        // First transition to Completed
-                        if (oldStatusId != (int)JobPostStatus.Completed &&
-                            existingJobPost.StatusId == (int)JobPostStatus.Completed)
-                        {
-                            farmer.TotalJobsCompleted += 1;
-                        }
-
-                        _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmer);
+                        farmer.TotalJobsPosted += 1;
+                        existingJobPost.PublishedAt = now;
+                        await NotifyMatchingWorkersAsync(existingJobPost);
                     }
-                }
-                else
-                {
-                    throw new Exception("Invalid status value");
+
+                    if (isFirstCompletedTransition)
+                    {
+                        farmer.TotalJobsCompleted += 1;
+                    }
+
+                    _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmer);
                 }
 
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);

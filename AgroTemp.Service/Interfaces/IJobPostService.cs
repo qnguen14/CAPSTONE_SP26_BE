@@ -1,4 +1,5 @@
 ﻿using AgroTemp.Domain.DTO.Job.JobPost;
+using AgroTemp.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace AgroTemp.Service.Interfaces
         Task<bool> DeleteJobPost(string id);
         Task<JobPostDTO> CancelJobPost(Guid id);
         Task<JobPostDTO> UpdateJobPostUrgency(string id, bool isUrgent);
-        Task<JobPostDTO> UpdateJobPostStatus(string id, string status);
+        Task<JobPostDTO> UpdateJobPostStatus(string id, JobPostStatus status);
         Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true);
         Task<List<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true);
 

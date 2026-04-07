@@ -586,7 +586,7 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobPostDTO>> UpdateJobPostStatus([FromRoute] string id, [FromQuery] string status)
+    public async Task<ActionResult<JobPostDTO>> UpdateJobPostStatus([FromRoute] string id, JobPostStatus status)
     {
         try
         {
