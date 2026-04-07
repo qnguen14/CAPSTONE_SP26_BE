@@ -842,45 +842,6 @@ public class JobController : ControllerBase
         }
     }
 
-    [HttpGet(ApiEndpointConstants.Job.GetWorkerApplicationStatsEndpoint)]
-    [Authorize(Roles = "Worker")]
-    [ProducesResponseType(typeof(ApiResponse<WorkerApplicationStatsDTO>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<WorkerApplicationStatsDTO>> GetWorkerApplicationStats()
-    {
-        try
-        {
-            var response = await _jobApplicationService.GetWorkerApplicationStats();
-            return Ok(new ApiResponse<WorkerApplicationStatsDTO>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Worker application stats retrieved successfully",
-                Data = response
-            });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            _logger.LogWarning(ex, "Worker profile not found when fetching application stats");
-            return NotFound(new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status404NotFound,
-                Message = ex.Message,
-                Data = null
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving worker application stats");
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = "An error occurred while retrieving worker application stats",
-                Data = null
-            });
-        }
-    }
-
     [HttpGet(ApiEndpointConstants.Job.GetJobApplicationsByWorkerEndpoint)]
     [Authorize(Roles = "Worker")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobApplicationDTO>>), StatusCodes.Status200OK)]

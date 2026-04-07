@@ -1,5 +1,6 @@
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.FarmerProfile;
+using AgroTemp.Domain.DTO.WorkerProfile;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Interfaces;
@@ -138,5 +139,38 @@ public class DashboardService : BaseService<JobPost>, IDashboardService
             JobStatusDistribution = jobStatusDistribution,
             SchedulesDates = scheduleDates
         };                                                    
+    }
+
+    public async Task<WorkerApplicationStatsDTO> GetWorkerDashboardAsync()
+    {
+        var userId = GetCurrentUserId();
+
+        var worker = await _unitOfWork.GetRepository<Worker>()
+            .FirstOrDefaultAsync(predicate: w => w.UserId == userId);
+
+        if (worker == null)
+            throw new KeyNotFoundException("Worker profile not found for the current user.");
+
+        var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
+            .GetListAsync(predicate: ja => ja.WorkerId == worker.Id);
+
+        var completedJobDetails = await _unitOfWork.GetRepository<JobDetail>()
+            .GetListAsync(predicate: jd => jd.WorkerId == worker.Id
+                                       && jd.StatusId == (int)JobStatus.Completed);
+
+        var totalEarnings = completedJobDetails
+            .Where(jd => jd.WorkerPaymentAmount.HasValue)
+            .Sum(jd => jd.WorkerPaymentAmount!.Value);
+
+        return new WorkerApplicationStatsDTO
+        {
+            TotalApplications     = jobApplications.Count,
+            PendingApplications   = jobApplications.Count(ja => ja.StatusId == (int)ApplicationStatus.Pending),
+            AcceptedApplications  = jobApplications.Count(ja => ja.StatusId == (int)ApplicationStatus.Accepted),
+            RejectedApplications  = jobApplications.Count(ja => ja.StatusId == (int)ApplicationStatus.Rejected),
+            CancelledApplications = jobApplications.Count(ja => ja.StatusId == (int)ApplicationStatus.Cancelled),
+            CompletedJobs         = completedJobDetails.Count,
+            TotalEarnings         = totalEarnings
+        };
     }
 }
