@@ -108,11 +108,12 @@ public class JobController : ControllerBase
 
     [HttpGet(ApiEndpointConstants.Job.GetJobApplicationsByJobPostEndpoint)]
     [Authorize(Roles = "Farmer")]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobApplicationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<JobApplicationDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<JobApplicationDTO>>> GetJobApplicationsByJobPostId([FromRoute] Guid jobPostId, [FromQuery] bool? includeAll, [FromQuery] int? statusId)
+    public async Task<ActionResult<PaginatedResponse<JobApplicationDTO>>> GetJobApplicationsByJobPostId([FromRoute] Guid jobPostId, [FromQuery] bool? includeAll, [FromQuery] int? statusId, 
+                                                                                                        [FromQuery] int page = 1, [FromQuery] int limit = 10)
     {
         try
         {
@@ -128,9 +129,9 @@ public class JobController : ControllerBase
                 });
             }
 
-            var response = await _jobApplicationService.GetJobApplicationsByJobPostId(jobPostId, farmerProfileId, statusId, includeAll ?? false);
+            var response = await _jobApplicationService.GetJobApplicationsByJobPostId(jobPostId, farmerProfileId, statusId, includeAll ?? false, page, limit);
 
-            return Ok(new ApiResponse<IEnumerable<JobApplicationDTO>>
+            return Ok(new ApiResponse<PaginatedResponse<JobApplicationDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
                 Message = "Job applications retrieved successfully",

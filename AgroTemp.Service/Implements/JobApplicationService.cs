@@ -3,6 +3,7 @@ using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
+using AgroTemp.Domain.Metadata;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
@@ -117,30 +118,46 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobApplicationDTO>> GetJobApplicationsByJobPostId(Guid jobPostId, Guid farmerProfileId, int? statusId, bool includeAll)
+        public async Task<PaginatedResponse<JobApplicationDTO>> GetJobApplicationsByJobPostId(Guid jobPostId, Guid farmerProfileId, int? statusId, bool includeAll, int page, int limit)
         {
             try
             {
+                page = page < 1 ? 1 : page;
+                limit = limit <= 0 ? 10 : limit;
+                var skip = (page - 1) * limit;
+
                 var statusFilter = statusId ?? (int)ApplicationStatus.Pending;
 
-                var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
-                    .GetListAsync(predicate: ja =>
-                                    ja.JobPostId == jobPostId &&
-                                    ja.JobPost.FarmerId == farmerProfileId &&
-                                    (includeAll || ja.StatusId == statusFilter),
-                                include: ja => ja
-                                                .Include(j => j.Worker)
-                                                    .ThenInclude(w => w.User)
-                                                .Include(j => j.JobPost.Farmer)
-                                                .Include(j => j.JobPost.Farm),
-                                orderBy: ja => ja.OrderBy(x => x.AppliedAt));
+                System.Linq.Expressions.Expression<Func<JobApplication, bool>> predicate = ja =>
+                    ja.JobPostId == jobPostId &&
+                    ja.JobPost.FarmerId == farmerProfileId &&
+                    (includeAll || ja.StatusId == statusFilter);
 
-                if (jobApplications == null || !jobApplications.Any())
+                var total = await _unitOfWork.GetRepository<JobApplication>().CountAsync(predicate);
+
+                var query = _unitOfWork.GetRepository<JobApplication>().CreateBaseQuery(
+                    predicate: predicate,
+                    orderBy: ja => ja.OrderBy(x => x.AppliedAt),
+                    include: ja => ja
+                        .Include(j => j.Worker)
+                            .ThenInclude(w => w.User)
+                        .Include(j => j.JobPost.Farmer)
+                        .Include(j => j.JobPost.Farm),
+                    asNoTracking: true);
+
+                var jobApplications = await query.Skip(skip).Take(limit).ToListAsync();
+
+                return new PaginatedResponse<JobApplicationDTO>
                 {
-                    return new List<JobApplicationDTO>();
-                }
-
-                return _mapper.JobApplicationsToJobApplicationDtos(jobApplications);
+                    Data = _mapper.JobApplicationsToJobApplicationDtos(jobApplications),
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit)
+                    }
+                };
             }
             catch (Exception ex)
             {
