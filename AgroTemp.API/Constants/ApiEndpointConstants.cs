@@ -277,8 +277,7 @@ public class ApiEndpointConstants
 
     public static class Dashboard
     {
-        public const string DashboardEndpoint = ApiEndpoint + "/dashboard";
-        public const string FarmerDashboardEndpoint = DashboardEndpoint + "/farmer";
-        public const string WorkerDashboardEndpoint = DashboardEndpoint + "/worker";
+        public const string FarmerDashboardEndpoint = FarmerProfile.FarmerProfileEndpoint + "/dashboard";
+        public const string WorkerDashboardEndpoint = WorkerProfile.WorkerProfileEndpoint + "/dashboard";
     }
 }
