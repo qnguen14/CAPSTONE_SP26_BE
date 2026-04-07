@@ -305,17 +305,20 @@ public class JobDetailController : ControllerBase
     }
 
     [HttpGet(ApiEndpointConstants.Job.GetJobDetailByWorker)]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobDetailResponseDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<JobDetailResponseDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job details by worker id.")]
     [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job details by worker id.")]
     [Microsoft.AspNetCore.Routing.EndpointName("JobDetailGetJobDetailsByWorkerId")]
-    public async Task<ActionResult<IEnumerable<JobDetailResponseDTO>>> GetJobDetailsByWorkerId([FromRoute] Guid id)
+    public async Task<ActionResult<PaginatedResponse<JobDetailResponseDTO>>> GetJobDetailsByWorkerId(
+        [FromRoute] Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 10)
     {
         try
         {
-            var response = await _jobDetailService.GetJobDetailsByWorkerId(id);
-            var apiResponse = new ApiResponse<IEnumerable<JobDetailResponseDTO>>
+            var response = await _jobDetailService.GetJobDetailsByWorkerId(id, page, limit);
+            var apiResponse = new ApiResponse<PaginatedResponse<JobDetailResponseDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
                 Message = "Job details retrieved successfully",
@@ -336,17 +339,20 @@ public class JobDetailController : ControllerBase
     }
 
     [HttpGet(ApiEndpointConstants.Job.GetJobDetailByJobPost)]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobDetailResponseDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<JobDetailResponseDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin job details by job post id.")]
     [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get job details by job post id.")]
     [Microsoft.AspNetCore.Routing.EndpointName("JobDetailGetJobDetailsByJobPostId")]
-    public async Task<ActionResult<IEnumerable<JobDetailResponseDTO>>> GetJobDetailsByJobPostId([FromRoute] Guid id)
+    public async Task<ActionResult<PaginatedResponse<JobDetailResponseDTO>>> GetJobDetailsByJobPostId(
+        [FromRoute] Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 10)
     {
         try
         {
-            var response = await _jobDetailService.GetJobDetailsByJobPostId(id);
-            var apiResponse = new ApiResponse<IEnumerable<JobDetailResponseDTO>>
+            var response = await _jobDetailService.GetJobDetailsByJobPostId(id, page, limit);
+            var apiResponse = new ApiResponse<PaginatedResponse<JobDetailResponseDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
                 Message = "Job details retrieved successfully",

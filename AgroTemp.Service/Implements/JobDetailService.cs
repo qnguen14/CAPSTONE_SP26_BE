@@ -2,6 +2,7 @@ using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
+using AgroTemp.Domain.Metadata;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
@@ -241,21 +242,34 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobDetailResponseDTO>> GetJobDetailsByWorkerId(Guid workerId)
+        public async Task<PaginatedResponse<JobDetailResponseDTO>> GetJobDetailsByWorkerId(Guid workerId, int page = 1, int limit = 10)
         {
             try
             {
-                var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
-                    .GetListAsync(
-                        predicate: jd => jd.WorkerId == workerId,
-                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User),
-                        orderBy: jd => jd.OrderByDescending(x => x.CreatedAt));
-                if (jobDetails == null || !jobDetails.Any())
+                var skip = (page - 1) * limit;
+                var predicate = (System.Linq.Expressions.Expression<Func<JobDetail, bool>>)(jd => jd.WorkerId == workerId);
+
+                var total = await _unitOfWork.GetRepository<JobDetail>().CountAsync(predicate);
+
+                var query = _unitOfWork.GetRepository<JobDetail>().CreateBaseQuery(
+                    predicate: predicate,
+                    orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                    include: q => q.Include(x => x.Worker).ThenInclude(w => w.User));
+
+                var items = await query.Skip(skip).Take(limit).ToListAsync();
+                var data = _mapper.JobDetailsToJobDetailResponseDtos(items);
+
+                return new PaginatedResponse<JobDetailResponseDTO>
                 {
-                    return new List<JobDetailResponseDTO>();
-                }
-                var result = _mapper.JobDetailsToJobDetailResponseDtos(jobDetails);
-                return result;
+                    Data = data,
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit)
+                    }
+                };
             }
             catch (Exception ex)
             {
@@ -263,21 +277,34 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobDetailResponseDTO>> GetJobDetailsByJobPostId(Guid jobPostId)
+        public async Task<PaginatedResponse<JobDetailResponseDTO>> GetJobDetailsByJobPostId(Guid jobPostId, int page = 1, int limit = 10)
         {
             try
             {
-                var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
-                    .GetListAsync(
-                        predicate: jd => jd.JobPostId == jobPostId,
-                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User),
-                        orderBy: jd => jd.OrderByDescending(x => x.CreatedAt));
-                if (jobDetails == null || !jobDetails.Any())
+                var skip = (page - 1) * limit;
+                var predicate = (System.Linq.Expressions.Expression<Func<JobDetail, bool>>)(jd => jd.JobPostId == jobPostId);
+
+                var total = await _unitOfWork.GetRepository<JobDetail>().CountAsync(predicate);
+
+                var query = _unitOfWork.GetRepository<JobDetail>().CreateBaseQuery(
+                    predicate: predicate,
+                    orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                    include: q => q.Include(x => x.Worker).ThenInclude(w => w.User));
+
+                var items = await query.Skip(skip).Take(limit).ToListAsync();
+                var data = _mapper.JobDetailsToJobDetailResponseDtos(items);
+
+                return new PaginatedResponse<JobDetailResponseDTO>
                 {
-                    return new List<JobDetailResponseDTO>();
-                }
-                var result = _mapper.JobDetailsToJobDetailResponseDtos(jobDetails);
-                return result;
+                    Data = data,
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit)
+                    }
+                };
             }
             catch (Exception ex)
             {

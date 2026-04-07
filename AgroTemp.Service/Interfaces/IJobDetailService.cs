@@ -1,4 +1,5 @@
 ﻿using AgroTemp.Domain.DTO.Job.JobDetail;
+using AgroTemp.Domain.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,8 +19,8 @@ namespace AgroTemp.Service.Interfaces
         Task<JobDetailDTO> UpdateJobDetailStatus(string id, string status);
 
         Task<JobDetailResponseDTO> ReportDailyWork(Guid id, CreateDailyReportRequest request);
-        Task<List<JobDetailResponseDTO>> GetJobDetailsByWorkerId(Guid workerId);
-        Task<List<JobDetailResponseDTO>> GetJobDetailsByJobPostId(Guid jobPostId);
+        Task<PaginatedResponse<JobDetailResponseDTO>> GetJobDetailsByWorkerId(Guid workerId, int page = 1, int limit = 10);
+        Task<PaginatedResponse<JobDetailResponseDTO>> GetJobDetailsByJobPostId(Guid jobPostId, int page = 1, int limit = 10);
         Task<JobDetailResponseDTO> ApproveJobDetail(Guid id,ApproveJobDetailRequest request);
     }
 }
