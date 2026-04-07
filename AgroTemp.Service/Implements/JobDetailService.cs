@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -39,7 +40,7 @@ namespace AgroTemp.Service.Implements
                 var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
                     .GetListAsync(
                         predicate: null,
-                        include: jd => jd.Include(x => x.Worker),
+                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User),
                         orderBy: jd => jd.OrderBy(x => x.CreatedAt));
                 if (jobDetails == null || !jobDetails.Any())
                 {
@@ -62,7 +63,7 @@ namespace AgroTemp.Service.Implements
                 var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
                     .FirstOrDefaultAsync(
                         predicate: jd => jd.Id == guid,
-                        include: jd => jd.Include(x => x.Worker));
+                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User));
                 if (jobDetail == null)
                 {
                     return null;
@@ -247,7 +248,7 @@ namespace AgroTemp.Service.Implements
                 var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
                     .GetListAsync(
                         predicate: jd => jd.WorkerId == workerId,
-                        include: jd => jd.Include(x => x.Worker),
+                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User),
                         orderBy: jd => jd.OrderByDescending(x => x.CreatedAt));
                 if (jobDetails == null || !jobDetails.Any())
                 {
@@ -269,7 +270,7 @@ namespace AgroTemp.Service.Implements
                 var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
                     .GetListAsync(
                         predicate: jd => jd.JobPostId == jobPostId,
-                        include: null,
+                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User),
                         orderBy: jd => jd.OrderByDescending(x => x.CreatedAt));
                 if (jobDetails == null || !jobDetails.Any())
                 {
