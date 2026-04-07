@@ -8,6 +8,9 @@ public class FarmerDashboardDTO
     public WalletSummaryDTO Wallet { get; set; }
     public DashboardCountersDTO Counters { get; set; }
     public List<ActiveJobSummaryDTO> ActiveJobs { get; set; }
+    public List<WeeklyActivityDTO> WeeklyActivity { get; set; }
+    public List<JobStatusDistributionDTO> JobStatusDistribution { get; set; }
+    public List<ScheduleDateDTO> SchedulesDates { get; set; }
 }
 
 public class FarmerProfileSummaryDTO
@@ -41,4 +44,23 @@ public class ActiveJobSummaryDTO
     public bool IsUrgent { get; set; }
     public int StatusId { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+public class WeeklyActivityDTO
+{
+    public string Name { get; set; }
+    public int ApplicationsCount { get; set; }
+    public int JobPostsCount { get; set; }
+}
+
+public class JobStatusDistributionDTO
+{
+    public int StatusId { get; set; }
+    public string StatusName { get; set; }
+    public int Count { get; set; }
+}
+
+public class ScheduleDateDTO
+{
+    public string ScheduleDate { get; set; }
 }
