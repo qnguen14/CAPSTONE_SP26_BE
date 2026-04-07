@@ -6,6 +6,7 @@ using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,7 +39,7 @@ namespace AgroTemp.Service.Implements
                 var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
                     .GetListAsync(
                         predicate: null,
-                        include: null,
+                        include: jd => jd.Include(x => x.Worker),
                         orderBy: jd => jd.OrderBy(x => x.CreatedAt));
                 if (jobDetails == null || !jobDetails.Any())
                 {
@@ -61,7 +62,7 @@ namespace AgroTemp.Service.Implements
                 var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
                     .FirstOrDefaultAsync(
                         predicate: jd => jd.Id == guid,
-                        include: null);
+                        include: jd => jd.Include(x => x.Worker));
                 if (jobDetail == null)
                 {
                     return null;
@@ -194,12 +195,10 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<JobDetailResponseDTO> ReportDailyWork(CreateDailyReportRequest request)
+        public async Task<JobDetailResponseDTO> ReportDailyWork(Guid id, CreateDailyReportRequest request)
         {
             try
             {
-                var id = request.JobApplicationId;
-
                 var application = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(ja => ja.Id.ToString() == id.ToString(),null,null);
                 if (application == null || application.Status != ApplicationStatus.Accepted)
@@ -209,7 +208,7 @@ namespace AgroTemp.Service.Implements
 
                 var today = DateTime.UtcNow.Date;
                 var existingReport = await _unitOfWork.GetRepository<JobDetail>()
-                    .FirstOrDefaultAsync(jd => jd.JobApplicationId == request.JobApplicationId && jd.WorkDate == today,null,null);
+                    .FirstOrDefaultAsync(jd => jd.JobApplicationId == id && jd.WorkDate == today,null,null);
                 if (existingReport != null)
                 {
                     throw new Exception("Already reported for today");
@@ -219,7 +218,7 @@ namespace AgroTemp.Service.Implements
                 var jobDetail = new JobDetail
                 {
                     Id = Guid.NewGuid(),
-                    JobApplicationId = request.JobApplicationId,
+                    JobApplicationId = id,
                     JobPostId = application.JobPostId,
                     WorkerId = application.WorkerId,
                     StatusId = (int)JobStatus.Reported,
@@ -248,7 +247,7 @@ namespace AgroTemp.Service.Implements
                 var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
                     .GetListAsync(
                         predicate: jd => jd.WorkerId == workerId,
-                        include: null,
+                        include: jd => jd.Include(x => x.Worker),
                         orderBy: jd => jd.OrderByDescending(x => x.CreatedAt));
                 if (jobDetails == null || !jobDetails.Any())
                 {

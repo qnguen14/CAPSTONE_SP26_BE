@@ -17,9 +17,9 @@ namespace AgroTemp.Service.Interfaces
         Task<bool> DeleteJobDetail(string id);
         Task<JobDetailDTO> UpdateJobDetailStatus(string id, string status);
 
-        Task<JobDetailResponseDTO> ReportDailyWork(CreateDailyReportRequest request);
+        Task<JobDetailResponseDTO> ReportDailyWork(Guid id, CreateDailyReportRequest request);
         Task<List<JobDetailResponseDTO>> GetJobDetailsByWorkerId(Guid workerId);
         Task<List<JobDetailResponseDTO>> GetJobDetailsByJobPostId(Guid jobPostId);
-        Task<JobDetailResponseDTO> ApproveJobDetail(Guid id, ApproveJobDetailRequest request);
+        Task<JobDetailResponseDTO> ApproveJobDetail(Guid id,ApproveJobDetailRequest request);
     }
 }

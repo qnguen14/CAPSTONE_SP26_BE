@@ -3,6 +3,7 @@ using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgroTemp.API.Controllers;
@@ -278,11 +279,11 @@ public class JobDetailController : ControllerBase
     [Microsoft.AspNetCore.Http.EndpointSummary("Bao cao cong viec hang ngay.")]
     [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang report daily work.")]
     [Microsoft.AspNetCore.Routing.EndpointName("JobDetailReportDailyWork")]
-    public async Task<ActionResult<JobDetailResponseDTO>> ReportDailyWork([FromBody] CreateDailyReportRequest request)
+    public async Task<ActionResult<JobDetailResponseDTO>> ReportDailyWork([FromRoute] Guid id, [FromBody] CreateDailyReportRequest request)
     {
         try
         {
-            var response = await _jobDetailService.ReportDailyWork(request);
+            var response = await _jobDetailService.ReportDailyWork(id, request);
             var apiResponse = new ApiResponse<JobDetailResponseDTO>
             {
                 StatusCode = StatusCodes.Status200OK,
@@ -365,6 +366,7 @@ public class JobDetailController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "Farmer")]
     [HttpPost(ApiEndpointConstants.Job.ApproveJobDetailEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<JobDetailResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]

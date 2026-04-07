@@ -80,7 +80,7 @@ if (app.Environment.IsDevelopment())
 }
 
 
-// Protect /swagger with Basic Auth (username/password from env vars)
+// Protect /swagger with Basic Auth (username/password from env vars) 
 app.UseMiddleware<SwaggerBasicAuthMiddleware>();
 
 app.UseSwagger();
