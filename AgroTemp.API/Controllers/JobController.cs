@@ -106,49 +106,6 @@ public class JobController : ControllerBase
         }
     }
 
-    [HttpGet(ApiEndpointConstants.Job.GetJobApplicationsByJobPostEndpoint)]
-    [Authorize(Roles = "Farmer")]
-    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<JobApplicationDTO>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<PaginatedResponse<JobApplicationDTO>>> GetJobApplicationsByJobPostId([FromRoute] Guid jobPostId, [FromQuery] bool? includeAll, [FromQuery] int? statusId, 
-                                                                                                        [FromQuery] int page = 1, [FromQuery] int limit = 10)
-    {
-        try
-        {
-            var farmerProfileIdClaim = User.FindFirst("FarmerProfileId")?.Value;
-
-            if(string.IsNullOrEmpty(farmerProfileIdClaim) || !Guid.TryParse(farmerProfileIdClaim, out var farmerProfileId))
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
-                {
-                    StatusCode = StatusCodes.Status403Forbidden,
-                    Message = "Farmer profile not found",
-                    Data = null
-                });
-            }
-
-            var response = await _jobApplicationService.GetJobApplicationsByJobPostId(jobPostId, farmerProfileId, statusId, includeAll ?? false, page, limit);
-
-            return Ok(new ApiResponse<PaginatedResponse<JobApplicationDTO>>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Job applications retrieved successfully",
-                Data = response
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving job applications by job post id");
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = ex.Message,
-                Data = null
-            });
-        }
-    }
 
     [HttpPost(ApiEndpointConstants.Job.CreateJobCategoryEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<JobCategoryDTO>), StatusCodes.Status200OK)]
@@ -869,6 +826,81 @@ public class JobController : ControllerBase
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = "An error occurred while retrieving job applications by worker",
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Job.GetJobApplicationsByJobPostEndpoint)]
+    [Authorize(Roles = "Farmer")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<JobApplicationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PaginatedResponse<JobApplicationDTO>>> GetJobApplicationsByJobPostId([FromRoute] Guid jobPostId, [FromQuery] bool? includeAll, [FromQuery] int? statusId,
+                                                                                                       [FromQuery] int page = 1, [FromQuery] int limit = 10)
+    {
+        try
+        {
+            var farmerProfileIdClaim = User.FindFirst("FarmerProfileId")?.Value;
+
+            if (string.IsNullOrEmpty(farmerProfileIdClaim) || !Guid.TryParse(farmerProfileIdClaim, out var farmerProfileId))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status403Forbidden,
+                    Message = "Farmer profile not found",
+                    Data = null
+                });
+            }
+
+            var response = await _jobApplicationService.GetJobApplicationsByJobPostId(jobPostId, farmerProfileId, statusId, includeAll ?? false, page, limit);
+
+            return Ok(new ApiResponse<PaginatedResponse<JobApplicationDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job applications retrieved successfully",
+                Data = response
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving job applications by job post id");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Job.GetJobApplicationsByFarmer)]
+    [Authorize(Roles = "Farmer")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<JobApplicationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PaginatedResponse<JobApplicationDTO>>> GetJobApplicationsByFarmer([FromQuery] int statusId, [FromQuery] bool includeAll = true, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    {
+        try
+        {
+            var response = await _jobApplicationService.GetJobApplicationsByFarmer(statusId, includeAll, pageNumber, pageSize);
+            var apiResponse = new ApiResponse<PaginatedResponse<JobApplicationDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job applications by farmer retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving job applications by farmer");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving job applications by farmer",
                 Data = null
             });
         }

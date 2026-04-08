@@ -469,5 +469,66 @@ namespace AgroTemp.Service.Implements
                 throw new Exception(ex.Message);
             }
         }
+
+        public async Task<PaginatedResponse<JobApplicationDTO>> GetJobApplicationsByFarmer(int? statusId, bool includeAll, int page, int limit)
+        {
+            try
+            {
+                page = page < 1 ? 1 : page;
+                limit = limit <= 0 ? 10 : limit;
+                var skip = (page - 1) * limit;
+
+                var statusFilter = statusId ?? (int)ApplicationStatus.Pending;
+
+                var currentUserId = GetCurrentUserId();
+                var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: fp => fp.UserId == currentUserId);
+
+                if (farmerProfile == null)
+                {
+                    throw new KeyNotFoundException("Farmer profile not found for the current user.");
+                }
+
+                System.Linq.Expressions.Expression<Func<JobApplication, bool>> predicate;
+                if (includeAll)
+                {
+                    predicate = ja => ja.JobPost.FarmerId == farmerProfile.Id;
+                }
+                else
+                {
+                    predicate = ja => ja.JobPost.FarmerId == farmerProfile.Id && ja.StatusId == statusFilter;
+                }
+
+                var total = await _unitOfWork.GetRepository<JobApplication>().CountAsync(predicate);
+
+                var query = _unitOfWork.GetRepository<JobApplication>().CreateBaseQuery(
+                    predicate: predicate,
+                    orderBy: ja => ja.OrderBy(x => x.AppliedAt),
+                    include: ja => ja
+                        .Include(j => j.Worker)
+                            .ThenInclude(w => w.User)
+                        .Include(j => j.JobPost.Farmer)
+                        .Include(j => j.JobPost.Farm),
+                    asNoTracking: true);
+
+                var jobApplications = await query.Skip(skip).Take(limit).ToListAsync();
+
+                return new PaginatedResponse<JobApplicationDTO>
+                {
+                    Data = _mapper.JobApplicationsToJobApplicationDtos(jobApplications),
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit)
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
     }
 }

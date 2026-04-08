@@ -125,6 +125,8 @@ public class ApiEndpointConstants
         public const string GetJobDetailByWorker = JobDetailEndpoint + "/worker" + "/{id}";
         public const string ReportDailyWorkerEndpoint = JobDetailEndpoint + "/report" + "/{id}";
         public const string ApproveJobDetailEndpoint = JobDetailEndpoint + "/approve" + "/{id}";
+
+        public const string GetJobApplicationsByFarmer = JobApplicationEndpoint + "/farmer";
     }
 
     public static class WorkerAttendance
