@@ -282,11 +282,11 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetJobPostsByFarmer([FromRoute] Guid farmerId)
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetJobPostsByFarmer()
     {
         try
         {
-            var response = await _jobPostService.GetJobPostsByFarmerId(farmerId);
+            var response = await _jobPostService.GetJobPostsByFarmerId();
             var apiResponse = new ApiResponse<IEnumerable<JobPostDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,

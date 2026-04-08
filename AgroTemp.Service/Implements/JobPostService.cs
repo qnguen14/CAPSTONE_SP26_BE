@@ -88,14 +88,14 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobPostDTO>> GetJobPostsByFarmerId(Guid farmerId)
+        public async Task<List<JobPostDTO>> GetJobPostsByFarmerId()
         {
             try
             {
                 var userId = GetCurrentUserId();
                 var farmer = await _unitOfWork.GetRepository<Farmer>()
                     .FirstOrDefaultAsync(predicate: f => f.UserId == userId);
-                if (farmer == null || farmer.Id != farmerId)
+                if (farmer == null)
                 {
                     throw new UnauthorizedAccessException("User is not authorized to view these job posts.");
                 }

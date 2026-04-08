@@ -12,7 +12,7 @@ namespace AgroTemp.Service.Interfaces
     {
         Task<List<JobPostDTO>> GetAllJobPosts();
         Task<JobPostDTO> GetJobPostById(string id);
-        Task<List<JobPostDTO>> GetJobPostsByFarmerId(Guid farmerId);
+        Task<List<JobPostDTO>> GetJobPostsByFarmerId();
         Task<List<JobPostDTO>> GetFarmerJobHistory();
         Task<JobPostDTO> CreateJobPost(CreateJobPostRequest request);
         Task<JobPostDTO> UpdateJobPost(Guid id, UpdateJobPostRequest request);
