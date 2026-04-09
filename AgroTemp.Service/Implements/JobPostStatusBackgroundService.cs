@@ -1,6 +1,7 @@
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Repository.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -118,29 +119,45 @@ namespace AgroTemp.Service.Implements
         private async Task<DateTime?> StartInProgressJobPostsAsync(
             IUnitOfWork<AgroTempDbContext> unitOfWork, DateTime now)
         {
-            var publishedPosts = await unitOfWork.GetRepository<JobPost>()
+            var eligiblePosts = await unitOfWork.GetRepository<JobPost>()
                 .GetListAsync(
                     predicate: jp =>
-                        jp.StatusId == (int)JobPostStatus.Published &&
+                        (jp.StatusId == (int)JobPostStatus.Published ||
+                         jp.StatusId == (int)JobPostStatus.Closed) &&
                         jp.StartDate.HasValue &&
                         jp.WorkersAccepted >= jp.WorkersNeeded,
-                    include: null,
+                    include: jp => jp.Include(p => p.JobApplications),
                     orderBy: null);
 
-            if (publishedPosts == null || !publishedPosts.Any())
+            if (eligiblePosts == null || !eligiblePosts.Any())
                 return null;
 
             var readyPosts = new List<JobPost>();
             DateTime? nextStart = null;
 
-            foreach (var post in publishedPosts)
+            foreach (var post in eligiblePosts)
             {
                 var startsAt = post.StartDate!.Value.ToDateTime(post.StartTime);
 
-                if (startsAt <= now)
-                    readyPosts.Add(post);
-                else if (nextStart == null || startsAt < nextStart.Value)
-                    nextStart = startsAt;
+                if (startsAt > now)
+                {
+                    if (nextStart == null || startsAt < nextStart.Value)
+                        nextStart = startsAt;
+                    continue;
+                }
+
+                if (post.SelectedDays != null && post.SelectedDays.Count > 0)
+                {
+                    var coveredDates = post.JobApplications
+                        .Where(ja => ja.StatusId == (int)ApplicationStatus.Accepted && ja.WorkDates != null)
+                        .SelectMany(ja => ja.WorkDates!.Select(d => DateOnly.FromDateTime(d)))
+                        .ToHashSet();
+
+                    if (!post.SelectedDays.All(day => coveredDates.Contains(day)))
+                        continue;
+                }
+
+                readyPosts.Add(post);
             }
 
             if (readyPosts.Any())
