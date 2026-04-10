@@ -10,7 +10,7 @@ namespace AgroTemp.Service.Implements
 {
     public class JobPostStatusBackgroundService : BackgroundService
     {
-        private static readonly TimeSpan MaxSleepDuration = TimeSpan.FromHours(1);
+        private static readonly TimeSpan MaxSleepDuration = TimeSpan.FromSeconds(5);
 
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<JobPostStatusBackgroundService> _logger;
