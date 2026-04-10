@@ -6,12 +6,16 @@
         {
             services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll", policy =>
+                options.AddPolicy("CorsPolicy", policy =>
                 {
                     policy
-                        .AllowAnyOrigin()
+                        .WithOrigins(
+                            "http://localhost:3000",
+                            "https://agrotemp-frontend.vercel.app"
+                        )
                         .AllowAnyHeader()
-                        .AllowAnyMethod();
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 });
             });
 

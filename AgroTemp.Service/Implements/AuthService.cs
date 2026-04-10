@@ -89,6 +89,7 @@ public class AuthService : BaseService<User>, IAuthService
             Token = token,
             ExpiresAt = expiresAt,
             Email = user.Email,
+            UserId = user.Id,
             Role = user.Role.ToString(),
             IsVerified = user.IsVerified
         };
@@ -313,6 +314,7 @@ public class AuthService : BaseService<User>, IAuthService
                 ExpiresAt = expiresAt,
                 Email = user.Email,
                 Role = user.Role.ToString(),
+                UserId = user.Id,
                 IsVerified = user.IsVerified
             };
         }

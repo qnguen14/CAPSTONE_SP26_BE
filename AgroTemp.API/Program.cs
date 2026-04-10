@@ -100,7 +100,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAll"); // Enable CORS
+app.UseCors("CorsPolicy"); // Enable CORS
 
 app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();
