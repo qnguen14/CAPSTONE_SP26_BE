@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Context;
+using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Rating;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
@@ -75,6 +75,21 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
+                var rater = await _unitOfWork.GetRepository<User>()
+                    .FirstOrDefaultAsync(predicate: u => u.Id == request.RaterId);
+                if (rater == null)
+                    throw new KeyNotFoundException($"Rater with ID {request.RaterId} does not exist.");
+
+                var ratee = await _unitOfWork.GetRepository<User>()
+                    .FirstOrDefaultAsync(predicate: u => u.Id == request.RateeId);
+                if (ratee == null)
+                    throw new KeyNotFoundException($"Ratee with ID {request.RateeId} does not exist. Make sure you are passing the User ID, not the Worker/Farmer profile ID.");
+
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(predicate: j => j.Id == request.JobPostId);
+                if (jobPost == null)
+                    throw new KeyNotFoundException($"Job post with ID {request.JobPostId} does not exist.");
+
                 var existingRating = await _unitOfWork.GetRepository<Rating>()
                     .FirstOrDefaultAsync(predicate: r =>
                         r.RaterId == request.RaterId &&
