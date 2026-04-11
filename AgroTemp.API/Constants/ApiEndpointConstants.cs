@@ -283,4 +283,10 @@ public class ApiEndpointConstants
         public const string FarmerDashboardEndpoint = FarmerProfile.FarmerProfileEndpoint + "/dashboard";
         public const string WorkerDashboardEndpoint = WorkerProfile.WorkerProfileEndpoint + "/dashboard";
     }
+
+    public static class Admin
+    {
+        public const string AdminEndpoint = ApiEndpoint + "/admin";
+        public const string GetDashboardEndpoint = AdminEndpoint + "/dashboard";
+    }
 }

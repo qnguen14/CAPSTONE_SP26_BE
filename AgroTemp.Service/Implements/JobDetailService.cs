@@ -231,9 +231,37 @@ namespace AgroTemp.Service.Implements
                 };
 
                 await _unitOfWork.GetRepository<JobDetail>().InsertAsync(jobDetail);
+
+                // Save image URL attachments
+                if (request.ImageUrls != null && request.ImageUrls.Count > 0)
+                {
+                    var attachments = request.ImageUrls.Select(url => new JobAttachment
+                    {
+                        Id = Guid.NewGuid(),
+                        JobDetailId = jobDetail.Id,
+                        CloudinaryPublicId = Path.GetFileNameWithoutExtension(new Uri(url).AbsolutePath),
+                        FileUrl = url,
+                        Format = Path.GetExtension(url).TrimStart('.').ToLower(),
+                        CreatedAt = DateTime.UtcNow
+                    }).ToList();
+
+                    await _unitOfWork.GetRepository<JobAttachment>().InsertRangeAsync(attachments);
+                }
+
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
+                result.Attachments = jobDetail.JobAttachments
+                    .Select(a => new JobAttachmentDTO
+                    {
+                        Id = a.Id,
+                        JobDetailId = a.JobDetailId,
+                        CloudinaryPublicId = a.CloudinaryPublicId,
+                        FileUrl = a.FileUrl,
+                        Format = a.Format,
+                        FileSize = a.FileSize,
+                        CreatedAt = a.CreatedAt
+                    }).ToList();
                 return result;
             }
             catch (Exception ex)

@@ -10,6 +10,6 @@ namespace AgroTemp.Domain.DTO.Job.JobDetail
     {
         public string WorkerDescription { get; set; }
 
-        // public List<string> ImageUrls { get; set; } = new List<string>();
+        public List<string> ImageUrls { get; set; } = new List<string>();
     }
 }
