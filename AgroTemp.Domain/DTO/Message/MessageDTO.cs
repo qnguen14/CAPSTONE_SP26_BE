@@ -1,5 +1,12 @@
 namespace AgroTemp.Domain.DTO.Message;
 
+public class UserBriefDTO
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? AvatarUrl { get; set; }
+}
+
 public class MessageDTO
 {
     public Guid Id { get; set; }
@@ -13,5 +20,8 @@ public class MessageDTO
     public bool Read { get; set; }
 
     public DateTime CreatedAt { get; set; }
-}
 
+    public UserBriefDTO? Sender { get; set; }
+
+    public UserBriefDTO? Receiver { get; set; }
+}

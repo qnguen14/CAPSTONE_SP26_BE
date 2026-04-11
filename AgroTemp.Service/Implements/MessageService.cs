@@ -48,7 +48,11 @@ public class MessageService : BaseService<ChatMessage>, IMessageService
         var query = _unitOfWork.GetRepository<ChatMessage>().CreateBaseQuery(
             predicate: predicate,
             orderBy: q => q.OrderBy(m => m.SentAt),
-            include: null,
+            include: q => q
+                .Include(m => m.Sender).ThenInclude(u => u.Worker)
+                .Include(m => m.Sender).ThenInclude(u => u.Farmer)
+                .Include(m => m.Recipient).ThenInclude(u => u.Worker)
+                .Include(m => m.Recipient).ThenInclude(u => u.Farmer),
             asNoTracking: true);
 
         var items = await query.Skip(skip).Take(limit).ToListAsync();
@@ -62,7 +66,9 @@ public class MessageService : BaseService<ChatMessage>, IMessageService
                 ReceiverId = m.RecipientId,
                 Content = m.MessageContent,
                 Read = m.IsRead,
-                CreatedAt = m.SentAt
+                CreatedAt = m.SentAt,
+                Sender = BuildUserBrief(m.Sender),
+                Receiver = BuildUserBrief(m.Recipient)
             }).ToList(),
             Pagination = new PaginationMetadata
             {
@@ -106,14 +112,28 @@ public class MessageService : BaseService<ChatMessage>, IMessageService
         await _unitOfWork.GetRepository<ChatMessage>().InsertAsync(entity);
         await _unitOfWork.SaveChangesAsync();
 
+        // Reload with navigation properties to populate Sender/Receiver
+        var saved = await _unitOfWork.GetRepository<ChatMessage>().CreateBaseQuery(
+            predicate: m => m.Id == entity.Id,
+            orderBy: null,
+            include: q => q
+                .Include(m => m.Sender).ThenInclude(u => u.Worker)
+                .Include(m => m.Sender).ThenInclude(u => u.Farmer)
+                .Include(m => m.Recipient).ThenInclude(u => u.Worker)
+                .Include(m => m.Recipient).ThenInclude(u => u.Farmer),
+            asNoTracking: true)
+            .FirstOrDefaultAsync() ?? entity;
+
         return new MessageDTO
         {
-            Id = entity.Id,
-            SenderId = entity.SenderId,
-            ReceiverId = entity.RecipientId,
-            Content = entity.MessageContent,
-            Read = entity.IsRead,
-            CreatedAt = entity.SentAt
+            Id = saved.Id,
+            SenderId = saved.SenderId,
+            ReceiverId = saved.RecipientId,
+            Content = saved.MessageContent,
+            Read = saved.IsRead,
+            CreatedAt = saved.SentAt,
+            Sender = BuildUserBrief(saved.Sender),
+            Receiver = BuildUserBrief(saved.Recipient)
         };
     }
 
@@ -156,6 +176,25 @@ public class MessageService : BaseService<ChatMessage>, IMessageService
         await _unitOfWork.SaveChangesAsync();
 
         return messagesList.Count;
+    }
+
+    private static UserBriefDTO? BuildUserBrief(User? user)
+    {
+        if (user is null) return null;
+
+        var name = user.Worker?.FullName
+                   ?? user.Farmer?.ContactName
+                   ?? user.Email;
+
+        var avatar = user.Worker?.AvatarUrl
+                     ?? user.Farmer?.AvatarUrl;
+
+        return new UserBriefDTO
+        {
+            Id = user.Id,
+            Name = name,
+            AvatarUrl = avatar
+        };
     }
 }
 
