@@ -26,4 +26,10 @@ public class UpdateWorkerProfileRequest
     
     [Required]
     public string AvatarUrl { get; set; }
+
+    public List<Guid>? SkillIds { get; set; }
+
+    [Required]
+    [Range(1, 2)]
+    public int GenderId { get; set; }
 }

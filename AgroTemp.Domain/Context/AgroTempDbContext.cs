@@ -144,7 +144,7 @@ public class AgroTempDbContext : DbContext
 
         // Configure JobPost-JobApplication one-to-many relationship
         modelBuilder.Entity<JobPost>()
-            .HasMany<JobApplication>()
+            .HasMany(jp => jp.JobApplications)
             .WithOne(ja => ja.JobPost)
             .HasForeignKey(ja => ja.JobPostId)
             .OnDelete(DeleteBehavior.Cascade);

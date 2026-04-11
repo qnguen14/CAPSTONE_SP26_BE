@@ -10,6 +10,12 @@ public enum ExperienceLevel
     Experienced = 3
 }
 
+public enum Gender
+{
+    Male = 1,
+    Female = 2
+}
+
 [Table("Worker")]
 public class Worker
 {
@@ -32,10 +38,6 @@ public class Worker
     [Required]
     [Column("date_of_birth")]
     public DateOnly DateOfBirth { get; set; }
-
-    [Required]
-    [Column("address")]
-    public string Address { get; set; }
 
     [Required]
     [Column("primary_location")]
@@ -81,4 +83,15 @@ public class Worker
     [Required]
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; }
+
+    [Required]
+    [Column("gender")]
+    public int GenderId { get; set; }
+    
+    [NotMapped]
+    public Gender Gender 
+    { 
+        get => (Gender)GenderId;
+        set => GenderId = (int)value;
+    }
 }

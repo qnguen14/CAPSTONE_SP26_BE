@@ -20,7 +20,24 @@ namespace AgroTemp.Domain.Mapper;
 public partial class MapperlyMapper : IMapperlyMapper
 {
     [MapProperty(nameof(User.Role), nameof(UserDTO.Role))]
-    public partial UserDTO UserToUserDto(User user);
+    public partial UserDTO UserToUserDtoManual(User user);
+
+    public UserDTO UserToUserDto(User user)
+    {
+        if (user == null) return null;
+        var dto = UserToUserDtoManual(user);
+        
+        if (user.Farmer != null)
+        {
+            dto.Address = user.Farmer.Address;
+        }
+        else if (user.Worker != null)
+        {
+            dto.Address = user.Worker.PrimaryLocation;
+        }
+        
+        return dto;
+    }
 
     public partial List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
 
@@ -68,6 +85,12 @@ public partial class MapperlyMapper : IMapperlyMapper
             UpdatedAt = worker.UpdatedAt,
             Email = worker.User?.Email ?? string.Empty,
             PhoneNumber = worker.User?.PhoneNumber ?? string.Empty,
+            Skills = worker.WorkerSkills?
+                .Where(ws => ws.Skill != null)
+                .Select(ws => SkillToSkillResponse(ws.Skill))
+                .ToList() ?? new List<SkillResponse>(),
+            GenderId = worker.GenderId,
+            Gender = MapGender((Gender)worker.GenderId)
         };
     }
 
@@ -77,6 +100,8 @@ public partial class MapperlyMapper : IMapperlyMapper
 
     // Custom mapping for ExperienceLevel enum to string
     private string MapExperienceLevel(ExperienceLevel level) => level.ToString();
+
+    private string MapGender(Gender gender) => gender.ToString();
 
     private string MapUserRole(UserRole role) => role.ToString();
 
@@ -192,7 +217,7 @@ public partial class MapperlyMapper : IMapperlyMapper
             RespondedAt = jobApplication.RespondedAt,
             ResponseMessage = jobApplication.ResponseMessage,
             WorkDates = jobApplication.WorkDates,
-            LocationName = jobApplication.JobPost?.Farm?.LocationName
+            LocationName = jobApplication.JobPost?.Farm?.LocationName,
         };
         return dto;
     }

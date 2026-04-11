@@ -2,13 +2,16 @@ using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Job.JobDetail;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
+using AgroTemp.Domain.Metadata;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -38,7 +41,7 @@ namespace AgroTemp.Service.Implements
                 var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
                     .GetListAsync(
                         predicate: null,
-                        include: null,
+                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User),
                         orderBy: jd => jd.OrderBy(x => x.CreatedAt));
                 if (jobDetails == null || !jobDetails.Any())
                 {
@@ -61,7 +64,7 @@ namespace AgroTemp.Service.Implements
                 var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
                     .FirstOrDefaultAsync(
                         predicate: jd => jd.Id == guid,
-                        include: null);
+                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User));
                 if (jobDetail == null)
                 {
                     return null;
@@ -156,9 +159,25 @@ namespace AgroTemp.Service.Implements
                     return null;
                 }
 
+                var oldStatusId = existingJobDetail.StatusId;
+
                 if (Enum.TryParse(status, out JobStatus jobStatus))
                 {
                     existingJobDetail.StatusId = (int)jobStatus;
+
+                    if (oldStatusId != (int)JobStatus.Completed &&
+                        existingJobDetail.StatusId == (int)JobStatus.Completed)
+                    {
+                        var worker = await _unitOfWork.GetRepository<Worker>()
+                            .FirstOrDefaultAsync(predicate: w => w.Id == existingJobDetail.WorkerId);
+                        
+                        if (worker != null)
+                        {
+                            worker.TotalJobsCompleted += 1;
+                            worker.UpdatedAt = DateTime.UtcNow;
+                            _unitOfWork.GetRepository<Worker>().UpdateAsync(worker);
+                        }
+                    }
                 }
                 else
                 {
@@ -178,13 +197,10 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        /////////////////////////////////////////////////////
-        public async Task<JobDetailResponseDTO> ReportDailyWork(CreateDailyReportRequest request)
+        public async Task<JobDetailResponseDTO> ReportDailyWork(Guid id, CreateDailyReportRequest request)
         {
             try
             {
-                var id = request.JobApplicationId;
-                // Check if application exists and is accepted
                 var application = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(ja => ja.Id.ToString() == id.ToString(),null,null);
                 if (application == null || application.Status != ApplicationStatus.Accepted)
@@ -192,21 +208,19 @@ namespace AgroTemp.Service.Implements
                     throw new Exception("Job application not found or not accepted");
                 }
 
-                // Check if already reported today
                 var today = DateTime.UtcNow.Date;
                 var existingReport = await _unitOfWork.GetRepository<JobDetail>()
-                    .FirstOrDefaultAsync(jd => jd.JobApplicationId == request.JobApplicationId && jd.WorkDate == today,null,null);
+                    .FirstOrDefaultAsync(jd => jd.JobApplicationId == id && jd.WorkDate == today,null,null);
                 if (existingReport != null)
                 {
                     throw new Exception("Already reported for today");
                 }
                 var jobPost = await _unitOfWork.GetRepository<JobPost>().FirstOrDefaultAsync(jp => jp.Id == application.JobPostId, null, null);
 
-                // Create new JobDetail
                 var jobDetail = new JobDetail
                 {
                     Id = Guid.NewGuid(),
-                    JobApplicationId = request.JobApplicationId,
+                    JobApplicationId = id,
                     JobPostId = application.JobPostId,
                     WorkerId = application.WorkerId,
                     StatusId = (int)JobStatus.Reported,
@@ -256,21 +270,34 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobDetailResponseDTO>> GetJobDetailsByWorkerId(Guid workerId)
+        public async Task<PaginatedResponse<JobDetailResponseDTO>> GetJobDetailsByWorkerId(Guid workerId, int page = 1, int limit = 10)
         {
             try
             {
-                var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
-                    .GetListAsync(
-                        predicate: jd => jd.WorkerId == workerId,
-                        include: null,
-                        orderBy: jd => jd.OrderByDescending(x => x.CreatedAt));
-                if (jobDetails == null || !jobDetails.Any())
+                var skip = (page - 1) * limit;
+                var predicate = (System.Linq.Expressions.Expression<Func<JobDetail, bool>>)(jd => jd.WorkerId == workerId);
+
+                var total = await _unitOfWork.GetRepository<JobDetail>().CountAsync(predicate);
+
+                var query = _unitOfWork.GetRepository<JobDetail>().CreateBaseQuery(
+                    predicate: predicate,
+                    orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                    include: q => q.Include(x => x.Worker).ThenInclude(w => w.User));
+
+                var items = await query.Skip(skip).Take(limit).ToListAsync();
+                var data = _mapper.JobDetailsToJobDetailResponseDtos(items);
+
+                return new PaginatedResponse<JobDetailResponseDTO>
                 {
-                    return new List<JobDetailResponseDTO>();
-                }
-                var result = _mapper.JobDetailsToJobDetailResponseDtos(jobDetails);
-                return result;
+                    Data = data,
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit)
+                    }
+                };
             }
             catch (Exception ex)
             {
@@ -278,21 +305,34 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobDetailResponseDTO>> GetJobDetailsByJobPostId(Guid jobPostId)
+        public async Task<PaginatedResponse<JobDetailResponseDTO>> GetJobDetailsByJobPostId(Guid jobPostId, int page = 1, int limit = 10)
         {
             try
             {
-                var jobDetails = await _unitOfWork.GetRepository<JobDetail>()
-                    .GetListAsync(
-                        predicate: jd => jd.JobPostId == jobPostId,
-                        include: null,
-                        orderBy: jd => jd.OrderByDescending(x => x.CreatedAt));
-                if (jobDetails == null || !jobDetails.Any())
+                var skip = (page - 1) * limit;
+                var predicate = (System.Linq.Expressions.Expression<Func<JobDetail, bool>>)(jd => jd.JobPostId == jobPostId);
+
+                var total = await _unitOfWork.GetRepository<JobDetail>().CountAsync(predicate);
+
+                var query = _unitOfWork.GetRepository<JobDetail>().CreateBaseQuery(
+                    predicate: predicate,
+                    orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                    include: q => q.Include(x => x.Worker).ThenInclude(w => w.User));
+
+                var items = await query.Skip(skip).Take(limit).ToListAsync();
+                var data = _mapper.JobDetailsToJobDetailResponseDtos(items);
+
+                return new PaginatedResponse<JobDetailResponseDTO>
                 {
-                    return new List<JobDetailResponseDTO>();
-                }
-                var result = _mapper.JobDetailsToJobDetailResponseDtos(jobDetails);
-                return result;
+                    Data = data,
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit)
+                    }
+                };
             }
             catch (Exception ex)
             {
@@ -321,9 +361,17 @@ namespace AgroTemp.Service.Implements
                     throw new Exception("Job detail is not in reported status");
                 }
 
-                // Calculate payments
                 var workerPayment = jobDetail.JobPrice * request.FarmerApprovedPercent / 100;
                 var refund = jobDetail.JobPrice - workerPayment;
+
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.Id == jobDetail.WorkerId);
+
+                if(worker != null)
+                {
+                    worker.TotalJobsCompleted += 1;
+                    _unitOfWork.GetRepository<Worker>().UpdateAsync(worker);
+                }
 
                 jobDetail.FarmerApprovedPercent = request.FarmerApprovedPercent;
                 jobDetail.FarmerFeedback = request.FarmerFeedback;
@@ -347,26 +395,26 @@ namespace AgroTemp.Service.Implements
             }
         }
    
-         public async Task<JobDetailResponseDTO> GetById(string id)
-        {
-            try
-            {
-                var guid = Guid.Parse(id);
-                var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
-                    .FirstOrDefaultAsync(
-                        predicate: jd => jd.Id == guid,
-                        include: null);
-                if (jobDetail == null)
-                {
-                    return null;
-                }
-                var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-        }
+        //  public async Task<JobDetailResponseDTO> GetById(string id)
+        // {
+        //     try
+        //     {
+        //         var guid = Guid.Parse(id);
+        //         var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
+        //             .FirstOrDefaultAsync(
+        //                 predicate: jd => jd.Id == guid,
+        //                 include: null);
+        //         if (jobDetail == null)
+        //         {
+        //             return null;
+        //         }
+        //         var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
+        //         return result;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         throw new Exception(ex.Message);
+        //     }
+        // }
     }
 }

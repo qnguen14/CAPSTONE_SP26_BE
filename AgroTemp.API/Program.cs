@@ -80,7 +80,7 @@ if (app.Environment.IsDevelopment())
 }
 
 
-// Protect /swagger with Basic Auth (username/password from env vars)
+// Protect /swagger with Basic Auth (username/password from env vars) 
 app.UseMiddleware<SwaggerBasicAuthMiddleware>();
 
 app.UseSwagger();
@@ -100,7 +100,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAll"); // Enable CORS
+app.UseCors("CorsPolicy"); // Enable CORS
 
 app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();
