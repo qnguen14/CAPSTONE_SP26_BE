@@ -126,5 +126,33 @@ public class MessagesController : ControllerBase
             });
         }
     }
+
+    [HttpGet(ApiEndpointConstants.Messages.GetRecentConversationsEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<List<ConversationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ApiResponse<List<ConversationDTO>>>> GetRecentConversations()
+    {
+        try
+        {
+            var conversations = await _messageService.GetRecentConversationsAsync();
+
+            return Ok(new ApiResponse<List<ConversationDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Conversations retrieved successfully",
+                Data = conversations
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving conversations");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
 }
 

@@ -166,6 +166,7 @@ public class ApiEndpointConstants
 
         public const string GetMessagesEndpoint = MessagesEndpoint;
         public const string SendMessageEndpoint = MessagesEndpoint;
+        public const string GetRecentConversationsEndpoint = MessagesEndpoint + "/conversations";
 
         // Optional read-receipt endpoint (used later)
         public const string MarkConversationAsReadEndpoint = MessagesEndpoint + "/read";

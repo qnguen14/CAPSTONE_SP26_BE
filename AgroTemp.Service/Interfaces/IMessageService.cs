@@ -11,5 +11,8 @@ public interface IMessageService
 
     // Mark all unread messages sent from `senderId` to the current user as read.
     Task<int> MarkConversationAsReadAsync(Guid senderId);
+
+    Task<List<ConversationDTO>> GetRecentConversationsAsync();
+
 }
 

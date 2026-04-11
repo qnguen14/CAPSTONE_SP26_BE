@@ -178,6 +178,62 @@ public class MessageService : BaseService<ChatMessage>, IMessageService
         return messagesList.Count;
     }
 
+    public async Task<List<ConversationDTO>> GetRecentConversationsAsync()
+    {
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId == Guid.Empty)
+        {
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
+
+        Expression<Func<ChatMessage, bool>> predicate =
+            m => m.SenderId == currentUserId || m.RecipientId == currentUserId;
+
+        var messages = await _unitOfWork.GetRepository<ChatMessage>().CreateBaseQuery(
+            predicate: predicate,
+            orderBy: q => q.OrderByDescending(m => m.SentAt),
+            include: q => q
+                .Include(m => m.Sender).ThenInclude(u => u.Worker)
+                .Include(m => m.Sender).ThenInclude(u => u.Farmer)
+                .Include(m => m.Recipient).ThenInclude(u => u.Worker)
+                .Include(m => m.Recipient).ThenInclude(u => u.Farmer),
+            asNoTracking: true)
+            .ToListAsync();
+
+        var grouped = messages
+            .GroupBy(m => m.SenderId == currentUserId ? m.RecipientId : m.SenderId);
+
+        var conversations = new List<ConversationDTO>();
+
+        foreach (var group in grouped)
+        {
+            var latest = group.First(); 
+            var otherUser = latest.SenderId == currentUserId ? latest.Recipient : latest.Sender;
+
+            var unreadCount = group.Count(m =>
+                m.SenderId != currentUserId && !m.IsRead);
+
+            conversations.Add(new ConversationDTO
+            {
+                Contact = BuildUserBrief(otherUser)!,
+                LastMessage = new MessageDTO
+                {
+                    Id = latest.Id,
+                    SenderId = latest.SenderId,
+                    ReceiverId = latest.RecipientId,
+                    Content = latest.MessageContent,
+                    Read = latest.IsRead,
+                    CreatedAt = latest.SentAt,
+                    Sender = BuildUserBrief(latest.Sender),
+                    Receiver = BuildUserBrief(latest.Recipient)
+                },
+                UnreadCount = unreadCount
+            });
+        }
+
+        return conversations.OrderByDescending(c => c.LastMessage.CreatedAt).ToList();
+    }
+
     private static UserBriefDTO? BuildUserBrief(User? user)
     {
         if (user is null) return null;
