@@ -9,7 +9,8 @@ namespace AgroTemp.Domain.Metadata
     public enum FarmType
     {
         Livestock = 1,  
-        Crop = 2        
+        Crop = 2,
+        Aquaculture = 3,
     }
 
     public enum WalletTransactionType

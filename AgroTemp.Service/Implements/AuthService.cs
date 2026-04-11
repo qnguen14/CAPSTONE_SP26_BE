@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using AgroTemp.Service.Templates;
 using Google.Apis.Auth;
 
 namespace AgroTemp.Service.Interfaces;
@@ -21,6 +22,7 @@ public class AuthService : BaseService<User>, IAuthService
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly ILogger<AuthService> _logger;
+    private readonly IWalletService _walletService;
 
     public AuthService(
         IUnitOfWork<AgroTempDbContext> unitOfWork, 
@@ -28,11 +30,13 @@ public class AuthService : BaseService<User>, IAuthService
         IMapperlyMapper mapper,
         IConfiguration configuration,
         IEmailService emailService,
-        ILogger<AuthService> logger) : base(unitOfWork, httpContextAccessor, mapper)
+        ILogger<AuthService> logger,
+        IWalletService walletService) : base(unitOfWork, httpContextAccessor, mapper)
     {
         _configuration = configuration;
         _emailService = emailService;
         _logger = logger;
+        _walletService = walletService;
     }
 
     public async Task<LoginResponse> Login(LoginRequest request)
@@ -71,6 +75,11 @@ public class AuthService : BaseService<User>, IAuthService
             throw new UnauthorizedAccessException("Invalid email/phone or password");
         }
 
+        if (!user.IsVerified)
+        {
+            throw new InvalidOperationException("EMAIL_NOT_VERIFIED");
+        }
+
         // Generate JWT token
         var token = await GenerateJwtToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
@@ -80,11 +89,13 @@ public class AuthService : BaseService<User>, IAuthService
             Token = token,
             ExpiresAt = expiresAt,
             Email = user.Email,
-            Role = user.Role.ToString()
+            UserId = user.Id,
+            Role = user.Role.ToString(),
+            IsVerified = user.IsVerified
         };
     }
 
-    public async Task<LoginResponse> Register(RegisterRequest request)
+    public async Task Register(RegisterRequest request)
     {
         // Check if user already exists
         var existingUsers = await _unitOfWork.GetRepository<User>()
@@ -108,36 +119,134 @@ public class AuthService : BaseService<User>, IAuthService
             throw new InvalidOperationException("User with this phone number already exists");
         }
 
-        // Create new user
+        // Generate a 6-digit OTP for email verification
+        var otp = new Random().Next(100000, 999999).ToString();
+
+        // Create new user — NOT verified yet
         var user = new User
         {
             Id = Guid.NewGuid(),
             Email = request.Email,
             PhoneNumber = request.PhoneNumber,
-            Address = request.Address,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             RoleId = request.RoleId,
             Role = (UserRole)request.RoleId,
             CreatedAt = DateTime.UtcNow,
             IsActive = true,
-            IsVerified = true,
+            IsVerified = false,
+            VerificationToken = otp,
+            VerificationTokenExpiresAt = DateTime.UtcNow.AddMinutes(15),
         };
-            
 
         await _unitOfWork.GetRepository<User>().InsertAsync(user);
+        await _walletService.GetOrCreateWalletAsync(user.Id);
         await _unitOfWork.SaveChangesAsync();
 
-        // Generate JWT token
-        var token = await GenerateJwtToken(user);
-        var expiresAt = DateTime.UtcNow.AddHours(24);
+        // Send verification OTP email
+        try
+        {
+            await _emailService.SendEmailAsync(user.Email, "Xác minh email của bạn",
+                $"""
+                <p style="margin:0 0 8px;font-size:15px;color:#374151;">Cảm ơn bạn đã đăng ký <strong>AgroTemp</strong>!</p>
+                <p style="margin:0 0 4px;font-size:15px;color:#374151;">Vui lòng dùng mã bên dưới để xác minh địa chỉ email của bạn.</p>
+                """ + EmailTemplateBuilder.BuildOtpBlock(otp) + """
+                <p style="margin:16px 0 0;font-size:13px;color:#6B7280;">Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email này.</p>
+                """);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send verification email to {Email}", user.Email);
+            // Don't throw — account is created, user can request resend
+        }
+    }
 
+    public async Task<LoginResponse> VerifyEmail(VerifyEmailRequest request)
+    {
+        var users = await _unitOfWork.GetRepository<User>()
+            .GetListAsync(predicate: u => u.Email == request.Email && u.IsActive);
+        var user = users.FirstOrDefault();
+
+        if (user == null)
+        {
+            throw new InvalidOperationException("User not found.");
+        }
+
+        if (user.IsVerified)
+        {
+            throw new InvalidOperationException("Email is already verified.");
+        }
+
+        if (user.VerificationToken != request.Otp)
+        {
+            throw new InvalidOperationException("Invalid verification code.");
+        }
+
+        if (user.VerificationTokenExpiresAt < DateTime.UtcNow)
+        {
+            throw new InvalidOperationException("Verification code has expired. Please request a new one.");
+        }
+
+        // Mark as verified and clear the token
+        user.IsVerified = true;
+        user.VerificationToken = null;
+        user.VerificationTokenExpiresAt = null;
+
+        _unitOfWork.GetRepository<User>().UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Return a JWT so the user is logged in immediately after verifying
+        var token = await GenerateJwtToken(user);
         return new LoginResponse
         {
             Token = token,
-            ExpiresAt = expiresAt,
+            ExpiresAt = DateTime.UtcNow.AddHours(24),
             Email = user.Email,
-            Role = user.Role.ToString()
+            Role = user.Role.ToString(),
+            IsVerified = user.IsVerified
         };
+    }
+
+    public async Task ResendVerificationEmail(string email)
+    {
+        var users = await _unitOfWork.GetRepository<User>()
+            .GetListAsync(predicate: u => u.Email == email && u.IsActive);
+        var user = users.FirstOrDefault();
+
+        if (user == null)
+        {
+            // Don't reveal whether the email exists
+            _logger.LogWarning("Resend verification requested for non-existent email: {Email}", email);
+            return;
+        }
+
+        if (user.IsVerified)
+        {
+            throw new InvalidOperationException("Email is already verified.");
+        }
+
+        // Generate a new OTP
+        var otp = new Random().Next(100000, 999999).ToString();
+        user.VerificationToken = otp;
+        user.VerificationTokenExpiresAt = DateTime.UtcNow.AddMinutes(15);
+
+        _unitOfWork.GetRepository<User>().UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        try
+        {
+            await _emailService.SendEmailAsync(user.Email, "Gửi lại mã xác minh email",
+                """
+                <p style="margin:0 0 8px;font-size:15px;color:#374151;">Bạn đã yêu cầu gửi lại mã xác minh.</p>
+                <p style="margin:0;font-size:15px;color:#374151;">Đây là mã xác minh mới của bạn:</p>
+                """ + EmailTemplateBuilder.BuildOtpBlock(otp) + """
+                <p style="margin:16px 0 0;font-size:13px;color:#6B7280;">Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
+                """);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resend verification email to {Email}", email);
+            throw;
+        }
     }
 
     public async Task<LoginResponse> GoogleLogin(GoogleLoginRequest request)
@@ -178,7 +287,6 @@ public class AuthService : BaseService<User>, IAuthService
                     Id = newUserId,
                     Email = payload.Email,
                     PhoneNumber = uniquePhone,   // Unique per user — update later via profile
-                    Address = "Not specified",   // Placeholder — user can update later
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
                     RoleId = request.RoleId ?? 2, // Default to Farmer role if not specified
                     Role = (UserRole)(request.RoleId ?? 2),
@@ -188,6 +296,7 @@ public class AuthService : BaseService<User>, IAuthService
                 };
 
                 await _unitOfWork.GetRepository<User>().InsertAsync(user);
+                await _walletService.GetOrCreateWalletAsync(user.Id);
                 await _unitOfWork.SaveChangesAsync();
             }
             else if (!user.IsActive)
@@ -204,7 +313,9 @@ public class AuthService : BaseService<User>, IAuthService
                 Token = token,
                 ExpiresAt = expiresAt,
                 Email = user.Email,
-                Role = user.Role.ToString()
+                Role = user.Role.ToString(),
+                UserId = user.Id,
+                IsVerified = user.IsVerified
             };
         }
         catch (InvalidJwtException)

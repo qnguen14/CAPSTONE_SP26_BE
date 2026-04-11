@@ -15,6 +15,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
+using AspNetCore.Swagger.Themes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,16 +63,30 @@ builder.Services.Configure<FormOptions>(options =>
     options.MultipartHeadersLengthLimit = int.MaxValue;
 });
 
+FirebaseApp.Create(new AppOptions()
+{
+    Credential = GoogleCredential.FromFile(Path.Combine(Directory.GetCurrentDirectory(), "agrotemp-push-firebase.json")),
+});
+
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    await AdminSeedConfiguration.EnsureAdminSeedAsync(app.Services, app.Configuration);
+}
+
+
+// Protect /swagger with Basic Auth (username/password from env vars) 
+app.UseMiddleware<SwaggerBasicAuthMiddleware>();
 
 app.UseSwagger();
-app.UseSwaggerUI(c =>
+app.UseSwaggerUI(ModernStyle.Dark , c =>
 {
+    c.EnableAllAdvancedOptions();
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
     c.RoutePrefix = "swagger"; // Swagger at /swagger
 });
@@ -83,11 +100,12 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAll"); // Enable CORS
+app.UseCors("CorsPolicy"); // Enable CORS
 
 app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();
 app.UseMiddleware<TokenBlacklistMiddleware>();
+app.UseMiddleware<EmailVerificationMiddleware>();
 
 app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization();
 app.MapControllers();

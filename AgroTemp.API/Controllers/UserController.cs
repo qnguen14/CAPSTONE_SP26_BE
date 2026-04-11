@@ -1,4 +1,4 @@
-﻿using AgroTemp.API.Constants;
+using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Metadata;

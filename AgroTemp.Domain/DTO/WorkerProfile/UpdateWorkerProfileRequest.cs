@@ -10,7 +10,7 @@ public class UpdateWorkerProfileRequest
     
     [Required]
     [StringLength(50)]
-    public string AgeRange { get; set; }
+    public string DateOfBirth { get; set; }
     
     [Required]
     public string PrimaryLocation { get; set; }
@@ -26,4 +26,10 @@ public class UpdateWorkerProfileRequest
     
     [Required]
     public string AvatarUrl { get; set; }
+
+    public List<Guid>? SkillIds { get; set; }
+
+    [Required]
+    [Range(1, 2)]
+    public int GenderId { get; set; }
 }

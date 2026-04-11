@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
@@ -29,10 +29,6 @@ public class User
     public string PhoneNumber { get; set; }
 
     [Required]
-    [Column("address")]
-    public string Address { get; set; }
-
-    [Required]
     [Column("password_hash")]
     public string PasswordHash { get; set; }
 
@@ -58,6 +54,12 @@ public class User
     [Required]
     [Column("is_verified")]
     public bool IsVerified { get; set; }
+
+    [Column("warning_count")]
+    public int WarningCount { get; set; } = 0;
+
+    [Column("last_warned_at")]
+    public DateTime? LastWarnedAt { get; set; }
 
     [Column("verification_token")]
     public string? VerificationToken { get; set; }

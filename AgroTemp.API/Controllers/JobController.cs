@@ -1,4 +1,4 @@
-﻿using AgroTemp.API.Constants;
+using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobCategory;
 using AgroTemp.Domain.DTO.Job.JobDetail;
@@ -7,6 +7,7 @@ using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AgroTemp.API.Controllers;
 
@@ -104,6 +105,7 @@ public class JobController : ControllerBase
             });
         }
     }
+
 
     [HttpPost(ApiEndpointConstants.Job.CreateJobCategoryEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<JobCategoryDTO>), StatusCodes.Status200OK)]
@@ -275,6 +277,77 @@ public class JobController : ControllerBase
         }
     }
 
+    [HttpGet(ApiEndpointConstants.Job.GetJobPostsByFarmerEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetJobPostsByFarmer()
+    {
+        try
+        {
+            var response = await _jobPostService.GetJobPostsByFarmerId();
+            var apiResponse = new ApiResponse<IEnumerable<JobPostDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job posts by farmer retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving job posts by farmer");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving job posts by farmer",
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Job.GetFarmerJobHistoryEndpoint)]
+    [Authorize(Roles = "Farmer")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFarmerJobHistory()
+    {
+        try
+        {
+            var response = await _jobPostService.GetFarmerJobHistory();
+            var apiResponse = new ApiResponse<IEnumerable<JobPostDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Farmer job history retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to farmer job history");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving farmer job history");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving farmer job history",
+                Data = null
+            });
+        }
+    }
+
     [HttpPost(ApiEndpointConstants.Job.CreateJobPostEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -315,6 +388,17 @@ public class JobController : ControllerBase
         }
         catch (Exception ex)
         {
+            // Check for insufficient wallet balance error
+            if (ex.Message != null && ex.Message.Contains("Insufficient wallet balance to create job post"))
+            {
+                _logger.LogWarning(ex, "Insufficient wallet balance for job post");
+                return BadRequest(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Message = ex.Message,
+                    Data = null
+                });
+            }
             _logger.LogError(ex, "Error creating job post");
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
             {
@@ -393,12 +477,74 @@ public class JobController : ControllerBase
         }
     }
 
+    [HttpPost(ApiEndpointConstants.Job.CancelJobPostEndpoint)]
+    [Authorize(Roles = "Farmer")]
+    [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobPostDTO>> CancelJobPost([FromRoute] Guid id)
+    {
+        try
+        {
+            var response = await _jobPostService.CancelJobPost(id);
+
+            var apiResponse = new ApiResponse<JobPostDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job post cancelled successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job post: Not found");
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job post: Unauthorized");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job post: Invalid state");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling job post");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while cancelling the job post",
+                Data = null
+            });
+        }
+    }
+
     [HttpPut(ApiEndpointConstants.Job.UpdateJobPostStatusEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobPostDTO>> UpdateJobPostStatus([FromRoute] string id, [FromQuery] string status)
+    public async Task<ActionResult<JobPostDTO>> UpdateJobPostStatus([FromRoute] string id, JobPostStatus status)
     {
         try
         {
@@ -476,11 +622,41 @@ public class JobController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFilteredJobPosts([FromQuery] string? title, [FromQuery] string? category, [FromQuery] string? address, [FromQuery] string? skill)
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFilteredJobPosts([FromQuery] string? title, [FromQuery] string? category, [FromQuery] string? address, [FromQuery] List<string>? skill, [FromQuery] bool? sortByDatesDescending)
     {
         try
         {
-            var response = await _jobPostService.GetFilteredJobPosts(title, category, address, skill);
+            var response = await _jobPostService.GetFilteredJobPosts(title, category, address, skill, sortByDatesDescending ?? true);
+            var apiResponse = new ApiResponse<IEnumerable<JobPostDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Filtered job posts retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving filtered job posts");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving filtered job posts",
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Job.GetFilteredJobPostsByFarmerEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFilteredJobPostsByFarmer([FromQuery] string? title, [FromQuery] string? category, [FromQuery] string? address, [FromQuery] List<string>? skill, [FromQuery] bool? sortByDatesDescending)
+    {
+        try
+        {
+            var response = await _jobPostService.GetFilteredJobPostsByFarmer(title, category, address, skill, sortByDatesDescending ?? true);
             var apiResponse = new ApiResponse<IEnumerable<JobPostDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
@@ -619,6 +795,112 @@ public class JobController : ControllerBase
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = "An error occurred while retrieving job applications",
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Job.GetJobApplicationsByWorkerEndpoint)]
+    [Authorize(Roles = "Worker")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobApplicationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobApplicationDTO>>> GetJobApplicationsByWorker()
+    {
+        try
+        {
+            var response = await _jobApplicationService.GetJobApplicationsByWorker();
+            var apiResponse = new ApiResponse<IEnumerable<JobApplicationDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job applications by worker retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving job applications by worker");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving job applications by worker",
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Job.GetJobApplicationsByJobPostEndpoint)]
+    [Authorize(Roles = "Farmer")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<JobApplicationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PaginatedResponse<JobApplicationDTO>>> GetJobApplicationsByJobPostId([FromRoute] Guid jobPostId, [FromQuery] bool? includeAll, [FromQuery] int? statusId,
+                                                                                                       [FromQuery] int page = 1, [FromQuery] int limit = 10)
+    {
+        try
+        {
+            var farmerProfileIdClaim = User.FindFirst("FarmerProfileId")?.Value;
+
+            if (string.IsNullOrEmpty(farmerProfileIdClaim) || !Guid.TryParse(farmerProfileIdClaim, out var farmerProfileId))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status403Forbidden,
+                    Message = "Farmer profile not found",
+                    Data = null
+                });
+            }
+
+            var response = await _jobApplicationService.GetJobApplicationsByJobPostId(jobPostId, farmerProfileId, statusId, includeAll ?? false, page, limit);
+
+            return Ok(new ApiResponse<PaginatedResponse<JobApplicationDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job applications retrieved successfully",
+                Data = response
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving job applications by job post id");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Job.GetJobApplicationsByFarmer)]
+    [Authorize(Roles = "Farmer")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<JobApplicationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PaginatedResponse<JobApplicationDTO>>> GetJobApplicationsByFarmer([FromQuery] int statusId, [FromQuery] bool includeAll = true, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    {
+        try
+        {
+            var response = await _jobApplicationService.GetJobApplicationsByFarmer(statusId, includeAll, pageNumber, pageSize);
+            var apiResponse = new ApiResponse<PaginatedResponse<JobApplicationDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job applications by farmer retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving job applications by farmer");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving job applications by farmer",
                 Data = null
             });
         }
@@ -791,215 +1073,77 @@ public class JobController : ControllerBase
         }
     }
 
-    // Job Detail Endpoints
-
-    [HttpGet(ApiEndpointConstants.Job.GetAllJobDetailsEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobDetailDTO>>), StatusCodes.Status200OK)]
+    [HttpPut(ApiEndpointConstants.Job.AutoAcceptUrgentJobApplicationsEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobApplicationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<JobDetailDTO>>> GetAllJobDetails()
+    public async Task<ActionResult<IEnumerable<JobApplicationDTO>>> AutoAcceptUrgentJobApplications([FromBody] List<Guid> jobApplicationIds)
     {
         try
         {
-            var response = await _jobDetailService.GetAllJobDetails();
-
-            var apiResponse = new ApiResponse<IEnumerable<JobDetailDTO>>
+            var response = await _jobApplicationService.AutoAcceptUrgentJobApplicationsAsync(jobApplicationIds);
+            return Ok(new ApiResponse<IEnumerable<JobApplicationDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
-                Message = "Job details retrieved successfully",
+                Message = $"{response.Count} pending application(s) have been automatically accepted.",
                 Data = response
-            };
-            return Ok(apiResponse);
+            });
         }
-        catch (Exception ex)
+        catch (ArgumentException ex)
         {
-            _logger.LogError(ex, "Error retrieving job details");
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            _logger.LogWarning(ex, "Invalid argument for auto-accept urgent job applications");
+            return BadRequest(new ApiResponse<object>
             {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = "An error occurred while retrieving job details",
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
                 Data = null
             });
         }
-    }
-
-    [HttpGet(ApiEndpointConstants.Job.GetJobDetailByIdEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<JobDetailDTO>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobDetailDTO>> GetJobDetailById([FromRoute] string id)
-    {
-        try
+        catch (KeyNotFoundException ex)
         {
-            var response = await _jobDetailService.GetJobDetailById(id);
-            if (response == null)
+            _logger.LogWarning(ex, "Resource not found during auto-accept urgent job applications");
+            return NotFound(new ApiResponse<object>
             {
-                return NotFound(new ApiResponse<object>
-                {
-                    StatusCode = StatusCodes.Status404NotFound,
-                    Message = "Job detail not found",
-                    Data = null
-                });
-            }
-            var apiResponse = new ApiResponse<JobDetailDTO>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Job detail retrieved successfully",
-                Data = response
-            };
-            return Ok(apiResponse);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving job detail");
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = "An error occurred while retrieving job detail",
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
                 Data = null
             });
         }
-    }
-
-    [HttpPost(ApiEndpointConstants.Job.CreateJobDetailEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<JobDetailDTO>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobDetailDTO>> CreateJobDetail([FromBody] CreateJobDetailRequest request)
-    {
-        try
+        catch (UnauthorizedAccessException ex)
         {
-            var response = await _jobDetailService.CreateJobDetail(request);
-            var apiResponse = new ApiResponse<JobDetailDTO>
+            _logger.LogWarning(ex, "Unauthorized auto-accept attempt");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
             {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Job detail created successfully",
-                Data = response
-            };
-            return Ok(apiResponse);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating job detail");
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = "An error occurred while creating job detail",
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
                 Data = null
             });
         }
-    }
-
-    [HttpPut(ApiEndpointConstants.Job.UpdateJobDetailEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<JobDetailDTO>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobDetailDTO>> UpdateJobDetail([FromRoute] Guid id, [FromBody] UpdateJobDetailRequest request)
-    {
-        try
+        catch (InvalidOperationException ex)
         {
-            var response = await _jobDetailService.UpdateJobDetail(id, request);
-            var apiResponse = new ApiResponse<JobDetailDTO>
+            _logger.LogWarning(ex, "Invalid auto-accept operation");
+            return BadRequest(new ApiResponse<object>
             {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Job detail updated successfully",
-                Data = response
-            };
-            return Ok(apiResponse);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating job detail");
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = "An error occurred while updating job detail",
-                Data = null
-            });
-        }
-    }
-
-    [HttpDelete(ApiEndpointConstants.Job.DeleteJobDetailEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> DeleteJobDetail([FromRoute] string id)
-    {
-        try
-        {
-            var result = await _jobDetailService.DeleteJobDetail(id);
-            if (!result)
-            {
-                return NotFound(new ApiResponse<object>
-                {
-                    StatusCode = StatusCodes.Status404NotFound,
-                    Message = "Job detail not found",
-                    Data = null
-                });
-            }
-            return Ok(new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Job detail deleted successfully",
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
                 Data = null
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting job detail");
+            _logger.LogError(ex, "Error auto-accepting urgent job applications");
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
-                Message = "An error occurred while deleting the job detail",
+                Message = "An error occurred while auto-accepting job applications",
                 Data = null
             });
         }
     }
 
-    [HttpPut(ApiEndpointConstants.Job.UpdateJobDetailStatusEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<JobDetailDTO>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobDetailDTO>> UpdateJobDetailStatus([FromRoute] string id, [FromQuery] string status)
-    {
-        try
-        {
-            var response = await _jobDetailService.UpdateJobDetailStatus(id, status);
-            if (response == null)
-            {
-                return NotFound(new ApiResponse<object>
-                {
-                    StatusCode = StatusCodes.Status404NotFound,
-                    Message = "Job detail not found",
-                    Data = null
-                });
-            }
-            var apiResponse = new ApiResponse<JobDetailDTO>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Job detail status updated successfully",
-                Data = response
-            };
-            return Ok(apiResponse);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating job detail status");
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = "An error occurred while updating job detail status",
-                Data = null
-            });
-        }
-    }
-
+    
     // Job Discovery and Search Endpoints
 
     [HttpPost(ApiEndpointConstants.Job.SearchJobsEndpoint)]
@@ -1278,6 +1422,68 @@ public class JobController : ControllerBase
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = "An error occurred while retrieving urgent jobs",
+                Data = null
+            });
+        }
+    }
+
+    [HttpPut(ApiEndpointConstants.Job.CancelJobApplicationEndpoint)]
+    [Authorize(Roles = "Worker")]
+    [ProducesResponseType(typeof(ApiResponse<JobApplicationDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobApplicationDTO>> CancelJobApplication([FromRoute] Guid id)
+    {
+        try
+        {
+            var response = await _jobApplicationService.CancelJobApplication(id);
+            
+            return Ok(new ApiResponse<JobApplicationDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job application cancelled successfully",
+                Data = response
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application: Not found");
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application: Unauthorized");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application: Invalid state");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling job application");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while cancelling the job application",
                 Data = null
             });
         }

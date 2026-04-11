@@ -64,32 +64,76 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
 
     public async Task<DisputeReportDTO> CreateDisputeAsync(Guid currentUserId, CreateDisputeReportRequest request)
     {
-        var JobPost = await _unitOfWork.GetRepository<JobPost>()
+        var jobPost = await _unitOfWork.GetRepository<JobPost>()
             .FirstOrDefaultAsync(predicate: j => j.Id == request.JobPostId);
 
-        if(JobPost == null)
+        if(jobPost == null)
         {
             throw new KeyNotFoundException("Job post not found");
         }
 
-        var farmer = await _unitOfWork.GetRepository<Farmer>()
+        var reporter_farmer = await _unitOfWork.GetRepository<Farmer>()
             .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
 
-        var worker = await _unitOfWork.GetRepository<Worker>()
+        var reporter_worker = await _unitOfWork.GetRepository<Worker>()
             .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId);
         
-        var isJobOwnerFarmer = farmer != null && JobPost.FarmerId == farmer.Id;
+        var isJobOwnerFarmer = reporter_farmer != null && jobPost.FarmerId == reporter_farmer.Id;
         var isWorkerApplied = false;
 
-        if(worker != null)
+        if(reporter_worker != null)
         {
             isWorkerApplied = await _unitOfWork.GetRepository<JobApplication>()
-                .FirstOrDefaultAsync(predicate: ja => ja.JobPostId == request.JobPostId && ja.WorkerId == worker.Id) != null;
+                .FirstOrDefaultAsync(predicate: ja => ja.JobPostId == request.JobPostId && ja.WorkerId == reporter_worker.Id) != null;
         }
 
         if(!isJobOwnerFarmer && !isWorkerApplied)
         {
             throw new UnauthorizedAccessException("You are not allowed to create a dispute report for this job post");
+        }
+
+
+        Guid? accusedUserId = null;
+        Guid? accusedFarmerId = null;
+        Guid? accusedWorkerId = null;
+
+        if(isJobOwnerFarmer)
+        {
+            if(request.WorkerId.HasValue)
+            {
+                var accusedWorker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.Id == request.WorkerId.Value);
+                if(accusedWorker == null)
+                    throw new KeyNotFoundException("Accused worker not found");
+                accusedUserId = accusedWorker.UserId;
+                accusedWorkerId = accusedWorker.Id;
+            }
+            else
+            {
+                var application = await _unitOfWork.GetRepository<JobApplication>()
+                    .FirstOrDefaultAsync(predicate: ja => ja.JobPostId == request.JobPostId
+                        && ja.StatusId == (int)ApplicationStatus.Accepted);
+                if(application != null)
+                {
+                    var accusedWorker = await _unitOfWork.GetRepository<Worker>()
+                        .FirstOrDefaultAsync(predicate: w => w.Id == application.WorkerId);
+                    if(accusedWorker != null)
+                    {
+                        accusedUserId = accusedWorker.UserId;
+                        accusedWorkerId = accusedWorker.Id;
+                    }
+                }
+            }
+        }
+        else
+        {
+            var accusedFarmer = await _unitOfWork.GetRepository<Farmer>()
+                .FirstOrDefaultAsync(predicate: f => f.Id == jobPost.FarmerId);
+            if(accusedFarmer != null)
+            {
+                accusedUserId = accusedFarmer.UserId;
+                accusedFarmerId = accusedFarmer.Id;
+            }
         }
 
         var dispute = _mapper.CreateDisputeReportRequestToDisputeReport(request);
@@ -100,10 +144,23 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
 
         dispute.CreatedAt = DateTime.UtcNow;
         dispute.StatusId = (int)DisputeStatus.Pending;
+        dispute.PenaltyTargetId = (int)PenaltyTarget.None;
         dispute.ResolvedAt = null;
         dispute.ResolvedById = null;
-        dispute.FarmerId = farmer?.Id;
-        dispute.WorkerId = worker?.Id;
+
+        dispute.FarmerId = reporter_farmer?.Id;
+        dispute.WorkerId = reporter_worker?.Id;
+        dispute.ReporterUserId = currentUserId;
+
+        dispute.AccusedUserId = accusedUserId;
+        if(isJobOwnerFarmer && accusedWorkerId.HasValue)
+        {
+            dispute.WorkerId = accusedWorkerId;
+        }
+        else if(!isJobOwnerFarmer && accusedFarmerId.HasValue)
+        {
+            dispute.FarmerId = accusedFarmerId;
+        }
 
         await _unitOfWork.GetRepository<DisputeReport>().InsertAsync(dispute);
         await _unitOfWork.SaveChangesAsync();
@@ -259,6 +316,32 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
         dispute.AdminNote = request.AdminNote;
         dispute.ResolvedById = adminUserId;
         dispute.ResolvedAt = DateTime.UtcNow;
+        dispute.PenaltyTargetId = (int)request.PenaltyTarget;
+
+
+        if(request.PenaltyTarget != PenaltyTarget.None)
+        {
+            Guid? userToBanId = request.PenaltyTarget == PenaltyTarget.Reporter
+                ? dispute.ReporterUserId
+                : dispute.AccusedUserId;
+
+            if(userToBanId.HasValue)
+            {
+                var userToBan = await _unitOfWork.GetRepository<User>()
+                    .FirstOrDefaultAsync(predicate: u => u.Id == userToBanId.Value);
+
+                if(userToBan == null)
+                    throw new KeyNotFoundException($"User to ban not found (UserId={userToBanId})");
+
+                userToBan.WarningCount += 1;
+                userToBan.LastWarnedAt = DateTime.UtcNow;
+                if(userToBan.WarningCount >= 2)
+                {
+                    userToBan.IsActive = false;
+                }
+                _unitOfWork.GetRepository<User>().UpdateAsync(userToBan);
+            }
+        }
 
         _unitOfWork.GetRepository<DisputeReport>().UpdateAsync(dispute);
         await _unitOfWork.SaveChangesAsync();

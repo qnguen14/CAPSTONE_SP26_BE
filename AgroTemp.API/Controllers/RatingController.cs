@@ -1,4 +1,4 @@
-﻿using AgroTemp.API.Constants;
+using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Rating;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
@@ -269,6 +269,45 @@ namespace AgroTemp.API.Controllers
                 {
                     StatusCode = StatusCodes.Status500InternalServerError,
                     Message = "An error occurred while retrieving ratings for the user",
+                    Data = null
+                });
+            }
+        }
+
+        [HttpGet(ApiEndpointConstants.Rating.GetGivenRatingsByUserEndpoint)]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<RatingDTO>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<RatingDTO>>> GetGivenRatingsByUser()
+        {
+            try
+            {
+                var response = await _ratingService.GetGivenRatingsByUser();
+                if (response == null || !response.Any())
+                {
+                    return NotFound(new ApiResponse<object>
+                    {
+                        StatusCode = StatusCodes.Status404NotFound,
+                        Message = "No ratings given by the user",
+                        Data = null
+                    });
+                }
+                var apiResponse = new ApiResponse<IEnumerable<RatingDTO>>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    Message = "Ratings given by the user retrieved successfully",
+                    Data = response
+                };
+                return Ok(apiResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving ratings given by the user");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Message = "An error occurred while retrieving ratings given by the user",
                     Data = null
                 });
             }

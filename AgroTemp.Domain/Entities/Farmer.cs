@@ -23,6 +23,14 @@ public class Farmer
     public string ContactName { get; set; }
 
     [Required]
+    [Column("address")]
+    public string Address { get; set; }
+
+    [Required]
+    [Column("date_of_birth")]
+    public DateOnly DateOfBirth { get; set; }
+
+    [Required]
     [Column("average_rating")]
     public decimal AverageRating { get; set; }
 
@@ -42,7 +50,6 @@ public class Farmer
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; }
 
-    [Required]
     [Column("avatar_url")]
     public string AvatarUrl { get; set; }
     // Navigation property for farms owned by this farmer

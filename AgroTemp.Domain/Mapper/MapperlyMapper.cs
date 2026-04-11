@@ -20,7 +20,24 @@ namespace AgroTemp.Domain.Mapper;
 public partial class MapperlyMapper : IMapperlyMapper
 {
     [MapProperty(nameof(User.Role), nameof(UserDTO.Role))]
-    public partial UserDTO UserToUserDto(User user);
+    public partial UserDTO UserToUserDtoManual(User user);
+
+    public UserDTO UserToUserDto(User user)
+    {
+        if (user == null) return null;
+        var dto = UserToUserDtoManual(user);
+        
+        if (user.Farmer != null)
+        {
+            dto.Address = user.Farmer.Address;
+        }
+        else if (user.Worker != null)
+        {
+            dto.Address = user.Worker.PrimaryLocation;
+        }
+        
+        return dto;
+    }
 
     public partial List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
 
@@ -31,6 +48,8 @@ public partial class MapperlyMapper : IMapperlyMapper
             Id = farmer.Id,
             UserId = farmer.UserId,
             ContactName = farmer.ContactName,
+            Address = farmer.Address,
+            DateOfBirth = farmer.DateOfBirth,
             AverageRating = farmer.AverageRating,
             TotalJobsPosted = farmer.TotalJobsPosted,
             TotalJobsCompleted = farmer.TotalJobsCompleted,
@@ -53,7 +72,7 @@ public partial class MapperlyMapper : IMapperlyMapper
             Id = worker.Id,
             UserId = worker.UserId,
             FullName = worker.FullName,
-            Age = worker.AgeRange,
+            Date_of_birth = worker.DateOfBirth.ToString(),
             PrimaryLocation = worker.PrimaryLocation,
             TravelRadiusKmPreference = worker.TravelRadiusKmPreference,
             ExperienceLevelId = worker.ExperienceLevelId,
@@ -66,14 +85,23 @@ public partial class MapperlyMapper : IMapperlyMapper
             UpdatedAt = worker.UpdatedAt,
             Email = worker.User?.Email ?? string.Empty,
             PhoneNumber = worker.User?.PhoneNumber ?? string.Empty,
+            Skills = worker.WorkerSkills?
+                .Where(ws => ws.Skill != null)
+                .Select(ws => SkillToSkillResponse(ws.Skill))
+                .ToList() ?? new List<SkillResponse>(),
+            GenderId = worker.GenderId,
+            Gender = MapGender((Gender)worker.GenderId)
         };
     }
 
     [MapProperty(nameof(User.Role), nameof(LoginResponse.Role))]
+    [MapProperty(nameof(User.IsVerified), nameof(LoginResponse.IsVerified))]
     public partial LoginResponse UserToLoginResponse(User user);
 
     // Custom mapping for ExperienceLevel enum to string
     private string MapExperienceLevel(ExperienceLevel level) => level.ToString();
+
+    private string MapGender(Gender gender) => gender.ToString();
 
     private string MapUserRole(UserRole role) => role.ToString();
 
@@ -114,11 +142,11 @@ public partial class MapperlyMapper : IMapperlyMapper
         int? durationDays = null;
         if (startDate.HasValue && endDate.HasValue)
         {
-            durationDays = (int)(endDate.Value.Date - startDate.Value.Date).TotalDays + 1;
+            durationDays = endDate.Value.DayNumber - startDate.Value.DayNumber + 1;
         }
 
-        var isUpcoming = startDate.HasValue && startDate.Value > DateTime.UtcNow && 
-                        startDate.Value <= DateTime.UtcNow.AddDays(7);
+        var isUpcoming = startDate.HasValue && startDate.Value.ToDateTime(TimeOnly.MinValue) > DateTime.UtcNow && 
+                        startDate.Value.ToDateTime(TimeOnly.MinValue) <= DateTime.UtcNow.AddDays(7);
 
         return new JobDiscoveryDTO
         {
@@ -133,12 +161,13 @@ public partial class MapperlyMapper : IMapperlyMapper
             StartDate = jobPost.StartDate,
             EndDate = jobPost.EndDate,
             SelectedDays = jobPost.SelectedDays,
+            StartTime = jobPost.StartTime,
+            EndTime = jobPost.EndTime,
             WorkersNeeded = jobPost.WorkersNeeded,
             WorkersAccepted = jobPost.WorkersAccepted,
             JobTypeId = jobPost.JobTypeId,
             JobTypeName = jobTypeName,
             WageAmount = jobPost.WageAmount,
-            RequiredSkills = jobPost.RequiredSkills,
             Requirements = jobPost.Requirements,
             Privileges = jobPost.Privileges,
             PublishedAt = jobPost.PublishedAt,
@@ -188,7 +217,7 @@ public partial class MapperlyMapper : IMapperlyMapper
             RespondedAt = jobApplication.RespondedAt,
             ResponseMessage = jobApplication.ResponseMessage,
             WorkDates = jobApplication.WorkDates,
-            LocationName = jobApplication.JobPost?.Farm?.LocationName
+            LocationName = jobApplication.JobPost?.Farm?.LocationName,
         };
         return dto;
     }
@@ -209,9 +238,12 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial void UpdateJobDetailRequestToJobDetail(UpdateJobDetailRequest request, JobDetail jobDetail);
 
     // Skill
+    [MapProperty(nameof(Skill.JobCategoryId), nameof(SkillResponse.CategoryId))]
     public partial SkillResponse SkillToSkillResponse(Skill skill);
     public partial List<SkillResponse> SkillsToSkillResponses(IEnumerable<Skill> skills);
+    [MapProperty(nameof(CreateSkillRequest.CategoryId), nameof(Skill.JobCategoryId))]
     public partial Skill CreateSkillRequestToSkill(CreateSkillRequest request);
+    [MapProperty(nameof(UpdateSkillRequest.CategoryId), nameof(Skill.JobCategoryId))]
     public partial void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
 
     // Rating

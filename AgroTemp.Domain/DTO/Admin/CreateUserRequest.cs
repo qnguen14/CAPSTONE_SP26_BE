@@ -1,3 +1,4 @@
+using AgroTemp.Domain.Entities;
 using System.ComponentModel.DataAnnotations;
 
 namespace AgroTemp.Domain.DTO;
@@ -22,7 +23,7 @@ public class CreateUserRequest
     
     [Required]
     [Range(1, 3)]
-    public int RoleId { get; set; }
+    public UserRole RoleId { get; set; }
     
     public bool IsActive { get; set; } = true;
     

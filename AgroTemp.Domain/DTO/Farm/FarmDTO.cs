@@ -10,7 +10,7 @@ namespace AgroTemp.Domain.DTO.Farm
         public decimal Latitude { get; set; }
         public decimal Longitude { get; set; }
         public string LocationName { get; set; }
-        public string? ImageUrl { get; set; }
+        public List<string>? ImageUrl { get; set; }
         public FarmType FarmType { get; set; }
         public string FarmTypeName => FarmType.ToString();
 

@@ -1,4 +1,4 @@
-using AgroTemp.API.Constants;
+﻿using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Payment;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
@@ -25,6 +25,9 @@ public class WithdrawController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tao moi withdrawal.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang create withdrawal. Lưu ý: phải add IP public vào payos thì mới thao tác được các API liên rút tiền( https://checkip.com.vn )")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WithdrawCreateWithdrawal")]
     public async Task<ActionResult<WithdrawalResponse>> CreateWithdrawal([FromBody] CreateWithdrawalRequest request)
     {
         if (!ModelState.IsValid)
@@ -92,6 +95,9 @@ public class WithdrawController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin withdrawal.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get withdrawal.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WithdrawGetWithdrawal")]
     public async Task<ActionResult<WithdrawalResponse>> GetWithdrawal([FromRoute] Guid id)
     {
         try
@@ -140,6 +146,9 @@ public class WithdrawController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<ICollection<WithdrawalResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin withdrawals cua nguoi dung hien tai.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get my withdrawals.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WithdrawGetMyWithdrawals")]
     public async Task<ActionResult<ICollection<WithdrawalResponse>>> GetMyWithdrawals()
     {
         try
@@ -177,6 +186,9 @@ public class WithdrawController : ControllerBase
     [Authorize]
     [ProducesResponseType(typeof(ApiResponse<WithdrawalAccountBalanceResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin withdraw account balance.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get withdraw account balance.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WithdrawGetWithdrawAccountBalance")]
     public async Task<ActionResult<WithdrawalAccountBalanceResponse>> GetWithdrawAccountBalance()
     {
         try

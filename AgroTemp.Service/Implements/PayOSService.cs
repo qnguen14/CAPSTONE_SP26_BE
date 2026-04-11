@@ -23,17 +23,20 @@ public class PayOSService : IPayOSService
     private readonly PayOSClient _transferClient;
     private readonly IUnitOfWork<AgroTempDbContext> _unitOfWork;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IWalletService _walletService;
 
     public PayOSService(
         [FromKeyedServices("OrderClient")] PayOSClient orderClient,
         [FromKeyedServices("TransferClient")] PayOSClient transferClient,
         IUnitOfWork<AgroTempDbContext> unitOfWork,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IWalletService walletService)
     {
         _orderClient = orderClient;
         _transferClient = transferClient;
         _unitOfWork = unitOfWork;
         _httpContextAccessor = httpContextAccessor;
+        _walletService = walletService;
     }
 
     public async Task<PayOSOrderResponse?> GetOrderAsync(Guid id)
@@ -52,6 +55,7 @@ public class PayOSService : IPayOSService
         var paymentLink = await _orderClient.PaymentRequests.GetAsync(order.PaymentLinkId);
         UpdateOrderFromPaymentLink(order, paymentLink);
         await ReplaceTransactionsFromPaymentLinkAsync(order, paymentLink);
+        await SyncDepositTransactionsToWalletAsync(order);
         await _unitOfWork.SaveChangesAsync();
 
         return MapOrderToResponse(order);
@@ -82,11 +86,10 @@ public class PayOSService : IPayOSService
         var buyerCompanyName = primaryFarm?.LocationName;
         var buyerEmail = farmer.User?.Email;
         var buyerPhone = farmer.User?.PhoneNumber;
-        var buyerAddress = farmer.User?.Address;
 
         var orderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var returnUrl = "https://your-domain.com/success";
-        var cancelUrl = "https://your-domain.com/cancel";
+        var returnUrl = "http://localhost:3000/farmer/payments/success";
+        var cancelUrl = "http://localhost:3000/farmer/payments/cancel";
         var expiredAt = DateTimeOffset.UtcNow.AddHours(2);
         var buyerNotGetInvoice = false;
         int? taxPercentage = null;
@@ -111,7 +114,7 @@ public class PayOSService : IPayOSService
             BuyerCompanyName = buyerCompanyName,
             BuyerEmail = buyerEmail,
             //BuyerPhone = buyerPhone,
-            BuyerAddress = buyerAddress,
+            // BuyerAddress = buyerAddress,
             ExpiredAt = expiredAt.ToUnixTimeSeconds(),
             Items = new List<PaymentLinkItem> { hardcodedItem }
         };
@@ -149,7 +152,7 @@ public class PayOSService : IPayOSService
             BuyerCompanyName = buyerCompanyName,
             BuyerEmail = buyerEmail,
             //BuyerPhone = buyerPhone,
-            BuyerAddress = buyerAddress,
+            // BuyerAddress = buyerAddress,
             ExpiredAt = expiredAt.UtcDateTime,
             BuyerNotGetInvoice = buyerNotGetInvoice,
             TaxPercentage = taxPercentage,
@@ -325,6 +328,12 @@ public class PayOSService : IPayOSService
                         CounterAccountName = webhookData.CounterAccountName,
                         CounterAccountNumber = webhookData.CounterAccountNumber
                     });
+
+                    await CreditWalletFromPayOSAsync(
+                        order,
+                        webhookData.Amount,
+                        webhookData.Reference,
+                        webhookData.Description);
                 }
 
                 var transactions = await _unitOfWork.GetRepository<PayOSTransaction>()
@@ -447,6 +456,7 @@ public class PayOSService : IPayOSService
             var paymentLink = await _orderClient.PaymentRequests.GetAsync(linkId);
             UpdateOrderFromPaymentLink(order, paymentLink);
             await ReplaceTransactionsFromPaymentLinkAsync(order, paymentLink);
+            await SyncDepositTransactionsToWalletAsync(order);
             await _unitOfWork.SaveChangesAsync();
         }
 
@@ -461,13 +471,7 @@ public class PayOSService : IPayOSService
             throw new UnauthorizedAccessException("User is not authenticated.");
         }
 
-        var wallet = await _unitOfWork.GetRepository<Wallet>()
-            .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId.Value);
-
-        if (wallet == null)
-        {
-            throw new InvalidOperationException("Wallet not found.");
-        }
+        var wallet = await _walletService.GetOrCreateWalletAsync(currentUserId.Value);
 
         if (request.Amount <= 0)
         {
@@ -480,14 +484,34 @@ public class PayOSService : IPayOSService
         }
 
         var withdrawalId = Guid.NewGuid();
+        
+        /* XỬ LÝ:
+         * - Description: API Payout của PayOS yêu cầu tối đa 25 ký tự và KHÔNG được có dấu/ký tự đặc biệt.
+         * - Category: Bỏ qua danh sách trống (đặt thành null) để tránh lỗi "Mã kiểm tra không hợp lệ" (Invalid Signature) 
+         *   do sự sai lệch khi tính toán chữ ký với mảng rỗng trong SDK PayOS.
+         * - ReferenceId: Sử dụng định dạng Guid "N" (32 ký tự) để đảm bảo luôn nằm trong giới hạn 50 ký tự của PayOS.
+         */
+         
+        /* CODE CŨ (Gây lỗi "Invalid Signature" hoặc "Description too long"): 
         var payoutRequest = new PayoutRequest
         {
             ReferenceId = withdrawalId.ToString(),
             Amount = (long)request.Amount,
             Description = request.Description ?? $"withdrawal-{withdrawalId}",
-            ToBin = request.ToBin,
+            ToBin = ((int)request.ToBin).ToString(),
             ToAccountNumber = request.ToAccountNumber,
-            Category = request.Category ?? new List<string>()
+            Category = request.Category
+        };
+        */
+
+        var payoutRequest = new PayoutRequest
+        {
+            ReferenceId = withdrawalId.ToString("N"),
+            Amount = (long)request.Amount,
+            Description = NormalizeDescription(request.Description, $"AgroTemp RT {withdrawalId.ToString("N").Substring(28)}"),
+            ToBin = ((int)request.ToBin).ToString(),
+            ToAccountNumber = request.ToAccountNumber,
+            Category = request.Category?.Any() == true ? request.Category : null
         };
 
         var payout = await _transferClient.Payouts.CreateAsync(payoutRequest);
@@ -502,7 +526,7 @@ public class PayOSService : IPayOSService
             WalletId = wallet.Id,
             Amount = request.Amount,
             BankAccountNumber = request.ToAccountNumber,
-            BankName = string.IsNullOrWhiteSpace(request.BankName) ? request.ToBin : request.BankName,
+            BankName = string.Empty,// string.IsNullOrWhiteSpace(request.BankName) ? request.ToBin.ToString() : request.BankName,
             AccountHolderName = string.IsNullOrWhiteSpace(request.AccountHolderName)
                 ? payout.Transactions.FirstOrDefault()?.ToAccountName ?? "Unknown"
                 : request.AccountHolderName,
@@ -553,6 +577,7 @@ public class PayOSService : IPayOSService
         var payout = await GetPayoutByWithdrawalAsync(withdrawal);
         if (payout != null)
         {
+            await ReconcileWithdrawalWalletAsync(withdrawal, payout);
             UpdateWithdrawalFromPayout(withdrawal, payout);
             _unitOfWork.GetRepository<WithdrawalRequest>().UpdateAsync(withdrawal);
             await _unitOfWork.SaveChangesAsync();
@@ -706,6 +731,109 @@ public class PayOSService : IPayOSService
         return new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc));
     }
 
+    private async Task CreditWalletFromPayOSAsync(PayOSOrder order, long amount, string? reference, string? description)
+    {
+        if (!order.UserId.HasValue || amount <= 0)
+        {
+            return;
+        }
+
+        var referenceCode = BuildDepositReferenceCode(order.OrderCode, reference);
+        var existed = await _unitOfWork.GetRepository<WalletTransaction>()
+            .FirstOrDefaultAsync(predicate: x => x.ReferenceCode == referenceCode);
+
+        if (existed != null)
+        {
+            return;
+        }
+
+        var wallet = await _walletService.GetOrCreateWalletAsync(order.UserId.Value);
+        wallet.Balance += amount;
+        wallet.UpdateAt = DateTime.UtcNow;
+        _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
+
+        await _unitOfWork.GetRepository<WalletTransaction>().InsertAsync(new WalletTransaction
+        {
+            Id = Guid.NewGuid(),
+            WalletId = wallet.Id,
+            JobDetailId = null,
+            Type = TransactionType.DEPOSIT,
+            Amount = amount,
+            BalanceAfter = wallet.Balance,
+            ReferenceCode = referenceCode,
+            Description = string.IsNullOrWhiteSpace(description) ? "Deposit from PayOS" : description,
+            CreatedAt = DateTime.UtcNow
+        });
+    }
+
+    private async Task SyncDepositTransactionsToWalletAsync(PayOSOrder order)
+    {
+        if (order.Transactions == null || order.Transactions.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var transaction in order.Transactions)
+        {
+            await CreditWalletFromPayOSAsync(order, transaction.Amount, transaction.Reference, transaction.Description);
+        }
+    }
+
+    private async Task ReconcileWithdrawalWalletAsync(WithdrawalRequest withdrawal, Payout payout)
+    {
+        var payoutState = payout.ApprovalState.ToString().ToUpperInvariant();
+        if (payoutState != "REJECTED")
+        {
+            return;
+        }
+
+        var refundReferenceCode = BuildWithdrawalRefundReferenceCode(withdrawal.Id);
+        var existedRefund = await _unitOfWork.GetRepository<WalletTransaction>()
+            .FirstOrDefaultAsync(predicate: x => x.ReferenceCode == refundReferenceCode);
+
+        if (existedRefund != null)
+        {
+            return;
+        }
+
+        var wallet = await _unitOfWork.GetRepository<Wallet>()
+            .FirstOrDefaultAsync(predicate: w => w.Id == withdrawal.WalletId);
+
+        if (wallet == null)
+        {
+            return;
+        }
+
+        wallet.Balance += withdrawal.Amount;
+        wallet.UpdateAt = DateTime.UtcNow;
+        _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
+
+        await _unitOfWork.GetRepository<WalletTransaction>().InsertAsync(new WalletTransaction
+        {
+            Id = Guid.NewGuid(),
+            WalletId = wallet.Id,
+            JobDetailId = null,
+            Type = TransactionType.REFUND,
+            Amount = withdrawal.Amount,
+            BalanceAfter = wallet.Balance,
+            ReferenceCode = refundReferenceCode,
+            Description = "Refund withdrawal amount because payout was rejected",
+            CreatedAt = DateTime.UtcNow
+        });
+    }
+
+    private static string BuildDepositReferenceCode(long orderCode, string? reference)
+    {
+        return string.IsNullOrWhiteSpace(reference)
+            ? $"PAYOS-DEPOSIT-{orderCode}"
+            : $"PAYOS-DEPOSIT-{orderCode}-{reference}";
+    }
+
+    private static string BuildWithdrawalRefundReferenceCode(Guid withdrawalId)
+    {
+        return $"PAYOS-WITHDRAW-REFUND-{withdrawalId:N}";
+    }
+
     private async Task<Payout?> GetPayoutByWithdrawalAsync(WithdrawalRequest withdrawal)
     {
         if (!string.IsNullOrWhiteSpace(withdrawal.Note))
@@ -761,5 +889,26 @@ public class PayOSService : IPayOSService
                 ? new DateTimeOffset(DateTime.SpecifyKind(withdrawal.ProcessedAt.Value, DateTimeKind.Utc))
                 : null
         };
+    }
+    private static string NormalizeDescription(string? description, string fallback)
+    {
+        var source = string.IsNullOrWhiteSpace(description) ? fallback : description;
+        var normalizedString = source.Normalize(System.Text.NormalizationForm.FormD);
+        var stringBuilder = new System.Text.StringBuilder();
+
+        foreach (var c in normalizedString)
+        {
+            var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                if (char.IsLetterOrDigit(c) || c == ' ')
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+        }
+
+        var result = stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC).Trim();
+        return result.Length > 25 ? result.Substring(0, 25).Trim() : result;
     }
 }

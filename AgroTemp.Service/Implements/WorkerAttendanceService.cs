@@ -106,12 +106,12 @@ namespace AgroTemp.Service.Implements
                 }
 
                 // Validate check-in time is within job post date range
-                if (request.CheckInTime.Date < jobApplication.JobPost.StartDate?.Date)
+                if (DateOnly.FromDateTime(request.CheckInTime.Date) < jobApplication.JobPost.StartDate)
                 {
                     throw new Exception("Cannot check in before job start date");
                 }
 
-                if (request.CheckInTime.Date > jobApplication.JobPost.EndDate?.Date)
+                if (DateOnly.FromDateTime(request.CheckInTime.Date) > jobApplication.JobPost.EndDate)
                 {
                     throw new Exception("Cannot check in after job end date");
                 }
