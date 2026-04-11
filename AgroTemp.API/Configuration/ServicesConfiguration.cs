@@ -81,6 +81,7 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IDisputeReportService, DisputeReportService>();
             services.AddScoped<IWalletService, WalletService>();
             services.AddScoped<IWalletTransactionService, WalletTransactionService>();
+            services.AddScoped<IAdminDashboardService, AdminDashboardService>();
             services.AddHttpClient<IWeatherService, WeatherService>();
             
             // Email Service
