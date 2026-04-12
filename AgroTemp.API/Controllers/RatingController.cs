@@ -201,11 +201,11 @@ namespace AgroTemp.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<RatingDTO>> GetSpecificRatingByUserId([FromRoute] Guid id)
+        public async Task<ActionResult<RatingDTO>> GetSpecificRatingByUserId([FromRoute] Guid userId)
         {
             try
             {
-                var response = await _ratingService.GetSpecificRatingByUserId(id);
+                var response = await _ratingService.GetSpecificRatingByUserId(userId);
                 if (response == null)
                 {
                     return NotFound(new ApiResponse<object>
