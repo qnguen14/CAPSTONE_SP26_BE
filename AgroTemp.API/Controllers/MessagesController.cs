@@ -1,9 +1,11 @@
 using AgroTemp.API.Constants;
+using AgroTemp.API.Hubs;
 using AgroTemp.Domain.DTO.Message;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace AgroTemp.API.Controllers;
 
@@ -13,11 +15,13 @@ public class MessagesController : ControllerBase
 {
     private readonly IMessageService _messageService;
     private readonly ILogger<MessagesController> _logger;
+    private readonly IHubContext<ChatHub> _chatHubContext;
 
-    public MessagesController(IMessageService messageService, ILogger<MessagesController> logger)
+    public MessagesController(IMessageService messageService, ILogger<MessagesController> logger, IHubContext<ChatHub> chatHubContext)
     {
         _messageService = messageService;
         _logger = logger;
+        _chatHubContext = chatHubContext;
     }
 
     [HttpGet(ApiEndpointConstants.Messages.GetMessagesEndpoint)]
@@ -69,6 +73,14 @@ public class MessagesController : ControllerBase
             }
 
             var message = await _messageService.SendMessageAsync(request.ReceiverId, request.Content);
+
+            await _chatHubContext.Clients
+               .Group(message.SenderId.ToString())
+               .SendAsync("NewMessage", message);
+            await _chatHubContext.Clients
+                .Group(message.ReceiverId.ToString())
+                .SendAsync("NewMessage", message);
+
 
             return Ok(new ApiResponse<MessageDTO>
             {

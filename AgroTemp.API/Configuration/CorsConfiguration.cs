@@ -11,6 +11,7 @@
                     policy
                         .WithOrigins(
                             "http://localhost:3000",
+                            "http://localhost:8081",
                             "https://agrotemp-frontend.vercel.app"
                         )
                         .AllowAnyHeader()
