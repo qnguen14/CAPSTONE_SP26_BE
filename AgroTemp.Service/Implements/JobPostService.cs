@@ -699,13 +699,15 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
-                filter.PageSize = Math.Min(filter.PageSize, 100); // Max 100 items per page
+                filter.PageNumber = filter.PageNumber < 1 ? 1 : filter.PageNumber;
+                filter.PageSize = filter.PageSize < 1 ? 10 : Math.Min(filter.PageSize, 100); // Min 1, max 100 items per page
                 var skip = (filter.PageNumber - 1) * filter.PageSize;
 
-                // Get all published and active job posts with related data
+                // Get all published and in-progress job posts with related data
                 var query = await _unitOfWork.GetRepository<JobPost>()
                     .GetListAsync(
-                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published,
+                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published
+                                      || jp.StatusId == (int)JobPostStatus.InProgress,
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.Farm)
