@@ -56,7 +56,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<JobDetailDTO> GetJobDetailById(string id)
+        public async Task<JobDetailResponseDTO> GetJobDetailById(string id)
         {
             try
             {
@@ -64,12 +64,23 @@ namespace AgroTemp.Service.Implements
                 var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
                     .FirstOrDefaultAsync(
                         predicate: jd => jd.Id == guid,
-                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User));
+                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User).Include(x => x.JobAttachments));
                 if (jobDetail == null)
                 {
                     return null;
                 }
-                var result = _mapper.JobDetailToJobDetailDto(jobDetail);
+                var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
+                result.Attachments = jobDetail.JobAttachments
+                    .Select(a => new JobAttachmentDTO
+                    {
+                        Id = a.Id,
+                        JobDetailId = a.JobDetailId,
+                        CloudinaryPublicId = a.CloudinaryPublicId,
+                        FileUrl = a.FileUrl,
+                        Format = a.Format,
+                        FileSize = a.FileSize,
+                        CreatedAt = a.CreatedAt
+                    }).ToList();
                 return result;
             }
             catch (Exception ex)

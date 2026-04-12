@@ -11,7 +11,7 @@ namespace AgroTemp.Service.Interfaces
     public interface IJobDetailService
     {
         Task<List<JobDetailDTO>> GetAllJobDetails();
-        Task<JobDetailDTO> GetJobDetailById(string id);
+        Task<JobDetailResponseDTO> GetJobDetailById(string id);
         // Task<JobDetailResponseDTO> GetById(string id); // new method returns JobDetailResponseDTO
         Task<JobDetailDTO> CreateJobDetail(CreateJobDetailRequest request);
         Task<JobDetailDTO> UpdateJobDetail(Guid id, UpdateJobDetailRequest request);

@@ -96,11 +96,11 @@ public class JobDetailController : ControllerBase
     }
 
     [HttpGet(ApiEndpointConstants.Job.GetJobDetailByIdEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<JobDetailDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<JobDetailResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<JobDetailDTO>> GetJobDetailById([FromRoute] string id)
+    public async Task<ActionResult<JobDetailResponseDTO>> GetJobDetailById([FromRoute] string id)
     {
         try
         {
@@ -114,7 +114,7 @@ public class JobDetailController : ControllerBase
                     Data = null
                 });
             }
-            var apiResponse = new ApiResponse<JobDetailDTO>
+            var apiResponse = new ApiResponse<JobDetailResponseDTO>
             {
                 StatusCode = StatusCodes.Status200OK,
                 Message = "Job detail retrieved successfully",
