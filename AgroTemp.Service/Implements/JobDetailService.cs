@@ -202,7 +202,9 @@ namespace AgroTemp.Service.Implements
             try
             {
                 var application = await _unitOfWork.GetRepository<JobApplication>()
-                    .FirstOrDefaultAsync(ja => ja.Id.ToString() == id.ToString(),null,null);
+                    .FirstOrDefaultAsync(predicate: ja => ja.Id.ToString() == id.ToString(),
+                                         include: q => q.Include(x => x.Worker).ThenInclude(w => w.User).Include(x => x.JobPost));
+
                 if (application == null || application.Status != ApplicationStatus.Accepted)
                 {
                     throw new Exception("Job application not found or not accepted");
