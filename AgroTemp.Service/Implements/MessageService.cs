@@ -207,7 +207,7 @@ public class MessageService : BaseService<ChatMessage>, IMessageService
 
         foreach (var group in grouped)
         {
-            var latest = group.First(); 
+            var latest = group.OrderByDescending(m => m.SentAt).First(); 
             var otherUser = latest.SenderId == currentUserId ? latest.Recipient : latest.Sender;
 
             var unreadCount = group.Count(m =>
