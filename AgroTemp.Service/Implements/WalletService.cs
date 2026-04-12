@@ -169,6 +169,15 @@ namespace AgroTemp.Service.Implements
                 var actualRelease = Math.Min(escrowReleaseAmount, farmerWallet.LockedBalance);
                 farmerWallet.LockedBalance -= actualRelease;
                 farmerWallet.UpdateAt = DateTime.UtcNow;
+
+                await _walletTransactionService.CreateAsync(
+                    wallet: farmerWallet,
+                    jobDetailId: jobDetail.Id,
+                    type: TransactionType.REFUND, // Using REFUND type to indicate escrow release
+                    amount: workerPaymentAmount,
+                    balanceAfter: workerWallet.Balance,
+                    referenceCode: $"JOB-{jobDetail.Id:N}-RELEASE",
+                    description: $"Release of escrow for job detail {jobDetail.Id} ({jobType}) for worker {worker.FullName})");
             }
 
             // Pay worker
@@ -196,7 +205,7 @@ namespace AgroTemp.Service.Implements
                 await _walletTransactionService.CreateAsync(
                     wallet: farmerWallet,
                     jobDetailId: jobDetail.Id,
-                    type: TransactionType.REFUND,
+                    type: TransactionType.JOB_PAYMENT,
                     amount: refundAmount,
                     balanceAfter: farmerWallet.Balance,
                     referenceCode: $"JOB-{jobDetail.Id:N}-REFUND",
