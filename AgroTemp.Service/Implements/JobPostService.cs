@@ -706,8 +706,7 @@ namespace AgroTemp.Service.Implements
                 // Get all published and in-progress job posts with related data
                 var query = await _unitOfWork.GetRepository<JobPost>()
                     .GetListAsync(
-                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published
-                                      || jp.StatusId == (int)JobPostStatus.InProgress,
+                        predicate: jp => jp.StatusId == (int)JobPostStatus.Published,
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.Farm)
