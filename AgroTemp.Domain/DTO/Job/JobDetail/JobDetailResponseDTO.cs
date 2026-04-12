@@ -17,6 +17,7 @@ namespace AgroTemp.Domain.DTO.Job.JobDetail
 
         public Guid WorkerId { get; set; }
         public WorkerProfileDTO Worker { get; set;}
+        public FarmerProfileDTO Farmer { get; set;}
 
         public int StatusId { get; set; }
 

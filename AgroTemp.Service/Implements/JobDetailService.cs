@@ -64,7 +64,9 @@ namespace AgroTemp.Service.Implements
                 var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
                     .FirstOrDefaultAsync(
                         predicate: jd => jd.Id == guid,
-                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User).Include(x => x.JobAttachments));
+                        include: jd => jd.Include(x => x.Worker).ThenInclude(w => w.User)
+                                         .Include(x => x.JobPost).ThenInclude(jp => jp.Farmer).ThenInclude(f => f.User)
+                                         .Include(x => x.JobAttachments));
                 if (jobDetail == null)
                 {
                     return null;
@@ -81,6 +83,13 @@ namespace AgroTemp.Service.Implements
                         FileSize = a.FileSize,
                         CreatedAt = a.CreatedAt
                     }).ToList();
+
+                // Map Farmer from JobPost.Farmer if available
+                if (jobDetail.JobPost != null && jobDetail.JobPost.Farmer != null)
+                {
+                    result.Farmer = _mapper.FarmerToDto(jobDetail.JobPost.Farmer);
+                }
+
                 return result;
             }
             catch (Exception ex)
@@ -295,10 +304,36 @@ namespace AgroTemp.Service.Implements
                 var query = _unitOfWork.GetRepository<JobDetail>().CreateBaseQuery(
                     predicate: predicate,
                     orderBy: q => q.OrderByDescending(x => x.CreatedAt),
-                    include: q => q.Include(x => x.Worker).ThenInclude(w => w.User));
+                    include: q => q.Include(x => x.Worker).ThenInclude(w => w.User)
+                                    .Include(x => x.JobPost).ThenInclude(jp => jp.Farmer).ThenInclude(f => f.User)
+                                    .Include(x => x.JobAttachments));
 
                 var items = await query.Skip(skip).Take(limit).ToListAsync();
                 var data = _mapper.JobDetailsToJobDetailResponseDtos(items);
+
+                // Fix mapping for Farmer and Attachments
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var jobDetail = items[i];
+                    var dto = data[i];
+                    // Attachments
+                    dto.Attachments = jobDetail.JobAttachments
+                        .Select(a => new JobAttachmentDTO
+                        {
+                            Id = a.Id,
+                            JobDetailId = a.JobDetailId,
+                            CloudinaryPublicId = a.CloudinaryPublicId,
+                            FileUrl = a.FileUrl,
+                            Format = a.Format,
+                            FileSize = a.FileSize,
+                            CreatedAt = a.CreatedAt
+                        }).ToList();
+                    // Farmer
+                    if (jobDetail.JobPost != null && jobDetail.JobPost.Farmer != null)
+                    {
+                        dto.Farmer = _mapper.FarmerToDto(jobDetail.JobPost.Farmer);
+                    }
+                }
 
                 return new PaginatedResponse<JobDetailResponseDTO>
                 {
@@ -330,10 +365,36 @@ namespace AgroTemp.Service.Implements
                 var query = _unitOfWork.GetRepository<JobDetail>().CreateBaseQuery(
                     predicate: predicate,
                     orderBy: q => q.OrderByDescending(x => x.CreatedAt),
-                    include: q => q.Include(x => x.Worker).ThenInclude(w => w.User));
+                    include: q => q.Include(x => x.Worker).ThenInclude(w => w.User)
+                                    .Include(x => x.JobPost).ThenInclude(jp => jp.Farmer).ThenInclude(f => f.User)
+                                    .Include(x => x.JobAttachments));
 
                 var items = await query.Skip(skip).Take(limit).ToListAsync();
                 var data = _mapper.JobDetailsToJobDetailResponseDtos(items);
+
+                // Fix mapping for Farmer and Attachments
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var jobDetail = items[i];
+                    var dto = data[i];
+                    // Attachments
+                    dto.Attachments = jobDetail.JobAttachments
+                        .Select(a => new JobAttachmentDTO
+                        {
+                            Id = a.Id,
+                            JobDetailId = a.JobDetailId,
+                            CloudinaryPublicId = a.CloudinaryPublicId,
+                            FileUrl = a.FileUrl,
+                            Format = a.Format,
+                            FileSize = a.FileSize,
+                            CreatedAt = a.CreatedAt
+                        }).ToList();
+                    // Farmer
+                    if (jobDetail.JobPost != null && jobDetail.JobPost.Farmer != null)
+                    {
+                        dto.Farmer = _mapper.FarmerToDto(jobDetail.JobPost.Farmer);
+                    }
+                }
 
                 return new PaginatedResponse<JobDetailResponseDTO>
                 {
@@ -438,6 +499,23 @@ namespace AgroTemp.Service.Implements
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.JobDetailToJobDetailResponseDto(jobDetail);
+                // Attachments
+                result.Attachments = jobDetail.JobAttachments
+                    .Select(a => new JobAttachmentDTO
+                    {
+                        Id = a.Id,
+                        JobDetailId = a.JobDetailId,
+                        CloudinaryPublicId = a.CloudinaryPublicId,
+                        FileUrl = a.FileUrl,
+                        Format = a.Format,
+                        FileSize = a.FileSize,
+                        CreatedAt = a.CreatedAt
+                    }).ToList();
+                // Farmer
+                if (jobDetail.JobPost != null && jobDetail.JobPost.Farmer != null)
+                {
+                    result.Farmer = _mapper.FarmerToDto(jobDetail.JobPost.Farmer);
+                }
                 return result;
             }
             catch (Exception ex)
