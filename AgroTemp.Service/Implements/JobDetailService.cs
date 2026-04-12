@@ -350,7 +350,7 @@ namespace AgroTemp.Service.Implements
                 }
 
                 var jobDetail = await _unitOfWork.GetRepository<JobDetail>()
-                    .FirstOrDefaultAsync(jd => jd.Id == id,null,null);
+                    .FirstOrDefaultAsync(jd => jd.Id == id, null, null);
                 if (jobDetail == null)
                 {
                     throw new Exception("Job detail not found");
@@ -367,7 +367,7 @@ namespace AgroTemp.Service.Implements
                 var worker = await _unitOfWork.GetRepository<Worker>()
                     .FirstOrDefaultAsync(predicate: w => w.Id == jobDetail.WorkerId);
 
-                if(worker != null)
+                if (worker != null)
                 {
                     worker.TotalJobsCompleted += 1;
                     _unitOfWork.GetRepository<Worker>().UpdateAsync(worker);
@@ -381,7 +381,45 @@ namespace AgroTemp.Service.Implements
                 jobDetail.CompletedAt = DateTime.UtcNow;
                 jobDetail.UpdatedAt = DateTime.UtcNow;
 
-                await _walletService.ApplyJobSettlementAsync(jobDetail, workerPayment, refund);
+                // Determine job type and whether this is the last job detail
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(predicate: jp => jp.Id == jobDetail.JobPostId);
+                if (jobPost == null)
+                    throw new Exception("Job post not found");
+
+                var jobType = (JobType)jobPost.JobTypeId;
+                bool isLastDetail;
+
+                if (jobType == JobType.Daily)
+                {
+                    // Daily: release escrow on every approved report
+                    isLastDetail = true;
+                }
+                else
+                {
+                    // PerJob: release escrow only on the last work day
+                    // "Last day" = WorkDate matches EndDate, or the last entry in SelectedDays
+                    var workDate = jobDetail.WorkDate.HasValue
+                        ? DateOnly.FromDateTime(jobDetail.WorkDate.Value)
+                        : (DateOnly?)null;
+
+                    if (jobPost.EndDate.HasValue && workDate.HasValue)
+                    {
+                        isLastDetail = workDate.Value >= jobPost.EndDate.Value;
+                    }
+                    else if (jobPost.SelectedDays != null && jobPost.SelectedDays.Count > 0 && workDate.HasValue)
+                    {
+                        var lastSelectedDay = jobPost.SelectedDays.Max();
+                        isLastDetail = workDate.Value >= lastSelectedDay;
+                    }
+                    else
+                    {
+                        // Fallback: treat as last if no date range is defined
+                        isLastDetail = true;
+                    }
+                }
+
+                await _walletService.ReleaseEscrowAndPayWorkerAsync(jobDetail, workerPayment, refund, isLastDetail);
 
                 _unitOfWork.GetRepository<JobDetail>().UpdateAsync(jobDetail);
                 await _unitOfWork.SaveChangesAsync();

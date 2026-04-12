@@ -123,6 +123,87 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        /// <summary>
+        /// Releases escrow from the farmer's locked balance and pays the worker.
+        /// - Daily jobs: always release the day's JobPrice from escrow on each approval.
+        /// - PerJob jobs: only release on the last job detail (isLastDetail == true).
+        /// The released escrow covers the workerPaymentAmount (to worker) + refundAmount (back to farmer).
+        /// </summary>
+        public async Task ReleaseEscrowAndPayWorkerAsync(
+            JobDetail jobDetail,
+            decimal workerPaymentAmount,
+            decimal refundAmount,
+            bool isLastDetail)
+        {
+            // Fetch related entities
+            var worker = await _unitOfWork.GetRepository<Worker>()
+                .FirstOrDefaultAsync(predicate: w => w.Id == jobDetail.WorkerId);
+            if (worker == null)
+                throw new Exception("Worker not found for escrow release.");
+
+            var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                .FirstOrDefaultAsync(predicate: jp => jp.Id == jobDetail.JobPostId);
+            if (jobPost == null)
+                throw new Exception("Job post not found for escrow release.");
+
+            var farmer = await _unitOfWork.GetRepository<Farmer>()
+                .FirstOrDefaultAsync(predicate: f => f.Id == jobPost.FarmerId);
+            if (farmer == null)
+                throw new Exception("Farmer not found for escrow release.");
+
+            var jobType = (JobType)jobPost.JobTypeId;
+
+            // For PerJob type, only act on the last detail
+            if (jobType == JobType.PerJob && !isLastDetail)
+                return;
+
+            var farmerWallet = await GetOrCreateWalletAsync(farmer.UserId);
+            var workerWallet = await GetOrCreateWalletAsync(worker.UserId);
+
+            // Amount to unlock from escrow for this settlement = workerPayment + refund
+            var escrowReleaseAmount = workerPaymentAmount + refundAmount;
+
+            // Release escrow from farmer's locked balance
+            if (escrowReleaseAmount > 0)
+            {
+                var actualRelease = Math.Min(escrowReleaseAmount, farmerWallet.LockedBalance);
+                farmerWallet.LockedBalance -= actualRelease;
+                farmerWallet.UpdateAt = DateTime.UtcNow;
+            }
+
+            // Pay worker
+            if (workerPaymentAmount > 0)
+            {
+                workerWallet.Balance += workerPaymentAmount;
+                workerWallet.UpdateAt = DateTime.UtcNow;
+
+                await _walletTransactionService.CreateAsync(
+                    wallet: workerWallet,
+                    jobDetailId: jobDetail.Id,
+                    type: TransactionType.JOB_PAYMENT,
+                    amount: workerPaymentAmount,
+                    balanceAfter: workerWallet.Balance,
+                    referenceCode: $"JOB-{jobDetail.Id:N}-PAY",
+                    description: $"Worker payment for job detail {jobDetail.Id} ({jobType})");
+            }
+
+            // Refund unused escrow back to farmer's spendable balance
+            if (refundAmount > 0)
+            {
+                farmerWallet.Balance += refundAmount;
+                farmerWallet.UpdateAt = DateTime.UtcNow;
+
+                await _walletTransactionService.CreateAsync(
+                    wallet: farmerWallet,
+                    jobDetailId: jobDetail.Id,
+                    type: TransactionType.REFUND,
+                    amount: refundAmount,
+                    balanceAfter: farmerWallet.Balance,
+                    referenceCode: $"JOB-{jobDetail.Id:N}-REFUND",
+                    description: $"Escrow refund for job detail {jobDetail.Id} ({jobType})");
+            }
+        }
+
         public async Task<Wallet> GetOrCreateWalletAsync(Guid userId)
         {
             var wallet = await _unitOfWork.GetRepository<Wallet>()
