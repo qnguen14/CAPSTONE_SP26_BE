@@ -163,6 +163,36 @@ public class JobPostController : ControllerBase
         }
     }
 
+    [HttpGet(ApiEndpointConstants.Job.GetJobPostsByStatusEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetJobPostsByStatus([FromRoute] JobPostStatus status)
+    {
+        try
+        {
+            var response = await _jobPostService.GetJobPostsByStatus(status);
+            var apiResponse = new ApiResponse<IEnumerable<JobPostDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job posts by status retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving job posts by status");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving job posts by status",
+                Data = null
+            });
+        }
+    }
+
     [HttpPost(ApiEndpointConstants.Job.CreateJobPostEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<JobPostDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]

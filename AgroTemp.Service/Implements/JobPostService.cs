@@ -161,6 +161,42 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<List<JobPostDTO>> GetJobPostsByStatus(JobPostStatus status)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == userId);
+
+                if (farmer == null)
+                {
+                    throw new UnauthorizedAccessException("User is not authorized to view these job posts.");
+                }
+
+                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.FarmerId == farmer.Id && jp.StatusId == (int)status,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
+
+                if (jobPosts == null || !jobPosts.Any())
+                {
+                    return new List<JobPostDTO>();
+                }
+
+                var result = _mapper.JobPostsToJobPostDtos(jobPosts);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<JobPostDTO> CreateJobPost(CreateJobPostRequest request)
         {
             try
