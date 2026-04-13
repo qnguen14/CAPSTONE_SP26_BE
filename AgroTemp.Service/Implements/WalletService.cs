@@ -169,15 +169,6 @@ namespace AgroTemp.Service.Implements
                 var actualRelease = Math.Min(escrowReleaseAmount, farmerWallet.LockedBalance);
                 farmerWallet.LockedBalance -= actualRelease;
                 farmerWallet.UpdateAt = DateTime.UtcNow;
-
-                await _walletTransactionService.CreateAsync(
-                    wallet: farmerWallet,
-                    jobDetailId: jobDetail.Id,
-                    type: TransactionType.REFUND, // Using REFUND type to indicate escrow release
-                    amount: workerPaymentAmount,
-                    balanceAfter: workerWallet.Balance,
-                    referenceCode: $"JOB-{jobDetail.Id:N}-RELEASE",
-                    description: $"Release of escrow for job detail {jobDetail.Id} ({jobType}) for worker {worker.FullName})");
             }
 
             // Pay worker
@@ -264,6 +255,38 @@ namespace AgroTemp.Service.Implements
                 balanceAfter: wallet.Balance,
                 referenceCode: $"JOB-{jobPostId:N}-LOCK",
                 description: $"Lock funds for job post {jobPostId}");
+        }
+
+        public async Task RefundLockedAmountForJobPostAsync(Guid farmerUserId, Guid jobPostId, decimal amount)
+        {
+            if (amount <= 0)
+            {
+                throw new ArgumentException("Refund amount must be greater than 0.", nameof(amount));
+            }
+
+            var wallet = await GetOrCreateWalletAsync(farmerUserId);
+
+            // Only refund up to what is actually locked to avoid negative locked balance
+            var actualRefund = Math.Min(amount, wallet.LockedBalance);
+
+            if (actualRefund <= 0)
+            {
+                // Nothing locked to refund – treat as a no-op
+                return;
+            }
+
+            wallet.LockedBalance -= actualRefund;
+            wallet.Balance += actualRefund;
+            wallet.UpdateAt = DateTime.UtcNow;
+
+            await _walletTransactionService.CreateAsync(
+                wallet: wallet,
+                jobDetailId: null,
+                type: TransactionType.REFUND,
+                amount: actualRefund,
+                balanceAfter: wallet.Balance,
+                referenceCode: $"JOB-{jobPostId:N}-CANCEL-REFUND",
+                description: $"Refund locked funds for cancelled job post {jobPostId}");
         }
 
         private static bool IsSchemaMismatch(Exception ex)

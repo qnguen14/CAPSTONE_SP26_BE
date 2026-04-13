@@ -9,6 +9,7 @@ namespace AgroTemp.Service.Interfaces
         Task<Wallet?> GetByUserIdAsync(Guid userId);
         Task<ICollection<Wallet>> GetAllAsync();
         Task LockAmountForJobPostAsync(Guid farmerUserId, Guid jobPostId, decimal amount);
+        Task RefundLockedAmountForJobPostAsync(Guid farmerUserId, Guid jobPostId, decimal amount);
         Task ApplyJobSettlementAsync(JobDetail jobDetail, decimal workerPaymentAmount, decimal refundAmount);
 
         /// <summary>

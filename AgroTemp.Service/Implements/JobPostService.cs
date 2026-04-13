@@ -380,6 +380,23 @@ namespace AgroTemp.Service.Implements
                 existingJobPost.StatusId = (int)JobPostStatus.Cancelled;
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
 
+                // Refund the locked amount back to the farmer's wallet
+                var totalDays = (existingJobPost.StartDate.HasValue && existingJobPost.EndDate.HasValue)
+                    ? (existingJobPost.EndDate.Value.ToDateTime(TimeOnly.MinValue) - existingJobPost.StartDate.Value.ToDateTime(TimeOnly.MinValue)).TotalDays
+                    : 0;
+
+                var lockedAmount = existingJobPost.JobTypeId == (int)JobType.PerJob
+                    ? existingJobPost.WageAmount
+                    : existingJobPost.WageAmount * existingJobPost.WorkersNeeded * (decimal)totalDays;
+
+                if (lockedAmount > 0)
+                {
+                    await _walletService.RefundLockedAmountForJobPostAsync(
+                        existingJobPost.Farmer.UserId,
+                        existingJobPost.Id,
+                        lockedAmount);
+                }
+
                 var applicants = await _unitOfWork.GetRepository<JobApplication>()
                 .GetListAsync(
                     predicate: ja => ja.JobPostId == id &&
