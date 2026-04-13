@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AgroTemp.Domain.DTO.Farm;
+using AgroTemp.Domain.DTO.FarmerProfile;
 
 namespace AgroTemp.Domain.DTO.Job.JobPost
 {
@@ -10,6 +12,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
     {
         public Guid Id { get; set; }
         public Guid FarmerProfileId { get; set; }
+        public FarmerProfileSummaryDTO FarmerProfile { get; set; }
         public string ContactName { get; set; }
         public List<JobSkillRequirementSummaryDTO> JobSkillRequirements { get; set; } = new();
         public Guid FarmId { get; set; }
