@@ -75,6 +75,8 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
+                var raterUserId = GetCurrentUserId();
+
                 var rater = await _unitOfWork.GetRepository<User>()
                     .FirstOrDefaultAsync(predicate: u => u.Id == request.RaterId);
                 if (rater == null)
@@ -103,6 +105,7 @@ namespace AgroTemp.Service.Implements
                 if (rating.Id == Guid.Empty)
                 {
                     rating.Id = Guid.NewGuid();
+                    rating.RaterId = raterUserId;
                 }
 
                 await _unitOfWork.GetRepository<Rating>().InsertAsync(rating);
