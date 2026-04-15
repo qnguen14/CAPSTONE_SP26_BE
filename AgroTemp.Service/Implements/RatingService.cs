@@ -77,11 +77,6 @@ namespace AgroTemp.Service.Implements
             {
                 var raterUserId = GetCurrentUserId();
 
-                var rater = await _unitOfWork.GetRepository<User>()
-                    .FirstOrDefaultAsync(predicate: u => u.Id == request.RaterId);
-                if (rater == null)
-                    throw new KeyNotFoundException($"Rater with ID {request.RaterId} does not exist.");
-
                 var ratee = await _unitOfWork.GetRepository<User>()
                     .FirstOrDefaultAsync(predicate: u => u.Id == request.RateeId);
                 if (ratee == null)
@@ -94,7 +89,7 @@ namespace AgroTemp.Service.Implements
 
                 var existingRating = await _unitOfWork.GetRepository<Rating>()
                     .FirstOrDefaultAsync(predicate: r =>
-                        r.RaterId == request.RaterId &&
+                        r.RaterId == raterUserId &&
                         r.RateeId == request.RateeId &&
                         r.JobPostId == request.JobPostId);
 
