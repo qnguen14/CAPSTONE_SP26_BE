@@ -13,6 +13,7 @@ public class WeatherService : IWeatherService
     private readonly ILogger<WeatherService> _logger;
 
     private const string WeatherBaseUrl  = "https://api.openweathermap.org/data/2.5/weather";
+    private const string WeatherForecastBaseUrl = "https://api.openweathermap.org/data/2.5/forecast";
     private const string NominatimUrl    = "https://nominatim.openstreetmap.org/search";
 
     private const string NominatimAgent  = "AgroTempApp/1.0 (contact@agrotemp.vn)";
@@ -26,16 +27,14 @@ public class WeatherService : IWeatherService
 
     public async Task<WeatherDTO> GetWeatherByCoordinatesAsync(double latitude, double longitude)
     {
-        var apiKey = GetApiKey();
-        var url = $"{WeatherBaseUrl}?lat={latitude}&lon={longitude}&appid={apiKey}&units=metric&lang=vi";
-        return await FetchWeatherAsync(url);
+        var query = $"lat={latitude}&lon={longitude}";
+        return await FetchWeatherWithForecastAsync(query);
     }
 
     public async Task<WeatherDTO> GetWeatherByCityAsync(string city)
     {
-        var apiKey = GetApiKey();
-        var url = $"{WeatherBaseUrl}?q={Uri.EscapeDataString(city)}&appid={apiKey}&units=metric&lang=vi";
-        return await FetchWeatherAsync(url);
+        var query = $"q={Uri.EscapeDataString(city)}";
+        return await FetchWeatherWithForecastAsync(query);
     }
 
     public async Task<WeatherDTO> GetWeatherByAddressAsync(string address)
@@ -105,51 +104,173 @@ public class WeatherService : IWeatherService
         return apiKey;
     }
 
-    private async Task<WeatherDTO> FetchWeatherAsync(string url)
+    private async Task<WeatherDTO> FetchWeatherWithForecastAsync(string query)
     {
         try
         {
-            var response = await _httpClient.GetAsync(url);
+            var apiKey = GetApiKey();
+            var currentUrl = $"{WeatherBaseUrl}?{query}&appid={apiKey}&units=metric&lang=vi";
+            var forecastUrl = $"{WeatherForecastBaseUrl}?{query}&appid={apiKey}&units=metric&lang=vi";
 
-            if (!response.IsSuccessStatusCode)
+            var currentResponse = await _httpClient.GetAsync(currentUrl);
+
+            if (!currentResponse.IsSuccessStatusCode)
             {
-                var errorBody = await response.Content.ReadAsStringAsync();
-                _logger.LogError("OpenWeather API error {StatusCode}: {Body}", response.StatusCode, errorBody);
-                throw new HttpRequestException($"Weather API returned {(int)response.StatusCode}: {response.ReasonPhrase}");
+                var errorBody = await currentResponse.Content.ReadAsStringAsync();
+                _logger.LogError("OpenWeather current API error {StatusCode}: {Body}", currentResponse.StatusCode, errorBody);
+                throw new HttpRequestException($"Weather API returned {(int)currentResponse.StatusCode}: {currentResponse.ReasonPhrase}");
             }
 
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            var root  = doc.RootElement;
-            var main  = root.GetProperty("main");
-            var weather = root.GetProperty("weather")[0];
-            var wind  = root.GetProperty("wind");
-            var sys   = root.GetProperty("sys");
-            var coord = root.GetProperty("coord");
+            var forecastResponse = await _httpClient.GetAsync(forecastUrl);
 
-            return new WeatherDTO
+            if (!forecastResponse.IsSuccessStatusCode)
             {
-                City        = root.GetProperty("name").GetString()    ?? string.Empty,
-                Country     = sys.GetProperty("country").GetString()  ?? string.Empty,
-                Latitude    = coord.GetProperty("lat").GetDouble(),
-                Longitude   = coord.GetProperty("lon").GetDouble(),
-                Temperature = main.GetProperty("temp").GetDouble(),
-                FeelsLike   = main.GetProperty("feels_like").GetDouble(),
-                TempMin     = main.GetProperty("temp_min").GetDouble(),
-                TempMax     = main.GetProperty("temp_max").GetDouble(),
-                Humidity    = main.GetProperty("humidity").GetInt32(),
-                WindSpeed   = wind.GetProperty("speed").GetDouble(),
-                Description = weather.GetProperty("description").GetString() ?? string.Empty,
-                Icon        = weather.GetProperty("icon").GetString()        ?? string.Empty,
-                Sunrise     = DateTimeOffset.FromUnixTimeSeconds(sys.GetProperty("sunrise").GetInt64()).UtcDateTime,
-                Sunset      = DateTimeOffset.FromUnixTimeSeconds(sys.GetProperty("sunset").GetInt64()).UtcDateTime,
-                FetchedAt   = DateTime.UtcNow
-            };
+                var errorBody = await forecastResponse.Content.ReadAsStringAsync();
+                _logger.LogError("OpenWeather forecast API error {StatusCode}: {Body}", forecastResponse.StatusCode, errorBody);
+                throw new HttpRequestException($"Forecast API returned {(int)forecastResponse.StatusCode}: {forecastResponse.ReasonPhrase}");
+            }
+
+            var currentJson = await currentResponse.Content.ReadAsStringAsync();
+            var forecastJson = await forecastResponse.Content.ReadAsStringAsync();
+
+            using var currentDoc = JsonDocument.Parse(currentJson);
+            using var forecastDoc = JsonDocument.Parse(forecastJson);
+
+            var weather = ParseCurrentWeather(currentDoc.RootElement);
+            weather.HourlyForecast = ParseHourlyForecast(forecastDoc.RootElement);
+            ApplyDailyRangeFromForecast(weather);
+
+            return weather;
         }
         catch (Exception ex) when (ex is not InvalidOperationException && ex is not HttpRequestException)
         {
             _logger.LogError(ex, "Unexpected error fetching weather data");
             throw new Exception("Failed to retrieve weather data. Please try again later.", ex);
         }
+    }
+
+    private WeatherDTO ParseCurrentWeather(JsonElement root)
+    {
+        var main  = root.GetProperty("main");
+        var weather = root.GetProperty("weather")[0];
+        var wind  = root.GetProperty("wind");
+        var sys   = root.GetProperty("sys");
+        var coord = root.GetProperty("coord");
+
+        return new WeatherDTO
+        {
+            City        = root.GetProperty("name").GetString()    ?? string.Empty,
+            Country     = sys.GetProperty("country").GetString()  ?? string.Empty,
+            Latitude    = coord.GetProperty("lat").GetDouble(),
+            Longitude   = coord.GetProperty("lon").GetDouble(),
+            Temperature = main.GetProperty("temp").GetDouble(),
+            FeelsLike   = main.GetProperty("feels_like").GetDouble(),
+            TempMin     = main.GetProperty("temp_min").GetDouble(),
+            TempMax     = main.GetProperty("temp_max").GetDouble(),
+            Humidity    = main.GetProperty("humidity").GetInt32(),
+            WindSpeed   = wind.GetProperty("speed").GetDouble(),
+            Description = weather.GetProperty("description").GetString() ?? string.Empty,
+            Icon        = weather.GetProperty("icon").GetString()        ?? string.Empty,
+            Sunrise     = DateTimeOffset.FromUnixTimeSeconds(sys.GetProperty("sunrise").GetInt64()).UtcDateTime,
+            Sunset      = DateTimeOffset.FromUnixTimeSeconds(sys.GetProperty("sunset").GetInt64()).UtcDateTime,
+            FetchedAt   = DateTime.UtcNow
+        };
+    }
+
+    private static ICollection<WeatherForecastItemDTO> ParseHourlyForecast(JsonElement root)
+    {
+        var result = new List<WeatherForecastItemDTO>();
+
+        if (!root.TryGetProperty("list", out var forecastList) || forecastList.ValueKind != JsonValueKind.Array)
+        {
+            return result;
+        }
+
+        var now = DateTime.UtcNow;
+        // OpenWeather 5-day/3-hour forecast provides up to 40 slots.
+        var end = now.AddDays(5);
+
+        foreach (var item in forecastList.EnumerateArray())
+        {
+            if (!item.TryGetProperty("dt", out var dtElement))
+            {
+                continue;
+            }
+
+            var forecastTime = DateTimeOffset.FromUnixTimeSeconds(dtElement.GetInt64()).UtcDateTime;
+            if (forecastTime < now || forecastTime > end)
+            {
+                continue;
+            }
+
+            if (!item.TryGetProperty("main", out var main))
+            {
+                continue;
+            }
+
+            if (!item.TryGetProperty("weather", out var weatherList)
+                || weatherList.ValueKind != JsonValueKind.Array
+                || weatherList.GetArrayLength() == 0)
+            {
+                continue;
+            }
+
+            var weather = weatherList[0];
+
+            var windSpeed = 0d;
+            if (item.TryGetProperty("wind", out var wind)
+                && wind.TryGetProperty("speed", out var speedElement)
+                && speedElement.ValueKind == JsonValueKind.Number)
+            {
+                windSpeed = speedElement.GetDouble();
+            }
+
+            result.Add(new WeatherForecastItemDTO
+            {
+                ForecastTime = forecastTime,
+                Temperature = main.GetProperty("temp").GetDouble(),
+                FeelsLike = main.GetProperty("feels_like").GetDouble(),
+                TempMin = main.GetProperty("temp_min").GetDouble(),
+                TempMax = main.GetProperty("temp_max").GetDouble(),
+                Humidity = main.GetProperty("humidity").GetInt32(),
+                WindSpeed = windSpeed,
+                Description = weather.GetProperty("description").GetString() ?? string.Empty,
+                Icon = weather.GetProperty("icon").GetString() ?? string.Empty
+            });
+
+            if (result.Count >= 40)
+            {
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    private static void ApplyDailyRangeFromForecast(WeatherDTO weather)
+    {
+        if (weather.HourlyForecast.Count == 0)
+        {
+            return;
+        }
+
+        var min = double.MaxValue;
+        var max = double.MinValue;
+
+        foreach (var hourly in weather.HourlyForecast)
+        {
+            if (hourly.TempMin < min)
+            {
+                min = hourly.TempMin;
+            }
+
+            if (hourly.TempMax > max)
+            {
+                max = hourly.TempMax;
+            }
+        }
+
+        weather.TempMin = min;
+        weather.TempMax = max;
     }
 }
