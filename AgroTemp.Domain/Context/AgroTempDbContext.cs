@@ -1,4 +1,4 @@
-﻿using AgroTemp.Domain.Entities;
+using AgroTemp.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgroTemp.Domain.Context;
@@ -39,6 +39,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
     public DbSet<DisputeReport> DisputeReports { get; set; }
+    public DbSet<DisputeReportComment> DisputeReportComments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -339,6 +340,18 @@ public class AgroTempDbContext : DbContext
             .WithOne(wr => wr.JobDetail)
             .HasForeignKey(wr => wr.JobDetailId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<DisputeReport>()
+            .HasMany(dr => dr.Comments)
+            .WithOne(c => c.DisputeReport)
+            .HasForeignKey(c => c.DisputeReportId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<DisputeReportComment>()
+            .HasOne(c => c.User)
+            .WithMany()
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         base.OnModelCreating(modelBuilder);
     }
