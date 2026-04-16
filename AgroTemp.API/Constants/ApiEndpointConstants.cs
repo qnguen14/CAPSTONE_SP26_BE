@@ -216,6 +216,7 @@ public class ApiEndpointConstants
         public const string GetSpecificRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}";
         public const string GetAllRatingsByUserIdEndpoint = RatingEndpoint + "/user/{userId}/all";
         public const string GetGivenRatingsByUserEndpoint = RatingEndpoint + "/user/given";
+        public const string GetReceivedRatingsByUserByPostIdEndpoint = RatingEndpoint + "/user/received/post/{postId}";
         public const string GetAverageRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}/average";
     }
 

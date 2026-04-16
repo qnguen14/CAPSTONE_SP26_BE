@@ -248,8 +248,50 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
 
     // Rating
-    public partial RatingDTO RatingToRatingDto(Rating rating);
-    public partial List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings);
+    public RatingDTO RatingToRatingDto(Rating rating)
+    {
+        if (rating == null) return null;
+
+        return new RatingDTO
+        {
+            Id = rating.Id,
+            RaterId = rating.RaterId,
+            RateeId = rating.RateeId,
+            JobPostId = rating.JobPostId,
+            RatingScore = rating.RatingScore,
+            ReviewText = rating.ReviewText,
+            TypeId = rating.TypeId,
+            CreatedAt = rating.CreatedAt,
+            RaterProfile = MapRatingUserProfile(rating.Rater),
+            RateeProfile = MapRatingUserProfile(rating.Ratee)
+        };
+    }
+
+    public List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings)
+    {
+        return ratings?.Select(RatingToRatingDto).ToList() ?? new List<RatingDTO>();
+    }
+
+    private RatingUserProfileDTO? MapRatingUserProfile(User? user)
+    {
+        if (user == null)
+        {
+            return null;
+        }
+
+        return new RatingUserProfileDTO
+        {
+            UserId = user.Id,
+            Role = user.Role.ToString(),
+            FarmerProfile = user.Role == UserRole.Farmer && user.Farmer != null
+                ? FarmerToDto(user.Farmer)
+                : null,
+            WorkerProfile = user.Role == UserRole.Worker && user.Worker != null
+                ? WorkerToDto(user.Worker)
+                : null
+        };
+    }
+
     public partial Rating CreateRatingRequestToRating(CreateRatingRequest request);
     public partial void UpdateRatingRequestToRating(UpdateRatingRequest request, Rating rating);
 

@@ -31,7 +31,13 @@ namespace AgroTemp.Service.Implements
                         predicate: null,
                         include: q => q
                             .Include(r => r.Rater)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Rater)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.JobPost),
                         orderBy: r => r.OrderBy(x => x.CreatedAt));
                 if (ratings == null || !ratings.Any())
@@ -56,7 +62,13 @@ namespace AgroTemp.Service.Implements
                         predicate: r => r.Id == id,
                         include: q => q
                             .Include(r => r.Rater)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Rater)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.JobPost));
                 if (rating == null)
                 {
@@ -141,7 +153,13 @@ namespace AgroTemp.Service.Implements
                         predicate: r => r.Id == rating.Id,
                         include: q => q
                             .Include(r => r.Rater)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Rater)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.JobPost));
 
                 var result = _mapper.RatingToRatingDto(createdRating ?? rating);
@@ -160,7 +178,17 @@ namespace AgroTemp.Service.Implements
             {
                 var existingRating = await _unitOfWork.GetRepository<Rating>()
                     .FirstOrDefaultAsync(
-                        predicate: r => r.Id == id);
+                        predicate: r => r.Id == id,
+                        include: q => q
+                            .Include(r => r.Rater)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Rater)
+                                .ThenInclude(u => u.Farmer)
+                            .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Farmer)
+                            .Include(r => r.JobPost));
 
                 if (existingRating == null)
                 {
@@ -210,7 +238,13 @@ namespace AgroTemp.Service.Implements
                         predicate: r => r.RateeId == userId,
                         include: q => q
                             .Include(r => r.Rater)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Rater)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.JobPost));
                 if (rating == null)
                 {
@@ -234,7 +268,13 @@ namespace AgroTemp.Service.Implements
                         predicate: r => r.RateeId == userId,
                         include: q => q
                             .Include(r => r.Rater)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Rater)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.JobPost));
                 if (ratings == null || !ratings.Any())
                 {
@@ -260,11 +300,49 @@ namespace AgroTemp.Service.Implements
                         predicate: r => r.RaterId == userId,
                         include: q => q
                             .Include(r => r.Rater)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Rater)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Farmer)
                             .Include(r => r.JobPost));
 
                 if (ratings == null || !ratings.Any())
                     throw new KeyNotFoundException("No ratings found for the current user.");
+
+                var result = _mapper.RatingsToRatingDtos(ratings);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<RatingDTO>> GetReceivedRatingsByUserByPostId(Guid postId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var ratings = await _unitOfWork.GetRepository<Rating>()
+                    .GetListAsync(
+                        predicate: r => r.RateeId == userId && r.JobPostId == postId,
+                        include: q => q
+                            .Include(r => r.Rater)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Rater)
+                                .ThenInclude(u => u.Farmer)
+                            .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Worker)
+                            .Include(r => r.Ratee)
+                                .ThenInclude(u => u.Farmer)
+                            .Include(r => r.JobPost));
+
+                if (ratings == null || !ratings.Any())
+                    throw new KeyNotFoundException("No ratings found for the current user on this post.");
 
                 var result = _mapper.RatingsToRatingDtos(ratings);
                 return result;

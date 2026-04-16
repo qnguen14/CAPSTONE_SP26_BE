@@ -1,11 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AgroTemp.Domain.DTO;
 
 namespace AgroTemp.Domain.DTO.Rating
 {
+    public class RatingUserProfileDTO
+    {
+        public Guid UserId { get; set; }
+        public string Role { get; set; } = string.Empty;
+        public FarmerProfileDTO? FarmerProfile { get; set; }
+        public WorkerProfileDTO? WorkerProfile { get; set; }
+    }
+
     public class RatingDTO
     {
         public Guid Id { get; set; }
@@ -16,5 +20,7 @@ namespace AgroTemp.Domain.DTO.Rating
         public string? ReviewText { get; set; }
         public int TypeId { get; set; }
         public DateTime CreatedAt { get; set; }
+        public RatingUserProfileDTO? RaterProfile { get; set; }
+        public RatingUserProfileDTO? RateeProfile { get; set; }
     }
 }

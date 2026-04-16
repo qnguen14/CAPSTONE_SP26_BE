@@ -12,6 +12,7 @@ namespace AgroTemp.Service.Interfaces
         Task<RatingDTO> GetSpecificRatingByUserId(Guid userId);
         Task<List<RatingDTO>> GetAllRatingsByUserId(Guid userId);
         Task<List<RatingDTO>> GetGivenRatingsByUser();
+        Task<List<RatingDTO>> GetReceivedRatingsByUserByPostId(Guid postId);
         Task<decimal?> GetAverageRatingByUserId(Guid userId);
     }
 }
