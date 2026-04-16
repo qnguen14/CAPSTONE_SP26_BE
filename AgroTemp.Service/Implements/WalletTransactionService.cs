@@ -63,7 +63,7 @@ namespace AgroTemp.Service.Implements
 
                 var query = _unitOfWork.GetRepository<WalletTransaction>().CreateBaseQuery(
                     predicate: x => x.WalletId == walletId,
-                    orderBy: q => q.OrderBy(x => x.CreatedAt),
+                    orderBy: q => q.OrderByDescending(x => x.CreatedAt),
                     include: q => q.Include(x => x.Wallet),
                     asNoTracking: true
                 );
