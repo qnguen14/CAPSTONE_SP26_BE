@@ -227,6 +227,37 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial DisputeReport CreateDisputeReportRequestToDisputeReport(CreateDisputeReportRequest request);
     public partial void UpdateDisputeReportRequestToDisputeReport(UpdateDisputeReportRequest request, DisputeReport disputeReport);
 
+    // DisputeReportComment
+    public DisputeReportCommentDTO DisputeReportCommentToDto(DisputeReportComment comment)
+    {
+        if (comment == null) return null;
+
+        var dto = new DisputeReportCommentDTO
+        {
+            Id = comment.Id,
+            DisputeReportId = comment.DisputeReportId,
+            UserId = comment.UserId,
+            Content = comment.Content,
+            AttachmentUrl = comment.AttachmentUrl,
+            CreatedAt = comment.CreatedAt,
+            Role = comment.User?.Role ?? UserRole.Worker,
+        };
+
+        if (comment.User != null)
+        {
+            if (comment.User.Role == UserRole.Admin) dto.UserName = "Admin";
+            else if (comment.User.Role == UserRole.Farmer) dto.UserName = comment.User.Farmer?.ContactName ?? "Farmer";
+            else if (comment.User.Role == UserRole.Worker) dto.UserName = comment.User.Worker?.FullName ?? "Worker";
+        }
+
+        return dto;
+    }
+
+    public List<DisputeReportCommentDTO> DisputeReportCommentsToDtos(IEnumerable<DisputeReportComment> comments)
+    {
+        return comments?.Select(DisputeReportCommentToDto).ToList() ?? new List<DisputeReportCommentDTO>();
+    }
+
     // WorkerSession
     [MapProperty(nameof(WorkerSession.JobDetail.JobApplicationId), nameof(WorkerAttendanceDTO.JobApplicationId))]
     public partial WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);

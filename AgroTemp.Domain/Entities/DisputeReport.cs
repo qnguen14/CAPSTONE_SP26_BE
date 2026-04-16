@@ -114,4 +114,6 @@ public class DisputeReport
 
     [Column("resolved_at")]
     public DateTime? ResolvedAt { get; set; }
+
+    public virtual ICollection<DisputeReportComment> Comments { get; set; } = new List<DisputeReportComment>();
 }

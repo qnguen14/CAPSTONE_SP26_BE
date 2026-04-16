@@ -365,4 +365,63 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
             throw new UnauthorizedAccessException("You are not allowed to access this dispute report.");
         }
     }
+
+    public async Task<List<DisputeReportCommentDTO>> GetDisputeCommentsAsync(Guid disputeId, Guid currentUserId, bool isAdmin)
+    {
+        var dispute = await _unitOfWork.GetRepository<DisputeReport>()
+            .FirstOrDefaultAsync(predicate: d => d.Id == disputeId);
+
+        if (dispute == null) throw new KeyNotFoundException("Dispute not found");
+
+        if (!isAdmin)
+        {
+            await EnsureIsOwnerAsync(dispute, currentUserId);
+        }
+
+        var comments = await _unitOfWork.Context.Set<DisputeReportComment>()
+            .Include(c => c.User)
+            .ThenInclude(u => u.Farmer)
+            .Include(c => c.User)
+            .ThenInclude(u => u.Worker)
+            .Where(c => c.DisputeReportId == disputeId)
+            .OrderBy(c => c.CreatedAt)
+            .ToListAsync();
+
+        return _mapper.DisputeReportCommentsToDtos(comments);
+    }
+
+    public async Task<DisputeReportCommentDTO> AddDisputeCommentAsync(Guid disputeId, Guid currentUserId, bool isAdmin, CreateDisputeReportCommentRequest request)
+    {
+        var dispute = await _unitOfWork.GetRepository<DisputeReport>()
+            .FirstOrDefaultAsync(predicate: d => d.Id == disputeId);
+
+        if (dispute == null) throw new KeyNotFoundException("Dispute not found");
+
+        if (!isAdmin)
+        {
+            await EnsureIsOwnerAsync(dispute, currentUserId);
+        }
+
+        var comment = new DisputeReportComment
+        {
+            Id = Guid.NewGuid(),
+            DisputeReportId = disputeId,
+            UserId = currentUserId,
+            Content = request.Content,
+            AttachmentUrl = request.AttachmentUrl,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _unitOfWork.Context.Set<DisputeReportComment>().AddAsync(comment);
+        await _unitOfWork.SaveChangesAsync();
+
+        var createdComment = await _unitOfWork.Context.Set<DisputeReportComment>()
+            .Include(c => c.User)
+            .ThenInclude(u => u.Farmer)
+            .Include(c => c.User)
+            .ThenInclude(u => u.Worker)
+            .FirstOrDefaultAsync(c => c.Id == comment.Id);
+
+        return _mapper.DisputeReportCommentToDto(createdComment!);
+    }
 }

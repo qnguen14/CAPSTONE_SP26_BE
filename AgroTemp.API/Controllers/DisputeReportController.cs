@@ -430,4 +430,113 @@ public class DisputeReportController : ControllerBase
             });
         }
     }
+
+    [HttpGet("{id}/comments")]
+    [Authorize(Roles = "Admin,Farmer,Worker")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DisputeReportCommentDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<DisputeReportCommentDTO>>> GetDisputeComments([FromRoute] Guid id)
+    {
+        try
+        {
+            var isAdmin = User.IsInRole("Admin");
+            var response = await _disputeReportService.GetDisputeCommentsAsync(id, CurrentUserId, isAdmin);
+            return Ok(new ApiResponse<IEnumerable<DisputeReportCommentDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Comments retrieved successfully",
+                Data = response
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving comments for dispute {DisputeId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving the comments",
+                Data = null
+            });
+        }
+    }
+
+    [HttpPost("{id}/comments")]
+    [Authorize(Roles = "Admin,Farmer,Worker")]
+    [ProducesResponseType(typeof(ApiResponse<DisputeReportCommentDTO>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DisputeReportCommentDTO>> AddDisputeComment([FromRoute] Guid id, [FromBody] CreateDisputeReportCommentRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = "Invalid comment request",
+                Data = ModelState
+            });
+        }
+
+        try
+        {
+            var isAdmin = User.IsInRole("Admin");
+            var response = await _disputeReportService.AddDisputeCommentAsync(id, CurrentUserId, isAdmin, request);
+            return StatusCode(StatusCodes.Status201Created, new ApiResponse<DisputeReportCommentDTO>
+            {
+                StatusCode = StatusCodes.Status201Created,
+                Message = "Comment added successfully",
+                Data = response
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding comment to dispute {DisputeId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while adding the comment",
+                Data = null
+            });
+        }
+    }
 }
