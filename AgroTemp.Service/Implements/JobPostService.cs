@@ -237,10 +237,10 @@ namespace AgroTemp.Service.Implements
                     jobPost.Id = Guid.NewGuid();
                 }
                 jobPost.FarmerId = farmer.Id;
-                jobPost.StatusId = (int)JobPostStatus.Draft;
+                jobPost.StatusId = request.StatusId;
                 jobPost.CreatedAt = DateTime.UtcNow;
                 jobPost.UpdatedAt = DateTime.UtcNow;
-                jobPost.PublishedAt = default;
+                jobPost.PublishedAt = request.PublishedAt;
 
                 var totalDays = (request.StartDate.HasValue && request.EndDate.HasValue)
                     ? (request.EndDate.Value.ToDateTime(TimeOnly.MinValue) - request.StartDate.Value.ToDateTime(TimeOnly.MinValue)).TotalDays
