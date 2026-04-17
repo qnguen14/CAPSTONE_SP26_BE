@@ -295,6 +295,8 @@ public class UserService : BaseService<User>, IUserService
             else
             {
                 farmerProfile.ContactName = request.ContactName;
+                farmerProfile.Address = request.Address;
+                farmerProfile.DateOfBirth = request.DateOfBirth;
                 farmerProfile.UpdatedAt = DateTime.UtcNow;
                 farmerProfile.AvatarUrl = request.AvatarUrl;
 
