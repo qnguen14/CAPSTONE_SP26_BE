@@ -15,6 +15,7 @@ namespace AgroTemp.Service.Interfaces
         Task<List<JobPostDTO>> GetJobPostsByFarmerId();
         Task<List<JobPostDTO>> GetFarmerJobHistory();
         Task<List<JobPostDTO>> GetJobPostsByStatus(JobPostStatus status);
+        Task<List<WorkersPerDayDTO>> GetAcceptedWorkersPerDayAsync(Guid jobPostId);
 
 
         Task<JobPostDTO> CreateJobPost(CreateJobPostRequest request);

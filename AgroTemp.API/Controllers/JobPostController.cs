@@ -611,4 +611,42 @@ public class JobPostController : ControllerBase
             });
         }
     }
+
+    [HttpGet(ApiEndpointConstants.Job.GetAcceptedWorkersPerDayEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<WorkersPerDayDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<WorkersPerDayDTO>>> GetAcceptedWorkersPerDay([FromRoute] Guid id)
+    {
+        try
+        {
+            var response = await _jobPostService.GetAcceptedWorkersPerDayAsync(id);
+            var apiResponse = new ApiResponse<IEnumerable<WorkersPerDayDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Accepted workers per day retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving accepted workers per day for job post {Id}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving accepted workers per day",
+                Data = null
+            });
+        }
+    }
 }

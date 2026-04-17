@@ -1097,5 +1097,44 @@ namespace AgroTemp.Service.Implements
                 });
             }
         }
+
+        public async Task<List<WorkersPerDayDTO>> GetAcceptedWorkersPerDayAsync(Guid jobPostId)
+        {
+            try
+            {
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(predicate: jp => jp.Id == jobPostId);
+
+                if (jobPost == null)
+                    throw new KeyNotFoundException($"Job post with id '{jobPostId}' was not found.");
+
+                var acceptedApplications = await _unitOfWork.GetRepository<JobApplication>()
+                    .GetListAsync(
+                        predicate: ja =>
+                            ja.JobPostId == jobPostId &&
+                            ja.StatusId == (int)ApplicationStatus.Accepted);
+
+                var workDateCounts = acceptedApplications
+                    .Where(ja => ja.WorkDates != null)
+                    .SelectMany(ja => ja.WorkDates!.Select(dt => DateOnly.FromDateTime(dt)))
+                    .GroupBy(date => date)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                var result = jobPost.SelectedDays
+                    .Select(day => new WorkersPerDayDTO
+                    {
+                        Date = day,
+                        AcceptedWorkerCount = workDateCounts.TryGetValue(day, out var count) ? count : 0
+                    })
+                    .OrderBy(x => x.Date)
+                    .ToList();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
     }
 }
