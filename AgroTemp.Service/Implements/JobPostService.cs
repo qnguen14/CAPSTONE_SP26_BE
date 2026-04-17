@@ -242,12 +242,12 @@ namespace AgroTemp.Service.Implements
                 jobPost.UpdatedAt = DateTime.UtcNow;
                 jobPost.PublishedAt = request.PublishedAt;
 
-                var totalDays = (request.StartDate.HasValue && request.EndDate.HasValue)
-                    ? (request.EndDate.Value.ToDateTime(TimeOnly.MinValue) - request.StartDate.Value.ToDateTime(TimeOnly.MinValue)).TotalDays
-                    : 0;
+                var billableDays = request.JobTypeId == JobType.Daily
+                    ? ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays)
+                    : 1;
                 var lockAmount = request.JobTypeId == JobType.PerJob
                     ? request.WageAmount
-                    : request.WageAmount * request.WorkersNeeded * (decimal)totalDays;
+                    : request.WageAmount * request.WorkersNeeded * billableDays;
                 try
                 {
                     await _walletService.LockAmountForJobPostAsync(farmer.UserId, jobPost.Id, lockAmount);
@@ -417,13 +417,13 @@ namespace AgroTemp.Service.Implements
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
 
                 // Refund the locked amount back to the farmer's wallet
-                var totalDays = (existingJobPost.StartDate.HasValue && existingJobPost.EndDate.HasValue)
-                    ? (existingJobPost.EndDate.Value.ToDateTime(TimeOnly.MinValue) - existingJobPost.StartDate.Value.ToDateTime(TimeOnly.MinValue)).TotalDays
-                    : 0;
+                var billableDays = existingJobPost.JobTypeId == (int)JobType.Daily
+                    ? ResolveBillableDays(existingJobPost.StartDate, existingJobPost.EndDate, existingJobPost.SelectedDays)
+                    : 1;
 
                 var lockedAmount = existingJobPost.JobTypeId == (int)JobType.PerJob
                     ? existingJobPost.WageAmount
-                    : existingJobPost.WageAmount * existingJobPost.WorkersNeeded * (decimal)totalDays;
+                    : existingJobPost.WageAmount * existingJobPost.WorkersNeeded * billableDays;
 
                 if (lockedAmount > 0)
                 {
@@ -1055,6 +1055,23 @@ namespace AgroTemp.Service.Implements
             {
                 throw new Exception($"Error getting urgent jobs: {ex.Message}");
             }
+        }
+
+        private static int ResolveBillableDays(DateOnly? startDate, DateOnly? endDate, IEnumerable<DateOnly>? selectedDays)
+        {
+            var selectedDayCount = selectedDays?.Distinct().Count() ?? 0;
+            if (selectedDayCount > 0)
+            {
+                return selectedDayCount;
+            }
+
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                var spanDays = endDate.Value.DayNumber - startDate.Value.DayNumber + 1;
+                return Math.Max(1, spanDays);
+            }
+
+            return 1;
         }
 
         private async Task NotifyMatchingWorkersAsync(JobPost jobPost)
