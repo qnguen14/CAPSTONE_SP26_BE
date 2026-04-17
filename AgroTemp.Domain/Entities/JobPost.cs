@@ -88,13 +88,11 @@ public class JobPost
     [Column("wage_amount")]
     public decimal WageAmount { get; set; }
 
-    [Required]
     [Column("requirements")]
-    public List<string> Requirements { get; set; }
+    public List<string>? Requirements { get; set; }
 
-    [Required]
     [Column("privileges")]
-    public List<string> Privileges { get; set; }
+    public List<string>? Privileges { get; set; }
 
     [Required]
     [Column("published_at")]
