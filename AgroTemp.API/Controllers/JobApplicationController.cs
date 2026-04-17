@@ -455,4 +455,65 @@ public class JobApplicationController : ControllerBase
             });
         }
     }
+
+    [HttpPut(ApiEndpointConstants.Job.CancelJobApplicationForFarmerEndpoint)]
+    [Authorize(Roles = "Farmer")]
+    [ProducesResponseType(typeof(ApiResponse<JobApplicationDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<JobApplicationDTO>> CancelJobApplicationForFarmer([FromRoute] Guid id)
+    {
+        try
+        {
+            var response = await _jobApplicationService.CancelJobApplicationForFarmer(id);
+            return Ok(new ApiResponse<JobApplicationDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job application cancelled successfully",
+                Data = response
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application for farmer: Not found");
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application for farmer: Unauthorized");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Cancel job application for farmer: Invalid state");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling job application for farmer");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while cancelling the job application",
+                Data = null
+            });
+        }
+    }
 }

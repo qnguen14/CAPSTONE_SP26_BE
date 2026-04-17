@@ -121,6 +121,7 @@ public class ApiEndpointConstants
 
         public const string CancelJobPostEndpoint = JobPostEndpoint + "/cancel" + "/{id}";
         public const string CancelJobApplicationEndpoint = JobApplicationEndpoint + "/cancel" + "/{id}";
+        public const string CancelJobApplicationForFarmerEndpoint = JobApplicationEndpoint + "/cancel/farmer" + "/{id}";
 
         public const string GetJobDetailByJobPost = JobDetailEndpoint + "/post" + "/{id}";
         public const string GetJobDetailByWorker = JobDetailEndpoint + "/worker" + "/{id}";
