@@ -121,6 +121,7 @@ public class ApiEndpointConstants
 
         public const string CancelJobPostEndpoint = JobPostEndpoint + "/cancel" + "/{id}";
         public const string CancelJobApplicationEndpoint = JobApplicationEndpoint + "/cancel" + "/{id}";
+        public const string CancelJobApplicationForFarmerEndpoint = JobApplicationEndpoint + "/cancel/farmer" + "/{id}";
 
         public const string GetJobDetailByJobPost = JobDetailEndpoint + "/post" + "/{id}";
         public const string GetJobDetailByWorker = JobDetailEndpoint + "/worker" + "/{id}";
@@ -128,6 +129,11 @@ public class ApiEndpointConstants
         public const string ApproveJobDetailEndpoint = JobDetailEndpoint + "/approve" + "/{id}";
 
         public const string GetJobApplicationsByFarmer = JobApplicationEndpoint + "/farmer";
+
+        public const string GetAcceptedWorkersPerDayEndpoint = JobPostEndpoint + "/{id}/workers-per-day";
+
+        public const string ToggleSaveJobPostEndpoint = JobPostEndpoint + "/{id}/save";
+        public const string GetSavedJobPostsEndpoint = JobPostEndpoint + "/saved";
     }
 
     public static class WorkerAttendance

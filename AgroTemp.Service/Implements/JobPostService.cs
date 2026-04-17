@@ -1114,5 +1114,140 @@ namespace AgroTemp.Service.Implements
                 });
             }
         }
+
+        public async Task<List<WorkersPerDayDTO>> GetAcceptedWorkersPerDayAsync(Guid jobPostId)
+        {
+            try
+            {
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(predicate: jp => jp.Id == jobPostId);
+
+                if (jobPost == null)
+                    throw new KeyNotFoundException($"Job post with id '{jobPostId}' was not found.");
+
+                var acceptedApplications = await _unitOfWork.GetRepository<JobApplication>()
+                    .GetListAsync(
+                        predicate: ja =>
+                            ja.JobPostId == jobPostId &&
+                            ja.StatusId == (int)ApplicationStatus.Accepted);
+
+                var workDateCounts = acceptedApplications
+                    .Where(ja => ja.WorkDates != null)
+                    .SelectMany(ja => ja.WorkDates!.Select(dt => DateOnly.FromDateTime(dt)))
+                    .GroupBy(date => date)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                var result = jobPost.SelectedDays
+                    .Select(day => new WorkersPerDayDTO
+                    {
+                        Date = day,
+                        AcceptedWorkerCount = workDateCounts.TryGetValue(day, out var count) ? count : 0
+                    })
+                    .OrderBy(x => x.Date)
+                    .ToList();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<SavedJobPostDTO> ToggleSaveJobPostAsync(Guid jobPostId)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId);
+                if (worker == null)
+                    throw new UnauthorizedAccessException("Only workers can save job posts.");
+
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobPostId,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill));
+                if (jobPost == null)
+                    throw new KeyNotFoundException($"Job post with id '{jobPostId}' was not found.");
+
+                var existing = await _unitOfWork.GetRepository<SavedJobPost>()
+                    .FirstOrDefaultAsync(predicate: s => s.WorkerId == worker.Id && s.JobPostId == jobPostId);
+
+                if (existing != null)
+                {
+                    _unitOfWork.GetRepository<SavedJobPost>().DeleteAsync(existing);
+                    await _unitOfWork.SaveChangesAsync();
+                    return null;
+                }
+
+                var saved = new SavedJobPost
+                {
+                    Id = Guid.NewGuid(),
+                    WorkerId = worker.Id,
+                    JobPostId = jobPostId,
+                    SavedAt = DateTime.UtcNow
+                };
+
+                await _unitOfWork.GetRepository<SavedJobPost>().InsertAsync(saved);
+                await _unitOfWork.SaveChangesAsync();
+
+                return new SavedJobPostDTO
+                {
+                    Id = saved.Id,
+                    WorkerId = saved.WorkerId,
+                    SavedAt = saved.SavedAt,
+                    JobPost = _mapper.JobPostToJobPostDto(jobPost)
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<SavedJobPostDTO>> GetSavedJobPostsAsync()
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId);
+                if (worker == null)
+                    throw new UnauthorizedAccessException("Only workers can retrieve saved job posts.");
+
+                var savedPosts = await _unitOfWork.GetRepository<SavedJobPost>()
+                    .GetListAsync(
+                        predicate: s => s.WorkerId == worker.Id,
+                        include: q => q
+                            .Include(s => s.JobPost)
+                            .ThenInclude(jp => jp.Farmer)
+                            .Include(s => s.JobPost)
+                            .ThenInclude(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: s => s.OrderByDescending(x => x.SavedAt));
+
+                return savedPosts.Select(s => new SavedJobPostDTO
+                {
+                    Id = s.Id,
+                    WorkerId = s.WorkerId,
+                    SavedAt = s.SavedAt,
+                    JobPost = _mapper.JobPostToJobPostDto(s.JobPost)
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
     }
 }

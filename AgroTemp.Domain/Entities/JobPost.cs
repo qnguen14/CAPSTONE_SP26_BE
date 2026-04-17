@@ -89,10 +89,10 @@ public class JobPost
     public decimal WageAmount { get; set; }
 
     [Column("requirements")]
-    public List<string> Requirements { get; set; }
+    public List<string>? Requirements { get; set; }
 
     [Column("privileges")]
-    public List<string> Privileges { get; set; }
+    public List<string>? Privileges { get; set; }
 
     [Required]
     [Column("published_at")]
@@ -118,5 +118,6 @@ public class JobPost
     public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
     public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
     public virtual ICollection<JobApplication> JobApplications { get; set; } = new List<JobApplication>();
+    public virtual ICollection<SavedJobPost> SavedJobPosts { get; set; } = new List<SavedJobPost>();
 
 }
