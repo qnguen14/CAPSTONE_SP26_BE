@@ -131,6 +131,9 @@ public class ApiEndpointConstants
         public const string GetJobApplicationsByFarmer = JobApplicationEndpoint + "/farmer";
 
         public const string GetAcceptedWorkersPerDayEndpoint = JobPostEndpoint + "/{id}/workers-per-day";
+
+        public const string ToggleSaveJobPostEndpoint = JobPostEndpoint + "/{id}/save";
+        public const string GetSavedJobPostsEndpoint = JobPostEndpoint + "/saved";
     }
 
     public static class WorkerAttendance

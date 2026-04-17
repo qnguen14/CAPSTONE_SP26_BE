@@ -40,6 +40,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
     public DbSet<DisputeReport> DisputeReports { get; set; }
     public DbSet<DisputeReportComment> DisputeReportComments { get; set; }
+    public DbSet<SavedJobPost> SavedJobPosts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -198,6 +199,25 @@ public class AgroTempDbContext : DbContext
             .WithOne(jsr => jsr.JobPost)
             .HasForeignKey(jsr => jsr.JobPostId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure Worker-SavedJobPost one-to-many relationship
+        modelBuilder.Entity<Worker>()
+            .HasMany(w => w.SavedJobPosts)
+            .WithOne(s => s.Worker)
+            .HasForeignKey(s => s.WorkerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure JobPost-SavedJobPost one-to-many relationship
+        modelBuilder.Entity<JobPost>()
+            .HasMany(jp => jp.SavedJobPosts)
+            .WithOne(s => s.JobPost)
+            .HasForeignKey(s => s.JobPostId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Ensure a worker cannot save the same job post more than once
+        modelBuilder.Entity<SavedJobPost>()
+            .HasIndex(s => new { s.WorkerId, s.JobPostId })
+            .IsUnique();
 
         // Configure Skill-JobSkillRequirement one-to-many relationship
         modelBuilder.Entity<Skill>()
