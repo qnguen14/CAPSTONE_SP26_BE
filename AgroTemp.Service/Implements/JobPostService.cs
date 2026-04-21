@@ -748,6 +748,61 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<PaginatedAdminJobPostsResponse> GetJobPostsForAdmin(int page = 1, int limit = 20)
+        {
+            try
+            {
+                page = page < 1 ? 1 : page;
+                limit = limit < 1 ? 1 : limit;
+                var skip = (page - 1) * limit;
+
+                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: null,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobDetails)
+                            .ThenInclude(jd => jd.Worker),
+                        orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
+
+                var total = jobPosts?.Count ?? 0;
+                var active = jobPosts?.Count(jp => jp.StatusId == (int)JobPostStatus.Published || jp.StatusId == (int)JobPostStatus.InProgress) ?? 0;
+                var completed = jobPosts?.Count(jp => jp.StatusId == (int)JobPostStatus.Completed) ?? 0;
+                var completionRate = total > 0 ? Math.Round((double)completed / total * 100, 1) : 0.0;
+
+                var pageItems = jobPosts?.Skip(skip).Take(limit).Select(jp => new AdminJobPostItemDTO
+                {
+                    Id = jp.Id,
+                    Title = jp.Title,
+                    Farmer = jp.Farmer != null ? new SimpleUserDto { Id = jp.Farmer.Id, FullName = jp.Farmer.ContactName } : null,
+                    Worker = jp.JobDetails?.FirstOrDefault()?.Worker != null ? new SimpleUserDto { Id = jp.JobDetails.First().Worker.Id, FullName = jp.JobDetails.First().Worker.FullName } : null,
+                    Status = ((JobPostStatus)jp.StatusId).ToString(),
+                    Salary = jp.WageAmount,
+                    StartDate = jp.StartDate,
+                    EndDate = jp.EndDate
+                }).ToList() ?? new List<AdminJobPostItemDTO>();
+
+                return new PaginatedAdminJobPostsResponse
+                {
+                    Data = pageItems,
+                    Summary = new AdminJobPostSummaryDto
+                    {
+                        Total = total,
+                        Active = active,
+                        Completed = completed,
+                        CompletionRate = completionRate
+                    },
+                    Total = total,
+                    Page = page,
+                    Limit = limit
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<PaginatedJobDiscoveryResponse> SearchJobsAsync(JobSearchFilterRequest filter)
         {
             try

@@ -17,4 +17,7 @@ public interface IPayOSService
     Task<WithdrawalResponse?> GetWithdrawalAsync(Guid withdrawalId);
     Task<ICollection<WithdrawalResponse>> GetMyWithdrawalsAsync();
     Task<WithdrawalAccountBalanceResponse> GetWithdrawalAccountBalanceAsync();
+    Task<AgroTemp.Domain.DTO.Payment.AdminWalletStatsResponse> GetAdminWalletStatsAsync(DateTime? date = null);
+    Task<AgroTemp.Domain.DTO.Payment.PaginatedAdminWithdrawalsResponse> GetWithdrawalsForAdminAsync(int page = 1, int limit = 20, string? status = null, string? search = null);
+    // UpdateWithdrawalStatusAsync removed per admin PUT removal
 }

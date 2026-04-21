@@ -110,6 +110,8 @@ public class ApiEndpointConstants
         public const string GetFilteredJobPostsEndpoint = JobPostEndpoint + "/filter";
         public const string GetFilteredJobPostsByFarmerEndpoint = JobPostEndpoint + "/filter/farmer";
 
+        public const string GetJobPostsForAdminEndpoint = JobPostEndpoint + "/admin";
+
         public const string SaveJobPostDraftEndpoint = JobPostEndpoint + "/draft";
         public const string GetFarmerDraftsEndpoint = JobPostEndpoint + "/drafts";
 
@@ -298,5 +300,10 @@ public class ApiEndpointConstants
     {
         public const string AdminEndpoint = ApiEndpoint + "/admin";
         public const string GetDashboardEndpoint = AdminEndpoint + "/dashboard";
+        public const string GetJobpostEndpoint = AdminEndpoint + "/jobpost";
+        public const string WalletStatsEndpoint = AdminEndpoint + "/wallet/stats";
+        public const string WithdrawalsEndpoint = AdminEndpoint + "/withdrawals";
+        public const string WalletsEndpoint = AdminEndpoint + "/wallets";
+        public const string WalletTransactionsEndpoint = AdminEndpoint + "/wallet-transactions";
     }
 }

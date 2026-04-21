@@ -485,25 +485,7 @@ public class PayOSService : IPayOSService
 
         var withdrawalId = Guid.NewGuid();
         
-        /* XỬ LÝ:
-         * - Description: API Payout của PayOS yêu cầu tối đa 25 ký tự và KHÔNG được có dấu/ký tự đặc biệt.
-         * - Category: Bỏ qua danh sách trống (đặt thành null) để tránh lỗi "Mã kiểm tra không hợp lệ" (Invalid Signature) 
-         *   do sự sai lệch khi tính toán chữ ký với mảng rỗng trong SDK PayOS.
-         * - ReferenceId: Sử dụng định dạng Guid "N" (32 ký tự) để đảm bảo luôn nằm trong giới hạn 50 ký tự của PayOS.
-         */
-         
-        /* CODE CŨ (Gây lỗi "Invalid Signature" hoặc "Description too long"): 
-        var payoutRequest = new PayoutRequest
-        {
-            ReferenceId = withdrawalId.ToString(),
-            Amount = (long)request.Amount,
-            Description = request.Description ?? $"withdrawal-{withdrawalId}",
-            ToBin = ((int)request.ToBin).ToString(),
-            ToAccountNumber = request.ToAccountNumber,
-            Category = request.Category
-        };
-        */
-
+       
         var payoutRequest = new PayoutRequest
         {
             ReferenceId = withdrawalId.ToString("N"),
@@ -623,6 +605,93 @@ public class PayOSService : IPayOSService
             Currency = accountInfo.Currency
         };
     }
+
+    public async Task<AgroTemp.Domain.DTO.Payment.AdminWalletStatsResponse> GetAdminWalletStatsAsync(DateTime? date = null)
+    {
+        var target = date ?? DateTime.UtcNow;
+        var start = target.Date;
+        var end = start.AddDays(1);
+
+        var deposits = await _unitOfWork.GetRepository<WalletTransaction>()
+            .GetListAsync(predicate: t => t.Type == TransactionType.DEPOSIT && t.CreatedAt >= start && t.CreatedAt < end);
+
+        var withdraws = await _unitOfWork.GetRepository<WalletTransaction>()
+            .GetListAsync(predicate: t => t.Type == TransactionType.WITHDRAW && t.CreatedAt >= start && t.CreatedAt < end);
+
+        var depositAmount = deposits.Sum(d => d.Amount);
+        var withdrawAmount = withdraws.Sum(w => w.Amount);
+        var depositCount = deposits.Count;
+        var withdrawCount = withdraws.Count;
+        var totalTransactions = depositCount + withdrawCount;
+        var netFlow = depositAmount - withdrawAmount;
+
+        var wallets = await _unitOfWork.GetRepository<Domain.Entities.Wallet>().GetListAsync();
+        var totalBalance = wallets.Any() ? wallets.Sum(w => w.Balance + w.LockedBalance) : 0m;
+        var lockedBalance = wallets.Any() ? wallets.Sum(w => w.LockedBalance) : 0m;
+        var availableBalance = wallets.Any() ? wallets.Sum(w => w.Balance) : 0m;
+
+        return new AgroTemp.Domain.DTO.Payment.AdminWalletStatsResponse
+        {
+            SystemBalance = new AgroTemp.Domain.DTO.Payment.SystemBalanceDto
+            {
+                Total = totalBalance,
+                Locked = lockedBalance,
+                Available = availableBalance,
+                ChangeToday = netFlow
+            },
+            PayosToday = new AgroTemp.Domain.DTO.Payment.PayosTodayDto
+            {
+                DepositAmount = depositAmount,
+                WithdrawAmount = withdrawAmount,
+                DepositCount = depositCount,
+                WithdrawCount = withdrawCount,
+                TotalTransactions = totalTransactions,
+                NetFlow = netFlow
+            }
+        };
+    }
+
+    public async Task<AgroTemp.Domain.DTO.Payment.PaginatedAdminWithdrawalsResponse> GetWithdrawalsForAdminAsync(int page = 1, int limit = 20, string? status = null, string? search = null)
+    {
+        if (page < 1) page = 1;
+        if (limit < 1) limit = 20;
+
+        var query = _unitOfWork.Context.Set<Domain.Entities.WithdrawalRequest>()
+            .Include(wr => wr.Wallet)
+                .ThenInclude(w => w.User)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query = query.Where(wr => wr.Status == status);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim().ToLowerInvariant();
+            query = query.Where(wr => wr.Wallet.User.Email.ToLower().Contains(s) 
+                || ( wr.Wallet.User.Worker != null && wr.Wallet.User.Worker.FullName.ToLower().Contains(s))
+                || ( wr.Wallet.User.Farmer != null && wr.Wallet.User.Farmer.ContactName.ToLower().Contains(s)));
+        }
+
+        var total = await query.CountAsync();
+        var items = await query.OrderByDescending(wr => wr.CreatedAt)
+            .Skip((page - 1) * limit)
+            .Take(limit)
+            .ToListAsync();
+
+        var responses = items.Select(wr => MapWithdrawalToResponse(wr, null)).ToList();
+
+        return new AgroTemp.Domain.DTO.Payment.PaginatedAdminWithdrawalsResponse
+        {
+            Items = responses,
+            TotalCount = total,
+            Page = page,
+            Limit = limit
+        };
+    }
+
+    // UpdateWithdrawalStatusAsync removed per admin PUT removal
 
     private async Task<PayOSOrder?> GetOrderEntityByIdAsync(Guid id)
     {
