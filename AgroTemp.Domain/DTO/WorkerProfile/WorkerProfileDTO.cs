@@ -1,3 +1,5 @@
+using AgroTemp.Domain.DTO.Skill;
+
 namespace AgroTemp.Domain.DTO;
 
 public class WorkerProfileDTO
@@ -5,7 +7,7 @@ public class WorkerProfileDTO
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public string FullName { get; set; }
-    public string Age { get; set; }
+    public string Date_of_birth { get; set; }
     public string PrimaryLocation { get; set; }
     public double? TravelRadiusKmPreference { get; set; }
     public int ExperienceLevelId { get; set; }
@@ -19,4 +21,7 @@ public class WorkerProfileDTO
 
     public string Email { get; set; }
     public string PhoneNumber { get; set; }
+    public List<SkillResponse> Skills { get; set; } = new List<SkillResponse>();
+    public int GenderId { get; set; }
+    public string Gender { get; set; }
 }

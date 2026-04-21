@@ -12,7 +12,7 @@ public class UpdateSkillRequest
     public string Description { get; set; }
 
     [Required]
-    public int CategoryId { get; set; }
+    public Guid CategoryId { get; set; }
 
     public bool IsActive { get; set; }
 }

@@ -12,5 +12,9 @@ public interface IDisputeReportService
     Task<DisputeReportDTO?> ReviewDisputeAsync(Guid id, Guid adminUserId, ReviewDisputeReportRequest request);
     Task<DisputeReportDTO?> ResolveDisputeAsync(Guid id, Guid adminUserId, ResolveDisputeRequest request);
     Task<List<DisputeReportDTO>> GetMyDisputesAsync(Guid currentUserId);
+
+    // Comments
+    Task<List<DisputeReportCommentDTO>> GetDisputeCommentsAsync(Guid disputeId, Guid currentUserId, bool isAdmin);
+    Task<DisputeReportCommentDTO> AddDisputeCommentAsync(Guid disputeId, Guid currentUserId, bool isAdmin, CreateDisputeReportCommentRequest request);
 }
     

@@ -28,6 +28,9 @@ public class WalletTransactionController : ControllerBase
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach wallet transactions danh cho admin.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all wallet transactions danh cho admin.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WalletTransactionGetAllWalletTransactions")]
     public async Task<ActionResult> GetAllWalletTransactions()
     {
         try
@@ -56,6 +59,9 @@ public class WalletTransactionController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin wallet transaction by id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get wallet transaction by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WalletTransactionGetWalletTransactionById")]
     public async Task<ActionResult> GetWalletTransactionById([FromRoute] Guid id)
     {
         try
@@ -95,7 +101,10 @@ public class WalletTransactionController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> GetWalletTransactionsByWalletId([FromRoute] Guid walletId)
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin wallet transactions by wallet id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get wallet transactions by wallet id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WalletTransactionGetWalletTransactionsByWalletId")]
+    public async Task<IActionResult> GetWalletTransactionsByWalletId([FromRoute] Guid walletId, [FromQuery] int page = 1, [FromQuery] int limit = 10)
     {
         try
         {
@@ -121,7 +130,7 @@ public class WalletTransactionController : ControllerBase
                 }
             }
 
-            var transactions = await _walletTransactionService.GetByWalletIdAsync(walletId);
+            var transactions = await _walletTransactionService.GetByWalletIdAsync(walletId, page, limit);
             return Ok(new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status200OK,

@@ -20,7 +20,24 @@ namespace AgroTemp.Domain.Mapper;
 public partial class MapperlyMapper : IMapperlyMapper
 {
     [MapProperty(nameof(User.Role), nameof(UserDTO.Role))]
-    public partial UserDTO UserToUserDto(User user);
+    public partial UserDTO UserToUserDtoManual(User user);
+
+    public UserDTO UserToUserDto(User user)
+    {
+        if (user == null) return null;
+        var dto = UserToUserDtoManual(user);
+        
+        if (user.Farmer != null)
+        {
+            dto.Address = user.Farmer.Address;
+        }
+        else if (user.Worker != null)
+        {
+            dto.Address = user.Worker.PrimaryLocation;
+        }
+        
+        return dto;
+    }
 
     public partial List<UserDTO> UsersToUserDtos(IEnumerable<User> users);
 
@@ -31,6 +48,8 @@ public partial class MapperlyMapper : IMapperlyMapper
             Id = farmer.Id,
             UserId = farmer.UserId,
             ContactName = farmer.ContactName,
+            Address = farmer.Address,
+            DateOfBirth = farmer.DateOfBirth,
             AverageRating = farmer.AverageRating,
             TotalJobsPosted = farmer.TotalJobsPosted,
             TotalJobsCompleted = farmer.TotalJobsCompleted,
@@ -53,7 +72,7 @@ public partial class MapperlyMapper : IMapperlyMapper
             Id = worker.Id,
             UserId = worker.UserId,
             FullName = worker.FullName,
-            Age = worker.AgeRange,
+            Date_of_birth = worker.DateOfBirth.ToString(),
             PrimaryLocation = worker.PrimaryLocation,
             TravelRadiusKmPreference = worker.TravelRadiusKmPreference,
             ExperienceLevelId = worker.ExperienceLevelId,
@@ -66,14 +85,23 @@ public partial class MapperlyMapper : IMapperlyMapper
             UpdatedAt = worker.UpdatedAt,
             Email = worker.User?.Email ?? string.Empty,
             PhoneNumber = worker.User?.PhoneNumber ?? string.Empty,
+            Skills = worker.WorkerSkills?
+                .Where(ws => ws.Skill != null)
+                .Select(ws => SkillToSkillResponse(ws.Skill))
+                .ToList() ?? new List<SkillResponse>(),
+            GenderId = worker.GenderId,
+            Gender = MapGender((Gender)worker.GenderId)
         };
     }
 
     [MapProperty(nameof(User.Role), nameof(LoginResponse.Role))]
+    [MapProperty(nameof(User.IsVerified), nameof(LoginResponse.IsVerified))]
     public partial LoginResponse UserToLoginResponse(User user);
 
     // Custom mapping for ExperienceLevel enum to string
     private string MapExperienceLevel(ExperienceLevel level) => level.ToString();
+
+    private string MapGender(Gender gender) => gender.ToString();
 
     private string MapUserRole(UserRole role) => role.ToString();
 
@@ -93,6 +121,7 @@ public partial class MapperlyMapper : IMapperlyMapper
     // JobPost
     [MapProperty(nameof(JobPost.FarmerId), nameof(JobPostDTO.FarmerProfileId))]
     [MapProperty(nameof(JobPost.Farmer.ContactName), nameof(JobPostDTO.ContactName))]
+    [MapProperty(nameof(JobPost.Farmer), nameof(JobPostDTO.FarmerProfile))]
     public partial JobPostDTO JobPostToJobPostDto(JobPost jobPost);
     public partial List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
 
@@ -189,7 +218,7 @@ public partial class MapperlyMapper : IMapperlyMapper
             RespondedAt = jobApplication.RespondedAt,
             ResponseMessage = jobApplication.ResponseMessage,
             WorkDates = jobApplication.WorkDates,
-            LocationName = jobApplication.JobPost?.Farm?.LocationName
+            LocationName = jobApplication.JobPost?.Farm?.LocationName,
         };
         return dto;
     }
@@ -210,14 +239,59 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial void UpdateJobDetailRequestToJobDetail(UpdateJobDetailRequest request, JobDetail jobDetail);
 
     // Skill
+    [MapProperty(nameof(Skill.JobCategoryId), nameof(SkillResponse.CategoryId))]
     public partial SkillResponse SkillToSkillResponse(Skill skill);
     public partial List<SkillResponse> SkillsToSkillResponses(IEnumerable<Skill> skills);
+    [MapProperty(nameof(CreateSkillRequest.CategoryId), nameof(Skill.JobCategoryId))]
     public partial Skill CreateSkillRequestToSkill(CreateSkillRequest request);
+    [MapProperty(nameof(UpdateSkillRequest.CategoryId), nameof(Skill.JobCategoryId))]
     public partial void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
 
     // Rating
-    public partial RatingDTO RatingToRatingDto(Rating rating);
-    public partial List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings);
+    public RatingDTO RatingToRatingDto(Rating rating)
+    {
+        if (rating == null) return null;
+
+        return new RatingDTO
+        {
+            Id = rating.Id,
+            RaterId = rating.RaterId,
+            RateeId = rating.RateeId,
+            JobPostId = rating.JobPostId,
+            RatingScore = rating.RatingScore,
+            ReviewText = rating.ReviewText,
+            TypeId = rating.TypeId,
+            CreatedAt = rating.CreatedAt,
+            RaterProfile = MapRatingUserProfile(rating.Rater),
+            RateeProfile = MapRatingUserProfile(rating.Ratee)
+        };
+    }
+
+    public List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings)
+    {
+        return ratings?.Select(RatingToRatingDto).ToList() ?? new List<RatingDTO>();
+    }
+
+    private RatingUserProfileDTO? MapRatingUserProfile(User? user)
+    {
+        if (user == null)
+        {
+            return null;
+        }
+
+        return new RatingUserProfileDTO
+        {
+            UserId = user.Id,
+            Role = user.Role.ToString(),
+            FarmerProfile = user.Role == UserRole.Farmer && user.Farmer != null
+                ? FarmerToDto(user.Farmer)
+                : null,
+            WorkerProfile = user.Role == UserRole.Worker && user.Worker != null
+                ? WorkerToDto(user.Worker)
+                : null
+        };
+    }
+
     public partial Rating CreateRatingRequestToRating(CreateRatingRequest request);
     public partial void UpdateRatingRequestToRating(UpdateRatingRequest request, Rating rating);
 
@@ -226,6 +300,37 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial List<DisputeReportDTO> DisputeReportsToDisputeReportDtos(IEnumerable<DisputeReport> disputeReports);
     public partial DisputeReport CreateDisputeReportRequestToDisputeReport(CreateDisputeReportRequest request);
     public partial void UpdateDisputeReportRequestToDisputeReport(UpdateDisputeReportRequest request, DisputeReport disputeReport);
+
+    // DisputeReportComment
+    public DisputeReportCommentDTO DisputeReportCommentToDto(DisputeReportComment comment)
+    {
+        if (comment == null) return null;
+
+        var dto = new DisputeReportCommentDTO
+        {
+            Id = comment.Id,
+            DisputeReportId = comment.DisputeReportId,
+            UserId = comment.UserId,
+            Content = comment.Content,
+            AttachmentUrl = comment.AttachmentUrl,
+            CreatedAt = comment.CreatedAt,
+            Role = comment.User?.Role ?? UserRole.Worker,
+        };
+
+        if (comment.User != null)
+        {
+            if (comment.User.Role == UserRole.Admin) dto.UserName = "Admin";
+            else if (comment.User.Role == UserRole.Farmer) dto.UserName = comment.User.Farmer?.ContactName ?? "Farmer";
+            else if (comment.User.Role == UserRole.Worker) dto.UserName = comment.User.Worker?.FullName ?? "Worker";
+        }
+
+        return dto;
+    }
+
+    public List<DisputeReportCommentDTO> DisputeReportCommentsToDtos(IEnumerable<DisputeReportComment> comments)
+    {
+        return comments?.Select(DisputeReportCommentToDto).ToList() ?? new List<DisputeReportCommentDTO>();
+    }
 
     // WorkerSession
     [MapProperty(nameof(WorkerSession.JobDetail.JobApplicationId), nameof(WorkerAttendanceDTO.JobApplicationId))]

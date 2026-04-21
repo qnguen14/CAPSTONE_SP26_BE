@@ -16,6 +16,8 @@ namespace AgroTemp.Domain.DTO.Job.JobDetail
         public Guid JobPostId { get; set; }
 
         public Guid WorkerId { get; set; }
+        public WorkerProfileDTO Worker { get; set;}
+        public FarmerProfileDTO Farmer { get; set;}
 
         public int StatusId { get; set; }
 
@@ -39,6 +41,6 @@ namespace AgroTemp.Domain.DTO.Job.JobDetail
 
         public DateTime? UpdatedAt { get; set; }
 
-        //public virtual ICollection<JobAttachment> JobAttachments { get; set; } = new List<JobAttachment>();
+        public List<JobAttachmentDTO> Attachments { get; set; } = new List<JobAttachmentDTO>();
     }
 }

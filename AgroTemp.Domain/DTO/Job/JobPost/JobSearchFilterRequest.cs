@@ -7,7 +7,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
     {
         public decimal? WorkerLatitude { get; set; }
         public decimal? WorkerLongitude { get; set; }
-        public double? MaxDistanceKm { get; set; } = 20;
+        public double? MaxDistanceKm { get; set; }
         public decimal? MinWageAmount { get; set; }
         public decimal? MaxWageAmount { get; set; }
         public int? JobTypeId { get; set; }

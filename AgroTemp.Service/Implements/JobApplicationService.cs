@@ -3,6 +3,7 @@ using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
+using AgroTemp.Domain.Metadata;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
@@ -34,13 +35,51 @@ namespace AgroTemp.Service.Implements
                 var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
                     .GetListAsync(
                         predicate: null,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost.Farmer).Include(j => j.JobPost.Farm),
+                        include: ja => ja
+                            .Include(j => j.Worker)
+                                .ThenInclude(w => w.User)
+                            .Include(j => j.JobPost.Farmer)
+                            .Include(j => j.JobPost.Farm),
                         orderBy: ja => ja.OrderBy(x => x.AppliedAt));
 
                 if (jobApplications == null || !jobApplications.Any())
                 {
                     return null;
                 }
+
+                var result = _mapper.JobApplicationsToJobApplicationDtos(jobApplications);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobApplicationDTO>> GetJobApplicationsByWorker()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.UserId == userId);
+
+                if (worker == null)
+                    throw new KeyNotFoundException("Worker profile not found for the current user.");
+
+                var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
+                    .GetListAsync(
+                        predicate: ja => ja.WorkerId == worker.Id,
+                        include: ja => ja
+                            .Include(j => j.Worker)
+                                .ThenInclude(w => w.User)
+                            .Include(j => j.JobPost.Farmer)
+                            .Include(j => j.JobPost.Farm),
+                        orderBy: ja => ja.OrderByDescending(x => x.AppliedAt));
+
+                if (jobApplications == null || !jobApplications.Any())
+                    return new List<JobApplicationDTO>();
 
                 var result = _mapper.JobApplicationsToJobApplicationDtos(jobApplications);
                 return result;
@@ -59,7 +98,11 @@ namespace AgroTemp.Service.Implements
                 var jobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == guid,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost.Farmer).Include(j => j.JobPost.Farm));
+                        include: ja => ja
+                            .Include(j => j.Worker)
+                                .ThenInclude(w => w.User)
+                            .Include(j => j.JobPost.Farmer)
+                            .Include(j => j.JobPost.Farm));
 
                 if (jobApplication == null)
                 {
@@ -75,28 +118,46 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobApplicationDTO>> GetJobApplicationsByJobPostId(Guid jobPostId, Guid farmerProfileId, int? statusId, bool includeAll)
+        public async Task<PaginatedResponse<JobApplicationDTO>> GetJobApplicationsByJobPostId(Guid jobPostId, Guid farmerProfileId, int? statusId, bool includeAll, int page, int limit)
         {
             try
             {
+                page = page < 1 ? 1 : page;
+                limit = limit <= 0 ? 10 : limit;
+                var skip = (page - 1) * limit;
+
                 var statusFilter = statusId ?? (int)ApplicationStatus.Pending;
 
-                var jobApplications = await _unitOfWork.GetRepository<JobApplication>()
-                    .GetListAsync(predicate: ja =>
-                                    ja.JobPostId == jobPostId &&
-                                    ja.JobPost.FarmerId == farmerProfileId &&
-                                    (includeAll || ja.StatusId == statusFilter),
-                                include: ja => ja.Include(j => j.Worker)
-                                                .Include(j => j.JobPost.Farmer)
-                                                .Include(j => j.JobPost.Farm),
-                                orderBy: ja => ja.OrderBy(x => x.AppliedAt));
+                System.Linq.Expressions.Expression<Func<JobApplication, bool>> predicate = ja =>
+                    ja.JobPostId == jobPostId &&
+                    ja.JobPost.FarmerId == farmerProfileId &&
+                    (includeAll || ja.StatusId == statusFilter);
 
-                if (jobApplications == null || !jobApplications.Any())
+                var total = await _unitOfWork.GetRepository<JobApplication>().CountAsync(predicate);
+
+                var query = _unitOfWork.GetRepository<JobApplication>().CreateBaseQuery(
+                    predicate: predicate,
+                    orderBy: ja => ja.OrderBy(x => x.AppliedAt),
+                    include: ja => ja
+                        .Include(j => j.Worker)
+                            .ThenInclude(w => w.User)
+                        .Include(j => j.JobPost.Farmer)
+                        .Include(j => j.JobPost.Farm),
+                    asNoTracking: true);
+
+                var jobApplications = await query.Skip(skip).Take(limit).ToListAsync();
+
+                return new PaginatedResponse<JobApplicationDTO>
                 {
-                    return new List<JobApplicationDTO>();
-                }
-
-                return _mapper.JobApplicationsToJobApplicationDtos(jobApplications);
+                    Data = _mapper.JobApplicationsToJobApplicationDtos(jobApplications),
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit)
+                    }
+                };
             }
             catch (Exception ex)
             {
@@ -124,12 +185,12 @@ namespace AgroTemp.Service.Implements
                 jobApplication.Id = Guid.NewGuid();
                 jobApplication.AppliedAt = DateTime.UtcNow;
                 jobApplication.RespondedAt = null;
+                jobApplication.ResponseMessage = null;
                 jobApplication.StatusId = (int)ApplicationStatus.Pending;
 
                 await _unitOfWork.GetRepository<JobApplication>().InsertAsync(jobApplication);
-                await _unitOfWork.SaveChangesAsync();
 
-                // Get the job post and farmer information
+                // Get the job post and farmer information for the notification
                 var jobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
                         predicate: jp => jp.Id == jobApplication.JobPostId,
@@ -137,7 +198,6 @@ namespace AgroTemp.Service.Implements
 
                 if (jobPost != null && jobPost.Farmer != null)
                 {
-                    // Send notification to the farmer
                     var notificationRequest = new CreateNotificationRequest
                     {
                         UserId = jobPost.Farmer.UserId,
@@ -149,6 +209,8 @@ namespace AgroTemp.Service.Implements
 
                     await _notificationService.CreateAsync(notificationRequest);
                 }
+
+                await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.JobApplicationToJobApplicationDto(jobApplication);
                 return result;
@@ -218,7 +280,7 @@ namespace AgroTemp.Service.Implements
                 var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == guid,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost));
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost).ThenInclude(jp => jp.Farmer));
                 if (existingJobApplication == null)
                 {
                     return null;
@@ -232,12 +294,10 @@ namespace AgroTemp.Service.Implements
                 {
                     existingJobApplication.JobPost.WorkersAccepted += 1;
 
-                    if (existingJobApplication.JobPost.WorkersAccepted == existingJobApplication.JobPost.WorkersNeeded)
+                    if (existingJobApplication.JobPost.WorkersAccepted >= existingJobApplication.JobPost.WorkersNeeded)
                     {
                         existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Closed;
                     }
-
-                    _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobApplication.JobPost);
                 }
 
                 _unitOfWork.GetRepository<JobApplication>().UpdateAsync(existingJobApplication);
@@ -271,16 +331,27 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobApplicationDTO>> AutoAcceptUrgentJobApplicationsAsync(Guid jobPostId)
+        public async Task<List<JobApplicationDTO>> AutoAcceptUrgentJobApplicationsAsync(List<Guid> jobApplicationIds)
         {
             try
             {
+                if (jobApplicationIds == null || !jobApplicationIds.Any())
+                    throw new ArgumentException("No job application IDs provided.");
+
                 var currentUserId = GetCurrentUserId();
 
-                var jobPost = await _unitOfWork.GetRepository<JobPost>()
-                    .FirstOrDefaultAsync(
-                        predicate: jp => jp.Id == jobPostId,
-                        include: q => q.Include(jp => jp.Farmer));
+                var applications = await _unitOfWork.GetRepository<JobApplication>()
+                    .GetListAsync(
+                        predicate: ja => jobApplicationIds.Contains(ja.Id),
+                        include: q => q
+                            .Include(ja => ja.Worker)
+                            .Include(ja => ja.JobPost)
+                            .ThenInclude(jp => jp.Farmer));
+
+                if (applications == null || !applications.Any())
+                    throw new KeyNotFoundException("No job applications found for the provided IDs.");
+
+                var jobPost = applications.First().JobPost;
 
                 if (jobPost == null)
                     throw new KeyNotFoundException("Job post not found.");
@@ -295,19 +366,16 @@ namespace AgroTemp.Service.Implements
                 if (remainingSlots <= 0)
                     throw new InvalidOperationException("This job post has already reached its required number of workers.");
 
-                var pendingApplications = await _unitOfWork.GetRepository<JobApplication>()
-                    .GetListAsync(
-                        predicate: ja => ja.JobPostId == jobPostId
-                                      && ja.StatusId == (int)ApplicationStatus.Pending,
-                        include: q => q.Include(ja => ja.Worker),
-                        orderBy: q => q.OrderBy(ja => ja.AppliedAt));
+                var pendingApplications = applications
+                    .Where(ja => ja.StatusId == (int)ApplicationStatus.Pending)
+                    .OrderBy(ja => ja.AppliedAt)
+                    .Take(remainingSlots)
+                    .ToList();
 
-                if (pendingApplications == null || !pendingApplications.Any())
-                    throw new InvalidOperationException("No pending applications found for this job post.");
+                if (!pendingApplications.Any())
+                    throw new InvalidOperationException("None of the provided applications are pending.");
 
-                var toAccept = pendingApplications.Take(remainingSlots).ToList();
-
-                foreach (var application in toAccept)
+                foreach (var application in pendingApplications)
                 {
                     application.StatusId = (int)ApplicationStatus.Accepted;
                     application.RespondedAt = DateTime.UtcNow;
@@ -323,12 +391,12 @@ namespace AgroTemp.Service.Implements
                             Type = NotificationType.JobAcceptance,
                             Title = "Đơn tuyển dụng được CHẤP NHẬN",
                             Message = $"Đơn tuyển dụng của bạn cho \"{jobPost.Title}\" đã được tự động chấp nhận vì đây là công việc khẩn cấp.",
-                            RelatedEntityId = jobPostId
+                            RelatedEntityId = application.JobPostId
                         });
                     }
                 }
 
-                jobPost.WorkersAccepted += toAccept.Count;
+                jobPost.WorkersAccepted += pendingApplications.Count;
 
                 if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
                     jobPost.StatusId = (int)JobPostStatus.Closed;
@@ -336,7 +404,183 @@ namespace AgroTemp.Service.Implements
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(jobPost);
                 await _unitOfWork.SaveChangesAsync();
 
-                return _mapper.JobApplicationsToJobApplicationDtos(toAccept);
+                return _mapper.JobApplicationsToJobApplicationDtos(pendingApplications);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<JobApplicationDTO> CancelJobApplication (Guid id)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+
+                var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
+                    .FirstOrDefaultAsync(
+                        predicate: ja => ja.Id == id,
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost).ThenInclude(jp => jp.Farmer));
+
+                if (existingJobApplication == null)
+                    throw new KeyNotFoundException("Job application not found.");
+
+                if (existingJobApplication.Worker.UserId != currentUserId)
+                    throw new UnauthorizedAccessException("You are only authorized to cancel your own applications.");
+
+                if (existingJobApplication.StatusId == (int)ApplicationStatus.Cancelled || 
+                    existingJobApplication.StatusId == (int)ApplicationStatus.Rejected)
+                {
+                    throw new InvalidOperationException("Cannot cancel an application that is already cancelled or rejected.");
+                }
+
+                if (existingJobApplication.StatusId == (int)ApplicationStatus.Accepted)
+                {
+                    existingJobApplication.JobPost.WorkersAccepted -= 1;
+
+                    if (existingJobApplication.JobPost.StatusId == (int)JobPostStatus.Closed)
+                    {
+                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Published;
+                    }
+
+                    if (existingJobApplication.JobPost.Farmer != null)
+                    {
+                        await _notificationService.CreateAsync(new CreateNotificationRequest
+                        {
+                            UserId = existingJobApplication.JobPost.Farmer.UserId,
+                            Type = NotificationType.JobAcceptance,
+                            Title = "Công nhân hủy nhận việc",
+                            Message = $"Một công nhân đã hủy nhận việc cho \"{existingJobApplication.JobPost.Title}\". Vị trí công việc này đã được mở lại.",
+                            RelatedEntityId = existingJobApplication.JobPostId
+                        });
+                    }
+                }
+
+                existingJobApplication.StatusId = (int)ApplicationStatus.Cancelled;
+
+                _unitOfWork.GetRepository<JobApplication>().UpdateAsync(existingJobApplication);
+                await _unitOfWork.SaveChangesAsync();
+
+                return _mapper.JobApplicationToJobApplicationDto(existingJobApplication);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<JobApplicationDTO> CancelJobApplicationForFarmer(Guid id)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+
+                var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
+                    .FirstOrDefaultAsync(
+                        predicate: ja => ja.Id == id,
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost).ThenInclude(jp => jp.Farmer));
+
+                if (existingJobApplication == null)
+                    throw new KeyNotFoundException("Job application not found.");
+
+                if (existingJobApplication.JobPost.Farmer.UserId != currentUserId)
+                    throw new UnauthorizedAccessException("You are only authorized to cancel applications for your own job posts.");
+
+                if (existingJobApplication.StatusId == (int)ApplicationStatus.Cancelled || 
+                    existingJobApplication.StatusId == (int)ApplicationStatus.Rejected)
+                {
+                    throw new InvalidOperationException("Cannot cancel an application that is already cancelled or rejected.");
+                }
+
+                if (existingJobApplication.StatusId == (int)ApplicationStatus.Accepted)
+                {
+                    existingJobApplication.JobPost.WorkersAccepted -= 1;
+                    if (existingJobApplication.JobPost.StatusId == (int)JobPostStatus.Closed)
+                    {
+                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Published;
+                    }
+
+                    if (existingJobApplication.Worker != null)
+                    {
+                        await _notificationService.CreateAsync(new CreateNotificationRequest
+                        {
+                            UserId = existingJobApplication.Worker.UserId,
+                            Type = NotificationType.JobAcceptance,
+                            Title = "Đơn tuyển dụng bị HỦY",
+                            Message = $"Đơn tuyển dụng của bạn cho \"{existingJobApplication.JobPost.Title}\" đã bị hủy bởi người nông dân. Vị trí công việc này đã được mở lại.",
+                            RelatedEntityId = existingJobApplication.JobPostId
+                        });
+                    }
+                }
+
+                existingJobApplication.StatusId = (int)ApplicationStatus.Cancelled;
+
+                _unitOfWork.GetRepository<JobApplication>().UpdateAsync(existingJobApplication);
+                await _unitOfWork.SaveChangesAsync();
+
+                return _mapper.JobApplicationToJobApplicationDto(existingJobApplication);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<PaginatedResponse<JobApplicationDTO>> GetJobApplicationsByFarmer(int? statusId, bool includeAll, int page, int limit)
+        {
+            try
+            {
+                page = page < 1 ? 1 : page;
+                limit = limit <= 0 ? 10 : limit;
+                var skip = (page - 1) * limit;
+
+                var statusFilter = statusId ?? (int)ApplicationStatus.Pending;
+
+                var currentUserId = GetCurrentUserId();
+                var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: fp => fp.UserId == currentUserId);
+
+                if (farmerProfile == null)
+                {
+                    throw new KeyNotFoundException("Farmer profile not found for the current user.");
+                }
+
+                System.Linq.Expressions.Expression<Func<JobApplication, bool>> predicate;
+                if (includeAll)
+                {
+                    predicate = ja => ja.JobPost.FarmerId == farmerProfile.Id;
+                }
+                else
+                {
+                    predicate = ja => ja.JobPost.FarmerId == farmerProfile.Id && ja.StatusId == statusFilter;
+                }
+
+                var total = await _unitOfWork.GetRepository<JobApplication>().CountAsync(predicate);
+
+                var query = _unitOfWork.GetRepository<JobApplication>().CreateBaseQuery(
+                    predicate: predicate,
+                    orderBy: ja => ja.OrderBy(x => x.AppliedAt),
+                    include: ja => ja
+                        .Include(j => j.Worker)
+                            .ThenInclude(w => w.User)
+                        .Include(j => j.JobPost.Farmer)
+                        .Include(j => j.JobPost.Farm),
+                    asNoTracking: true);
+
+                var jobApplications = await query.Skip(skip).Take(limit).ToListAsync();
+
+                return new PaginatedResponse<JobApplicationDTO>
+                {
+                    Data = _mapper.JobApplicationsToJobApplicationDtos(jobApplications),
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit)
+                    }
+                };
             }
             catch (Exception ex)
             {

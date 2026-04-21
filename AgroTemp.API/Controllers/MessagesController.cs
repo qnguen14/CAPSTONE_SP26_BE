@@ -1,9 +1,11 @@
 using AgroTemp.API.Constants;
+using AgroTemp.API.Hubs;
 using AgroTemp.Domain.DTO.Message;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace AgroTemp.API.Controllers;
 
@@ -13,11 +15,13 @@ public class MessagesController : ControllerBase
 {
     private readonly IMessageService _messageService;
     private readonly ILogger<MessagesController> _logger;
+    private readonly IHubContext<ChatHub> _chatHubContext;
 
-    public MessagesController(IMessageService messageService, ILogger<MessagesController> logger)
+    public MessagesController(IMessageService messageService, ILogger<MessagesController> logger, IHubContext<ChatHub> chatHubContext)
     {
         _messageService = messageService;
         _logger = logger;
+        _chatHubContext = chatHubContext;
     }
 
     [HttpGet(ApiEndpointConstants.Messages.GetMessagesEndpoint)]
@@ -70,6 +74,14 @@ public class MessagesController : ControllerBase
 
             var message = await _messageService.SendMessageAsync(request.ReceiverId, request.Content);
 
+            await _chatHubContext.Clients
+               .Group(message.SenderId.ToString())
+               .SendAsync("NewMessage", message);
+            await _chatHubContext.Clients
+                .Group(message.ReceiverId.ToString())
+                .SendAsync("NewMessage", message);
+
+
             return Ok(new ApiResponse<MessageDTO>
             {
                 StatusCode = StatusCodes.Status200OK,
@@ -118,6 +130,34 @@ public class MessagesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error marking conversation as read");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Messages.GetRecentConversationsEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<List<ConversationDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ApiResponse<List<ConversationDTO>>>> GetRecentConversations()
+    {
+        try
+        {
+            var conversations = await _messageService.GetRecentConversationsAsync();
+
+            return Ok(new ApiResponse<List<ConversationDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Conversations retrieved successfully",
+                Data = conversations
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving conversations");
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status500InternalServerError,

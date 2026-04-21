@@ -65,6 +65,7 @@ public class ExpoPushService : IExpoPushService
         try
         {
             var httpClient = _httpClientFactory.CreateClient();
+            httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
             var successfulTokens = new List<string>();
 
             var payloads = tokens.Select(token => new ExpoPushPayload
@@ -102,7 +103,8 @@ public class ExpoPushService : IExpoPushService
             }
             else
             {
-                _logger.LogError($"Expo API returned error: {response.StatusCode}");            
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogError($"Expo API returned error: {response.StatusCode}. Body: {errorBody}");            
             }
 
             return successfulTokens;

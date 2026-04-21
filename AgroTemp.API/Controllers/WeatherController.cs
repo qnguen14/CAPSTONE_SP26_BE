@@ -56,13 +56,23 @@ public class WeatherController : Controller
                 Data = weather
             });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            _logger.LogError(ex, "Error retrieving weather for coordinates ({Lat}, {Lon})", lat, lon);
+            _logger.LogWarning(ex, "Weather service configuration error for coordinates ({Lat}, {Lon})", lat, lon);
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving weather for coordinates ({Lat}, {Lon})", lat, lon);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An unexpected error occurred while retrieving weather data.",
                 Data = null
             });
         }
@@ -96,13 +106,23 @@ public class WeatherController : Controller
                 Data = weather
             });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            _logger.LogError(ex, "Error retrieving weather for city {City}", city);
+            _logger.LogWarning(ex, "Weather service configuration error for city {City}", city);
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving weather for city {City}", city);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An unexpected error occurred while retrieving weather data.",
                 Data = null
             });
         }
@@ -149,13 +169,23 @@ public class WeatherController : Controller
                 Data = weather
             });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            _logger.LogError(ex, "Error retrieving weather for current user address");
+            _logger.LogWarning(ex, "Weather service configuration error for current user address");
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving weather for current user address");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An unexpected error occurred while retrieving weather data.",
                 Data = null
             });
         }

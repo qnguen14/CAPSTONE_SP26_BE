@@ -8,6 +8,11 @@ public class UpdateFarmerProfileRequest
     [StringLength(256)]
     public string ContactName { get; set; }
 
-    [Required]
     public string AvatarUrl { get; set; }
+
+    [Required]
+    public string Address { get; set; }
+
+    [Required]
+    public DateOnly DateOfBirth { get; set; }
 }

@@ -29,5 +29,6 @@ namespace AgroTemp.Domain.DTO.Job.JobApplication
 
         public List<DateTime>? WorkDates { get; set; } = new List<DateTime>();
         public string? LocationName { get; set; }
+
     }
 }

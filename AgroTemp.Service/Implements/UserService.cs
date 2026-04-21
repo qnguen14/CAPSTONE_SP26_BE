@@ -32,7 +32,9 @@ public class UserService : BaseService<User>, IUserService
         try
         {
             var user = await _unitOfWork.GetRepository<User>()
-                .FirstOrDefaultAsync(predicate: u => u.Email == email);
+                .FirstOrDefaultAsync(
+                    predicate: u => u.Email == email,
+                    include: u => u.Include(x => x.Farmer).Include(x => x.Worker));
 
             if (user == null)
             {
@@ -54,7 +56,7 @@ public class UserService : BaseService<User>, IUserService
             var users = await _unitOfWork.GetRepository<User>()
                 .GetListAsync(
                     predicate: null,
-                    include: null,
+                    include: u => u.Include(x => x.Farmer).Include(x => x.Worker),
                     orderBy: u => u.OrderBy(x => x.Email));
 
             if (users == null || !users.Any())
@@ -76,7 +78,9 @@ public class UserService : BaseService<User>, IUserService
         try
         {
             var user = await _unitOfWork.GetRepository<User>()
-                .FirstOrDefaultAsync(predicate: u => u.Id == id);
+                .FirstOrDefaultAsync(
+                    predicate: u => u.Id == id,
+                    include: u => u.Include(x => x.Farmer).Include(x => x.Worker));
 
             if (user == null)
             {
@@ -127,7 +131,6 @@ public class UserService : BaseService<User>, IUserService
                 Id = userId,
                 Email = request.Email,
                 PhoneNumber = request.PhoneNumber,
-                Address = request.Address,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 RoleId = (int)request.RoleId,
                 Role = request.RoleId,
@@ -153,7 +156,9 @@ public class UserService : BaseService<User>, IUserService
         try
         {
             var user = await _unitOfWork.GetRepository<User>()
-                .FirstOrDefaultAsync(predicate: u => u.Id == id);
+                .FirstOrDefaultAsync(
+                    predicate: u => u.Id == id,
+                    include: u => u.Include(x => x.Farmer).Include(x => x.Worker));
 
             if (user == null)
             {
@@ -182,11 +187,6 @@ public class UserService : BaseService<User>, IUserService
                     throw new Exception("Phone number already exists");
                 }
                 user.PhoneNumber = request.PhoneNumber;
-            }
-
-            if (!string.IsNullOrEmpty(request.Address))
-            {
-                user.Address = request.Address;
             }
 
             if (request.RoleId.HasValue)
@@ -248,14 +248,48 @@ public class UserService : BaseService<User>, IUserService
             var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
                 .FirstOrDefaultAsync(
                     predicate: fp => fp.UserId == userId,
-                    include: fp => fp.Include(x => x.User));
+                    include: fp => fp.Include(x => x.User)
+                                     .Include(x => x.Farms));
 
             if (farmerProfile == null)
             {
                 throw new Exception("Farmer profile not found");
             }
 
-            return _mapper.FarmerToDto(farmerProfile);
+            var farms = farmerProfile.Farms.OrderBy(f => f.CreatedAt).ToList();
+            var mainFarm = farms.FirstOrDefault(predicate: f => f.IsPrimary) ?? farms.FirstOrDefault();
+            var response = _mapper.FarmerToDto(farmerProfile);
+            response.MainFarmId = mainFarm?.Id ?? Guid.Empty;
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<FarmerProfileDTO> GetFarmerProfileById(Guid id)
+    {
+        try
+        {
+            var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
+                .FirstOrDefaultAsync(
+                    predicate: fp => fp.UserId == id,
+                    include: fp => fp.Include(x => x.User)
+                                     .Include(x => x.Farms));
+
+            if (farmerProfile == null)
+            {
+                throw new Exception("Farmer profile not found");
+            }
+
+            var farms = farmerProfile.Farms.OrderBy(f => f.CreatedAt).ToList();
+            var mainFarm = farms.FirstOrDefault(predicate: f => f.IsPrimary) ?? farms.FirstOrDefault();
+            var response = _mapper.FarmerToDto(farmerProfile);
+            response.MainFarmId = mainFarm?.Id ?? Guid.Empty;
+
+            return response;
         }
         catch (Exception ex)
         {
@@ -280,6 +314,8 @@ public class UserService : BaseService<User>, IUserService
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     ContactName = request.ContactName,
+                    Address = request.Address,
+                    DateOfBirth = request.DateOfBirth,
                     AverageRating = 0,
                     TotalJobsPosted = 0,
                     TotalJobsCompleted = 0,
@@ -293,6 +329,8 @@ public class UserService : BaseService<User>, IUserService
             else
             {
                 farmerProfile.ContactName = request.ContactName;
+                farmerProfile.Address = request.Address;
+                farmerProfile.DateOfBirth = request.DateOfBirth;
                 farmerProfile.UpdatedAt = DateTime.UtcNow;
                 farmerProfile.AvatarUrl = request.AvatarUrl;
 
@@ -324,8 +362,8 @@ public class UserService : BaseService<User>, IUserService
                     predicate: wp => wp.UserId == userId,
                     include: query => query
                         .Include(w => w.User)
-                            // .Include(w => w.WorkerSkills)
-                            //     .ThenInclude(ws => ws.Skill)
+                        .Include(w => w.WorkerSkills)
+                            .ThenInclude(ws => ws.Skill)
                             );
 
             if (workerProfile == null)
@@ -333,7 +371,37 @@ public class UserService : BaseService<User>, IUserService
                 throw new Exception("Worker profile not found");
             }
 
-            // DEBUG: Check if User is loaded
+            if (workerProfile.User == null)
+            {
+                throw new Exception($"User not loaded! WorkerId: {workerProfile.Id}, UserId: {workerProfile.UserId}");
+            }
+
+            return _mapper.WorkerToDto(workerProfile);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<WorkerProfileDTO> GetWorkerProfileById(Guid id)
+    {
+        try
+        {
+            var workerProfile = await _unitOfWork.GetRepository<Worker>()
+                .FirstOrDefaultAsync(
+                    predicate: wp => wp.UserId == id,
+                    include: query => query
+                        .Include(w => w.User)
+                        .Include(w => w.WorkerSkills)
+                            .ThenInclude(ws => ws.Skill)
+                            );
+
+            if (workerProfile == null)
+            {
+                throw new Exception("Worker profile not found");
+            }
+
             if (workerProfile.User == null)
             {
                 throw new Exception($"User not loaded! WorkerId: {workerProfile.Id}, UserId: {workerProfile.UserId}");
@@ -352,19 +420,21 @@ public class UserService : BaseService<User>, IUserService
         try
         {
             var userId = GetCurrentUserId();
+            Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Processing UserId: {userId}");
+
             var workerProfile = await _unitOfWork.GetRepository<Worker>()
                 .FirstOrDefaultAsync(
-                    predicate: wp => wp.UserId == userId,
-                    include: query => query.Include(w => w.User));
+                    predicate: wp => wp.UserId == userId);
 
             if (workerProfile == null)
             {
+                Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Profile not found, creating new for UserId: {userId}");
                 workerProfile = new Worker
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     FullName = request.FullName,
-                    AgeRange = request.AgeRange,
+                    DateOfBirth = DateOnly.Parse(request.DateOfBirth),
                     PrimaryLocation = request.PrimaryLocation,
                     TravelRadiusKmPreference = request.TravelRadiusKmPreference,
                     ExperienceLevelId = request.ExperienceLevelId,
@@ -372,39 +442,83 @@ public class UserService : BaseService<User>, IUserService
                     AvatarUrl = request.AvatarUrl,
                     AverageRating = 0,
                     TotalJobsCompleted = 0,
+                    GenderId = request.GenderId,
                     CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = DateTime.UtcNow,
+                    WorkerSkills = request.SkillIds?.Distinct().Select(skillId => new WorkerSkill
+                    {
+                        Id = Guid.NewGuid(),
+                        SkillId = skillId,
+                        ProficiencyLevelId = (int)ProficiencyLevel.Beginner,
+                        YearsExperience = 0
+                    }).ToList() ?? new List<WorkerSkill>()
                 };
 
                 await _unitOfWork.GetRepository<Worker>().InsertAsync(workerProfile);
                 await _unitOfWork.SaveChangesAsync();
-
-                workerProfile = await _unitOfWork.GetRepository<Worker>()
-                    .FirstOrDefaultAsync(
-                        predicate: wp => wp.Id == workerProfile.Id,
-                        include: query => query
-                            .Include(w => w.User)
-                                // .Include(w => w.WorkerSkills)
-                                //     .ThenInclude(ws => ws.Skill)
-                                );
             }
             else
             {
-                // Profile exists - update it
-                workerProfile.FullName = request.FullName;
-                workerProfile.AgeRange = request.AgeRange;
-                workerProfile.PrimaryLocation = request.PrimaryLocation;
-                workerProfile.TravelRadiusKmPreference = request.TravelRadiusKmPreference;
-                workerProfile.ExperienceLevelId = request.ExperienceLevelId;
-                workerProfile.AvailabilitySchedule = request.AvailabilitySchedule;
-                workerProfile.AvatarUrl = request.AvatarUrl;
-                workerProfile.UpdatedAt = DateTime.UtcNow;
+                Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Found profile for UserId: {userId}. WorkerId: {workerProfile.Id}");
+                
+                await _unitOfWork.ExecuteInTransactionAsync(async () => {
+                    workerProfile.FullName = request.FullName;
+                    workerProfile.DateOfBirth = DateOnly.Parse(request.DateOfBirth);
+                    workerProfile.PrimaryLocation = request.PrimaryLocation;
+                    workerProfile.TravelRadiusKmPreference = request.TravelRadiusKmPreference;
+                    workerProfile.ExperienceLevelId = request.ExperienceLevelId;
+                    workerProfile.AvailabilitySchedule = request.AvailabilitySchedule;
+                    workerProfile.AvatarUrl = request.AvatarUrl;
+                    workerProfile.GenderId = request.GenderId;
+                    workerProfile.UpdatedAt = DateTime.UtcNow;
 
-                _unitOfWork.GetRepository<Worker>().UpdateAsync(workerProfile);
-                await _unitOfWork.SaveChangesAsync();
+                    if (request.SkillIds != null)
+                    {
+                        var requestedSkillIds = request.SkillIds.Distinct().ToList();
+                        var existingSkills = await _unitOfWork.GetRepository<WorkerSkill>()
+                            .GetListAsync(predicate: ws => ws.WorkerId == workerProfile.Id);
+
+                        var toRemove = existingSkills.Where(es => !requestedSkillIds.Contains(es.SkillId)).ToList();
+                        if (toRemove.Any())
+                        {
+                            Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Removing {toRemove.Count} skills for WorkerId: {workerProfile.Id}");
+                            _unitOfWork.GetRepository<WorkerSkill>().DeleteRangeAsync(toRemove);
+                        }
+
+                        // Identify skills to add
+                        var currentSkillIds = existingSkills.Select(es => es.SkillId).ToList();
+                        var toAdd = requestedSkillIds.Where(id => !currentSkillIds.Contains(id)).ToList();
+
+                        if (toAdd.Any())
+                        {
+                            Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Adding {toAdd.Count} new skills for WorkerId: {workerProfile.Id}");
+                            var newSkills = toAdd.Select(skillId => new WorkerSkill
+                            {
+                                Id = Guid.NewGuid(),
+                                WorkerId = workerProfile.Id,
+                                SkillId = skillId,
+                                ProficiencyLevelId = (int)ProficiencyLevel.Beginner,
+                                YearsExperience = 0
+                            }).ToList();
+                            await _unitOfWork.GetRepository<WorkerSkill>().InsertRangeAsync(newSkills);
+                        }
+                    }
+
+                    await _unitOfWork.SaveChangesAsync();
+                    Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Atomic Transaction committed for WorkerId: {workerProfile.Id}");
+                });
             }
 
-            return _mapper.WorkerToDto(workerProfile);
+            var finalProfile = await _unitOfWork.GetRepository<Worker>()
+                .FirstOrDefaultAsync(
+                    predicate: wp => wp.Id == workerProfile.Id,
+                    include: query => query
+                        .Include(w => w.User)
+                        .Include(w => w.WorkerSkills)
+                            .ThenInclude(ws => ws.Skill)
+                            );
+
+            return _mapper.WorkerToDto(finalProfile ?? workerProfile);
         }
         catch (Exception ex)
         {

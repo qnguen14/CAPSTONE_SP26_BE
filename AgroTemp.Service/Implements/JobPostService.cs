@@ -1,5 +1,6 @@
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.Job.JobPost;
+using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Interfaces;
@@ -11,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,17 +22,20 @@ namespace AgroTemp.Service.Implements
     {
         private readonly IMapperlyMapper _mapper;
         private readonly IWalletService _walletService;
+        private readonly INotificationService _notificationService;
 
         public JobPostService(
             IUnitOfWork<AgroTempDbContext> unitOfWork,
             IHttpContextAccessor httpContextAccessor,
             IMapperlyMapper mapper,
-            IWalletService walletService) : base(unitOfWork, httpContextAccessor, mapper)
+            IWalletService walletService,
+            INotificationService notificationService) : base(unitOfWork, httpContextAccessor, mapper)
         {
             _unitOfWork = unitOfWork;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
             _walletService = walletService;
+            _notificationService = notificationService;
         }
 
         public async Task<List<JobPostDTO>> GetAllJobPosts()
@@ -83,6 +88,115 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<List<JobPostDTO>> GetJobPostsByFarmerId()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == userId);
+                if (farmer == null)
+                {
+                    throw new UnauthorizedAccessException("User is not authorized to view these job posts.");
+                }
+
+                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.FarmerId == farmer.Id,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
+
+                if (jobPosts == null || !jobPosts.Any())
+                {
+                    return new List<JobPostDTO>();
+                }
+
+                var result = _mapper.JobPostsToJobPostDtos(jobPosts);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobPostDTO>> GetFarmerJobHistory()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == userId);
+
+                if (farmer == null)
+                {
+                    throw new UnauthorizedAccessException("User is not authorized to view job history.");
+                }
+
+                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.FarmerId == farmer.Id && 
+                                         (jp.StatusId == (int)JobPostStatus.Completed || jp.StatusId == (int)JobPostStatus.Cancelled),
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
+
+                if (jobPosts == null || !jobPosts.Any())
+                {
+                    return new List<JobPostDTO>();
+                }
+
+                var result = _mapper.JobPostsToJobPostDtos(jobPosts);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobPostDTO>> GetJobPostsByStatus(JobPostStatus status)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == userId);
+
+                if (farmer == null)
+                {
+                    throw new UnauthorizedAccessException("User is not authorized to view these job posts.");
+                }
+
+                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp => jp.FarmerId == farmer.Id && jp.StatusId == (int)status,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
+
+                if (jobPosts == null || !jobPosts.Any())
+                {
+                    return new List<JobPostDTO>();
+                }
+
+                var result = _mapper.JobPostsToJobPostDtos(jobPosts);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<JobPostDTO> CreateJobPost(CreateJobPostRequest request)
         {
             try
@@ -123,13 +237,26 @@ namespace AgroTemp.Service.Implements
                     jobPost.Id = Guid.NewGuid();
                 }
                 jobPost.FarmerId = farmer.Id;
-                jobPost.StatusId = (int)JobPostStatus.Draft;
+                jobPost.StatusId = request.StatusId;
                 jobPost.CreatedAt = DateTime.UtcNow;
                 jobPost.UpdatedAt = DateTime.UtcNow;
-                jobPost.PublishedAt = default;
+                jobPost.PublishedAt = request.PublishedAt;
 
-                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
-                await _unitOfWork.SaveChangesAsync();
+                var billableDays = request.JobTypeId == JobType.Daily
+                    ? ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays)
+                    : 1;
+                var lockAmount = request.JobTypeId == JobType.PerJob
+                    ? request.WageAmount
+                    : request.WageAmount * request.WorkersNeeded * billableDays;
+                try
+                {
+                    await _walletService.LockAmountForJobPostAsync(farmer.UserId, jobPost.Id, lockAmount);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new Exception("Insufficient wallet balance to create job post. Please top up your wallet.", ex);
+                }
+
 
                 if (skills.Any())
                 {
@@ -143,8 +270,11 @@ namespace AgroTemp.Service.Implements
                     }).ToList();
 
                     await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
-                    await _unitOfWork.SaveChangesAsync();
                 }
+
+                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
+                await _unitOfWork.SaveChangesAsync();
+
 
                 var createdJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
@@ -259,6 +389,86 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<JobPostDTO> CancelJobPost(Guid id)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+
+                var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == id,
+                        include: q => q.Include(jp => jp.Farmer));
+
+                if (existingJobPost == null)
+                    throw new KeyNotFoundException("Job post not found.");
+
+                if (existingJobPost.Farmer.UserId != currentUserId)
+                    throw new UnauthorizedAccessException("You are only authorized to cancel your own job posts.");
+
+                if (existingJobPost.StatusId == (int)JobPostStatus.Cancelled || existingJobPost.StatusId == (int)JobPostStatus.Completed
+                        || existingJobPost.StatusId == (int)JobPostStatus.InProgress || existingJobPost.StatusId == (int)JobPostStatus.Closed)
+                    throw new InvalidOperationException("Job post cannot be cancelled in its current status.");
+
+                if (existingJobPost.StartDate.HasValue && existingJobPost.StartDate.Value < DateOnly.FromDateTime(DateTime.UtcNow))
+                    throw new InvalidOperationException("Cannot cancel a job post that has already started.");
+
+                existingJobPost.StatusId = (int)JobPostStatus.Cancelled;
+                _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
+
+                // Refund the locked amount back to the farmer's wallet
+                var billableDays = existingJobPost.JobTypeId == (int)JobType.Daily
+                    ? ResolveBillableDays(existingJobPost.StartDate, existingJobPost.EndDate, existingJobPost.SelectedDays)
+                    : 1;
+
+                var lockedAmount = existingJobPost.JobTypeId == (int)JobType.PerJob
+                    ? existingJobPost.WageAmount
+                    : existingJobPost.WageAmount * existingJobPost.WorkersNeeded * billableDays;
+
+                if (lockedAmount > 0)
+                {
+                    await _walletService.RefundLockedAmountForJobPostAsync(
+                        existingJobPost.Farmer.UserId,
+                        existingJobPost.Id,
+                        lockedAmount);
+                }
+
+                var applicants = await _unitOfWork.GetRepository<JobApplication>()
+                .GetListAsync(
+                    predicate: ja => ja.JobPostId == id &&
+                                     ja.StatusId != (int)ApplicationStatus.Cancelled &&
+                                     ja.StatusId != (int)ApplicationStatus.Rejected,
+                    include: q => q.Include(ja => ja.Worker));
+
+                if (applicants != null && applicants.Any())
+                {
+                    foreach (var application in applicants)
+                    {
+                        if (application.Worker != null)
+                        {
+                            await _notificationService.CreateAsync(new CreateNotificationRequest
+                            {
+                                UserId = application.Worker.UserId,
+                                Type = NotificationType.JobAcceptance,
+                                Title = "Bài đăng công việc đã bị hủy",
+                                Message = $"Bài đăng công việc \"{existingJobPost.Title}\" mà bạn đã ứng tuyển đã bị hủy bởi chủ tuyển dụng.",
+                                RelatedEntityId = existingJobPost.Id
+                            });
+                        }
+                    }
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                var result = _mapper.JobPostToJobPostDto(existingJobPost);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<JobPostDTO> UpdateJobPostUrgency(string id, bool isUrgent)
         {
             try
@@ -283,13 +493,23 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<JobPostDTO> UpdateJobPostStatus(string id, string status)
+        public async Task<JobPostDTO> UpdateJobPostStatus(string id, JobPostStatus status)
         {
             try
             {
+                if (!Guid.TryParse(id, out var jobPostId))
+                {
+                    throw new ArgumentException("Invalid job post id.");
+                }
+
+                if (!Enum.IsDefined(typeof(JobPostStatus), status))
+                {
+                    throw new Exception("Invalid status value");
+                }
+
                 var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
-                        predicate: jp => jp.Id == Guid.Parse(id),
+                        predicate: jp => jp.Id == jobPostId,
                         include: q => q.Include(jp => jp.Farmer));
                 if (existingJobPost == null)
                 {
@@ -297,36 +517,36 @@ namespace AgroTemp.Service.Implements
                 }
 
                 var oldStatusId = existingJobPost.StatusId;
+                var newStatusId = (int)status;
+                var now = DateTime.UtcNow;
 
-                if (Enum.TryParse(status, out JobPostStatus jobPostStatus))
+                existingJobPost.StatusId = newStatusId;
+                existingJobPost.UpdatedAt = now;
+
+                var farmer = existingJobPost.Farmer;
+                if (farmer != null)
                 {
-                    existingJobPost.StatusId = (int)jobPostStatus;
-                    existingJobPost.UpdatedAt = DateTime.UtcNow;
+                    var isFirstPublishedTransition =
+                        oldStatusId != (int)JobPostStatus.Published &&
+                        newStatusId == (int)JobPostStatus.Published;
 
-                    var farmer = existingJobPost.Farmer;
-                    if (farmer != null)
+                    var isFirstCompletedTransition =
+                        oldStatusId != (int)JobPostStatus.Completed &&
+                        newStatusId == (int)JobPostStatus.Completed;
+
+                    if (isFirstPublishedTransition)
                     {
-                        // First transition to Published: count posted job + set PublishedAt
-                        if (oldStatusId != (int)JobPostStatus.Published &&
-                            existingJobPost.StatusId == (int)JobPostStatus.Published)
-                        {
-                            farmer.TotalJobsPosted += 1;
-                            existingJobPost.PublishedAt = DateTime.UtcNow;
-                        }
-
-                        // First transition to Completed
-                        if (oldStatusId != (int)JobPostStatus.Completed &&
-                            existingJobPost.StatusId == (int)JobPostStatus.Completed)
-                        {
-                            farmer.TotalJobsCompleted += 1;
-                        }
-
-                        _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmer);
+                        farmer.TotalJobsPosted += 1;
+                        existingJobPost.PublishedAt = now;
+                        await NotifyMatchingWorkersAsync(existingJobPost);
                     }
-                }
-                else
-                {
-                    throw new Exception("Invalid status value");
+
+                    if (isFirstCompletedTransition)
+                    {
+                        farmer.TotalJobsCompleted += 1;
+                    }
+
+                    _unitOfWork.GetRepository<Farmer>().UpdateAsync(farmer);
                 }
 
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
@@ -341,7 +561,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, string? skill)
+        public async Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true)
         {
             try
             {
@@ -351,12 +571,49 @@ namespace AgroTemp.Service.Implements
                             (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
                             (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&
                             (string.IsNullOrEmpty(address) || jp.Address.Contains(address)) &&
-                            (string.IsNullOrEmpty(skill) || jp.JobSkillRequirements.Any(jsr => jsr.Skill.Name == skill)),
+                            (skill == null || skill.Count == 0 || jp.JobSkillRequirements.Any(jsr => skill.Contains(jsr.Skill.Name))),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill),
-                        orderBy: jp => jp.OrderBy(x => x.Title));
+                        orderBy: jp => sortByDateDesc ? jp.OrderByDescending(x => x.CreatedAt) : jp.OrderBy(x => x.CreatedAt));
+                if (jobPosts == null || !jobPosts.Any())
+                {
+                    return null;
+                }
+                var result = _mapper.JobPostsToJobPostDtos(jobPosts);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                var farmer = await _unitOfWork.GetRepository<Farmer>()
+                    .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
+                if (farmer == null) {
+                    throw new UnauthorizedAccessException("No farmer profile created to view these job posts.");
+                }
+
+                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: jp =>
+                            jp.FarmerId == farmer.Id &&
+                            (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
+                            (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&
+                            (string.IsNullOrEmpty(address) || jp.Address.Contains(address)) &&
+                            (skill == null || skill.Count == 0 || jp.JobSkillRequirements.Any(jsr => skill.Contains(jsr.Skill.Name))),
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: jp => sortByDateDesc ? jp.OrderByDescending(x => x.CreatedAt) : jp.OrderBy(x => x.CreatedAt));
                 if (jobPosts == null || !jobPosts.Any())
                 {
                     return null;
@@ -495,10 +752,11 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
-                filter.PageSize = Math.Min(filter.PageSize, 100); // Max 100 items per page
+                filter.PageNumber = filter.PageNumber < 1 ? 1 : filter.PageNumber;
+                filter.PageSize = filter.PageSize < 1 ? 10 : Math.Min(filter.PageSize, 100); // Min 1, max 100 items per page
                 var skip = (filter.PageNumber - 1) * filter.PageSize;
 
-                // Get all published and active job posts with related data
+                // Get all published and in-progress job posts with related data
                 var query = await _unitOfWork.GetRepository<JobPost>()
                     .GetListAsync(
                         predicate: jp => jp.StatusId == (int)JobPostStatus.Published,
@@ -796,6 +1054,199 @@ namespace AgroTemp.Service.Implements
             catch (Exception ex)
             {
                 throw new Exception($"Error getting urgent jobs: {ex.Message}");
+            }
+        }
+
+        private static int ResolveBillableDays(DateOnly? startDate, DateOnly? endDate, IEnumerable<DateOnly>? selectedDays)
+        {
+            var selectedDayCount = selectedDays?.Distinct().Count() ?? 0;
+            if (selectedDayCount > 0)
+            {
+                return selectedDayCount;
+            }
+
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                var spanDays = endDate.Value.DayNumber - startDate.Value.DayNumber + 1;
+                return Math.Max(1, spanDays);
+            }
+
+            return 1;
+        }
+
+        private async Task NotifyMatchingWorkersAsync(JobPost jobPost)
+        {
+            var jobSkillIds = await _unitOfWork.GetRepository<JobSkillRequirement>()
+                .GetListAsync(
+                    predicate: jsr => jsr.JobPostId == jobPost.Id,
+                    include: null,
+                    orderBy: null);
+
+            if (jobSkillIds == null || !jobSkillIds.Any())
+                return;
+
+            var requiredSkillIds = jobSkillIds.Select(jsr => jsr.SkillId).ToHashSet();
+
+            var matchingWorkerSkills = await _unitOfWork.GetRepository<WorkerSkill>()
+                .GetListAsync(
+                    predicate: ws => requiredSkillIds.Contains(ws.SkillId),
+                    include: q => q.Include(ws => ws.Worker),
+                    orderBy: null);
+
+            if (matchingWorkerSkills == null || !matchingWorkerSkills.Any())
+                return;
+
+            var distinctWorkers = matchingWorkerSkills
+                .Where(ws => ws.Worker != null)
+                .GroupBy(ws => ws.WorkerId)
+                .Select(g => g.First().Worker)
+                .ToList();
+
+            foreach (var worker in distinctWorkers)
+            {
+                await _notificationService.CreateAsync(new CreateNotificationRequest
+                {
+                    UserId = worker.UserId,
+                    Type = NotificationType.NearbyJobOpening,
+                    Title = "Công việc mới phù hợp với kỹ năng của bạn",
+                    Message = $"Một công việc mới \"{jobPost.Title}\" vừa được đăng và phù hợp với kỹ năng của bạn. Hãy xem ngay!",
+                    RelatedEntityId = jobPost.Id
+                });
+            }
+        }
+
+        public async Task<List<WorkersPerDayDTO>> GetAcceptedWorkersPerDayAsync(Guid jobPostId)
+        {
+            try
+            {
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(predicate: jp => jp.Id == jobPostId);
+
+                if (jobPost == null)
+                    throw new KeyNotFoundException($"Job post with id '{jobPostId}' was not found.");
+
+                var acceptedApplications = await _unitOfWork.GetRepository<JobApplication>()
+                    .GetListAsync(
+                        predicate: ja =>
+                            ja.JobPostId == jobPostId &&
+                            ja.StatusId == (int)ApplicationStatus.Accepted);
+
+                var workDateCounts = acceptedApplications
+                    .Where(ja => ja.WorkDates != null)
+                    .SelectMany(ja => ja.WorkDates!.Select(dt => DateOnly.FromDateTime(dt)))
+                    .GroupBy(date => date)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                var result = jobPost.SelectedDays
+                    .Select(day => new WorkersPerDayDTO
+                    {
+                        Date = day,
+                        AcceptedWorkerCount = workDateCounts.TryGetValue(day, out var count) ? count : 0
+                    })
+                    .OrderBy(x => x.Date)
+                    .ToList();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<SavedJobPostDTO> ToggleSaveJobPostAsync(Guid jobPostId)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId);
+                if (worker == null)
+                    throw new UnauthorizedAccessException("Only workers can save job posts.");
+
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobPostId,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill));
+                if (jobPost == null)
+                    throw new KeyNotFoundException($"Job post with id '{jobPostId}' was not found.");
+
+                var existing = await _unitOfWork.GetRepository<SavedJobPost>()
+                    .FirstOrDefaultAsync(predicate: s => s.WorkerId == worker.Id && s.JobPostId == jobPostId);
+
+                if (existing != null)
+                {
+                    _unitOfWork.GetRepository<SavedJobPost>().DeleteAsync(existing);
+                    await _unitOfWork.SaveChangesAsync();
+                    return null;
+                }
+
+                var saved = new SavedJobPost
+                {
+                    Id = Guid.NewGuid(),
+                    WorkerId = worker.Id,
+                    JobPostId = jobPostId,
+                    SavedAt = DateTime.UtcNow
+                };
+
+                await _unitOfWork.GetRepository<SavedJobPost>().InsertAsync(saved);
+                await _unitOfWork.SaveChangesAsync();
+
+                return new SavedJobPostDTO
+                {
+                    Id = saved.Id,
+                    WorkerId = saved.WorkerId,
+                    SavedAt = saved.SavedAt,
+                    JobPost = _mapper.JobPostToJobPostDto(jobPost)
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<SavedJobPostDTO>> GetSavedJobPostsAsync()
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId);
+                if (worker == null)
+                    throw new UnauthorizedAccessException("Only workers can retrieve saved job posts.");
+
+                var savedPosts = await _unitOfWork.GetRepository<SavedJobPost>()
+                    .GetListAsync(
+                        predicate: s => s.WorkerId == worker.Id,
+                        include: q => q
+                            .Include(s => s.JobPost)
+                            .ThenInclude(jp => jp.Farmer)
+                            .Include(s => s.JobPost)
+                            .ThenInclude(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: s => s.OrderByDescending(x => x.SavedAt));
+
+                return savedPosts.Select(s => new SavedJobPostDTO
+                {
+                    Id = s.Id,
+                    WorkerId = s.WorkerId,
+                    SavedAt = s.SavedAt,
+                    JobPost = _mapper.JobPostToJobPostDto(s.JobPost)
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
             }
         }
     }

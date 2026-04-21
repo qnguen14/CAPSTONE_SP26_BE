@@ -23,6 +23,9 @@ public class WalletController : ControllerBase
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach wallets danh cho admin.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all wallets danh cho admin.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WalletGetAllWallets")]
     public async Task<ActionResult> GetAllWallets()
     {
         try
@@ -51,6 +54,9 @@ public class WalletController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin wallet by id.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get wallet by id.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WalletGetWalletById")]
     public async Task<ActionResult> GetWalletById([FromRoute] Guid id)
     {
         try
@@ -89,6 +95,9 @@ public class WalletController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lay thong tin wallet cua nguoi dung hien tai.")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get my wallet.")]
+    [Microsoft.AspNetCore.Routing.EndpointName("WalletGetMyWallet")]
     public async Task<ActionResult> GetMyWallet()
     {
         try

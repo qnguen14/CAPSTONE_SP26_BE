@@ -1,4 +1,5 @@
 using AgroTemp.Domain.DTO.Skill;
+using AgroTemp.Domain.Metadata;
 
 namespace AgroTemp.Service.Interfaces
 {
@@ -9,5 +10,6 @@ namespace AgroTemp.Service.Interfaces
         Task<SkillResponse> CreateSkill(CreateSkillRequest request);
         Task<SkillResponse> UpdateSkill(Guid id, UpdateSkillRequest request);
         Task<bool> DeleteSkill(Guid id);
+        Task<PaginatedResponse<SkillResponse>> GetSkillsByCategoryPagedAsync(Guid categoryId, int page, int limit);
     }
 }

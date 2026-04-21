@@ -13,9 +13,11 @@ public interface IUserService
     Task<bool> DeleteUser(Guid id);
     
     Task<FarmerProfileDTO> GetFarmerProfile();
+    Task<FarmerProfileDTO> GetFarmerProfileById(Guid id);
     Task<FarmerProfileDTO> UpdateFarmerProfile(UpdateFarmerProfileRequest request);
     
     Task<WorkerProfileDTO> GetWorkerProfile();
+    Task<WorkerProfileDTO> GetWorkerProfileById(Guid id);
     Task<WorkerProfileDTO> UpdateWorkerProfile(UpdateWorkerProfileRequest request);
 
     Task<string> UploadFarmerAvatar(IFormFile file);

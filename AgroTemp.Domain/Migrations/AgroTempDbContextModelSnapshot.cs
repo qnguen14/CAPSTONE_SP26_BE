@@ -218,6 +218,43 @@ namespace AgroTemp.Domain.Migrations
                     b.ToTable("Dispute_Reports", "AgroTempV2");
                 });
 
+            modelBuilder.Entity("AgroTemp.Domain.Entities.DisputeReportComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AttachmentUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("attachment_url");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("DisputeReportId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dispute_report_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DisputeReportId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Dispute_Report_Comments", "AgroTempV2");
+                });
+
             modelBuilder.Entity("AgroTemp.Domain.Entities.Farm", b =>
                 {
                     b.Property<Guid>("Id")
@@ -293,6 +330,11 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("address");
+
                     b.Property<string>("AvatarUrl")
                         .IsRequired()
                         .HasColumnType("text")
@@ -312,6 +354,10 @@ namespace AgroTemp.Domain.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("DateOfBirth")
+                        .HasColumnType("date")
+                        .HasColumnName("date_of_birth");
 
                     b.Property<int>("TotalJobsCompleted")
                         .HasColumnType("integer")
@@ -576,7 +622,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("job_type");
 
                     b.Property<List<string>>("Privileges")
-                        .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("privileges");
 
@@ -585,7 +630,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("published_at");
 
                     b.Property<List<string>>("Requirements")
-                        .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("requirements");
 
@@ -1182,16 +1226,41 @@ namespace AgroTemp.Domain.Migrations
                     b.ToTable("Rating", "AgroTempV2");
                 });
 
-            modelBuilder.Entity("AgroTemp.Domain.Entities.Skill", b =>
+            modelBuilder.Entity("AgroTemp.Domain.Entities.SavedJobPost", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("integer")
-                        .HasColumnName("category");
+                    b.Property<Guid>("JobPostId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("job_post_id");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("saved_at");
+
+                    b.Property<Guid>("WorkerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("worker_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobPostId");
+
+                    b.HasIndex("WorkerId", "JobPostId")
+                        .IsUnique();
+
+                    b.ToTable("Saved_Job_Post", "AgroTempV2");
+                });
+
+            modelBuilder.Entity("AgroTemp.Domain.Entities.Skill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -1202,6 +1271,10 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
 
+                    b.Property<Guid>("JobCategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("job_category_id");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -1209,6 +1282,8 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("JobCategoryId");
 
                     b.ToTable("Skill", "AgroTempV2");
                 });
@@ -1219,11 +1294,6 @@ namespace AgroTemp.Domain.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("address");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1438,12 +1508,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("AgeRange")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("age_range");
-
                     b.Property<string>("AvailabilitySchedule")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1463,6 +1527,10 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<DateOnly>("DateOfBirth")
+                        .HasColumnType("date")
+                        .HasColumnName("date_of_birth");
+
                     b.Property<int>("ExperienceLevelId")
                         .HasColumnType("integer")
                         .HasColumnName("experience_level");
@@ -1472,6 +1540,10 @@ namespace AgroTemp.Domain.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("full_name");
+
+                    b.Property<int>("GenderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("gender");
 
                     b.Property<string>("PrimaryLocation")
                         .IsRequired()
@@ -1658,6 +1730,25 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("Worker");
                 });
 
+            modelBuilder.Entity("AgroTemp.Domain.Entities.DisputeReportComment", b =>
+                {
+                    b.HasOne("AgroTemp.Domain.Entities.DisputeReport", "DisputeReport")
+                        .WithMany("Comments")
+                        .HasForeignKey("DisputeReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AgroTemp.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DisputeReport");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("AgroTemp.Domain.Entities.Farm", b =>
                 {
                     b.HasOne("AgroTemp.Domain.Entities.Farmer", "Farmer")
@@ -1683,7 +1774,7 @@ namespace AgroTemp.Domain.Migrations
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobApplication", b =>
                 {
                     b.HasOne("AgroTemp.Domain.Entities.JobPost", "JobPost")
-                        .WithMany()
+                        .WithMany("JobApplications")
                         .HasForeignKey("JobPostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1865,6 +1956,36 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("Rater");
                 });
 
+            modelBuilder.Entity("AgroTemp.Domain.Entities.SavedJobPost", b =>
+                {
+                    b.HasOne("AgroTemp.Domain.Entities.JobPost", "JobPost")
+                        .WithMany("SavedJobPosts")
+                        .HasForeignKey("JobPostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AgroTemp.Domain.Entities.Worker", "Worker")
+                        .WithMany("SavedJobPosts")
+                        .HasForeignKey("WorkerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobPost");
+
+                    b.Navigation("Worker");
+                });
+
+            modelBuilder.Entity("AgroTemp.Domain.Entities.Skill", b =>
+                {
+                    b.HasOne("AgroTemp.Domain.Entities.JobCategory", "Category")
+                        .WithMany("Skills")
+                        .HasForeignKey("JobCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("AgroTemp.Domain.Entities.Wallet", b =>
                 {
                     b.HasOne("AgroTemp.Domain.Entities.User", "User")
@@ -1946,6 +2067,11 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("Worker");
                 });
 
+            modelBuilder.Entity("AgroTemp.Domain.Entities.DisputeReport", b =>
+                {
+                    b.Navigation("Comments");
+                });
+
             modelBuilder.Entity("AgroTemp.Domain.Entities.Farmer", b =>
                 {
                     b.Navigation("Farms");
@@ -1959,6 +2085,8 @@ namespace AgroTemp.Domain.Migrations
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobCategory", b =>
                 {
                     b.Navigation("JobPosts");
+
+                    b.Navigation("Skills");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobDetail", b =>
@@ -1972,11 +2100,15 @@ namespace AgroTemp.Domain.Migrations
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.JobPost", b =>
                 {
+                    b.Navigation("JobApplications");
+
                     b.Navigation("JobDetails");
 
                     b.Navigation("JobSkillRequirements");
 
                     b.Navigation("Ratings");
+
+                    b.Navigation("SavedJobPosts");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSOrder", b =>
@@ -2028,6 +2160,8 @@ namespace AgroTemp.Domain.Migrations
             modelBuilder.Entity("AgroTemp.Domain.Entities.Worker", b =>
                 {
                     b.Navigation("JobDetails");
+
+                    b.Navigation("SavedJobPosts");
 
                     b.Navigation("WorkerSkills");
                 });

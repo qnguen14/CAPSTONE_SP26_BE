@@ -17,6 +17,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using AspNetCore.Swagger.Themes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,12 +80,13 @@ if (app.Environment.IsDevelopment())
 }
 
 
-// Protect /swagger with Basic Auth (username/password from env vars)
+// Protect /swagger with Basic Auth (username/password from env vars) 
 app.UseMiddleware<SwaggerBasicAuthMiddleware>();
 
 app.UseSwagger();
-app.UseSwaggerUI(c =>
+app.UseSwaggerUI(ModernStyle.Dark , c =>
 {
+    c.EnableAllAdvancedOptions();
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
     c.RoutePrefix = "swagger"; // Swagger at /swagger
 });
@@ -98,11 +100,12 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAll"); // Enable CORS
+app.UseCors("CorsPolicy"); // Enable CORS
 
 app.UseAuthentication(); // Add this before UseAuthorization
 app.UseAuthorization();
 app.UseMiddleware<TokenBlacklistMiddleware>();
+app.UseMiddleware<EmailVerificationMiddleware>();
 
 app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization();
 app.MapControllers();

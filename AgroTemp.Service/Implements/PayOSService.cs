@@ -86,11 +86,10 @@ public class PayOSService : IPayOSService
         var buyerCompanyName = primaryFarm?.LocationName;
         var buyerEmail = farmer.User?.Email;
         var buyerPhone = farmer.User?.PhoneNumber;
-        var buyerAddress = farmer.User?.Address;
 
         var orderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var returnUrl = "https://your-domain.com/success";
-        var cancelUrl = "https://your-domain.com/cancel";
+        var returnUrl = "http://localhost:3000/farmer/payments/success";
+        var cancelUrl = "http://localhost:3000/farmer/payments/cancel";
         var expiredAt = DateTimeOffset.UtcNow.AddHours(2);
         var buyerNotGetInvoice = false;
         int? taxPercentage = null;
@@ -115,7 +114,7 @@ public class PayOSService : IPayOSService
             BuyerCompanyName = buyerCompanyName,
             BuyerEmail = buyerEmail,
             //BuyerPhone = buyerPhone,
-            BuyerAddress = buyerAddress,
+            // BuyerAddress = buyerAddress,
             ExpiredAt = expiredAt.ToUnixTimeSeconds(),
             Items = new List<PaymentLinkItem> { hardcodedItem }
         };
@@ -153,7 +152,7 @@ public class PayOSService : IPayOSService
             BuyerCompanyName = buyerCompanyName,
             BuyerEmail = buyerEmail,
             //BuyerPhone = buyerPhone,
-            BuyerAddress = buyerAddress,
+            // BuyerAddress = buyerAddress,
             ExpiredAt = expiredAt.UtcDateTime,
             BuyerNotGetInvoice = buyerNotGetInvoice,
             TaxPercentage = taxPercentage,
@@ -485,14 +484,34 @@ public class PayOSService : IPayOSService
         }
 
         var withdrawalId = Guid.NewGuid();
+        
+        /* XỬ LÝ:
+         * - Description: API Payout của PayOS yêu cầu tối đa 25 ký tự và KHÔNG được có dấu/ký tự đặc biệt.
+         * - Category: Bỏ qua danh sách trống (đặt thành null) để tránh lỗi "Mã kiểm tra không hợp lệ" (Invalid Signature) 
+         *   do sự sai lệch khi tính toán chữ ký với mảng rỗng trong SDK PayOS.
+         * - ReferenceId: Sử dụng định dạng Guid "N" (32 ký tự) để đảm bảo luôn nằm trong giới hạn 50 ký tự của PayOS.
+         */
+         
+        /* CODE CŨ (Gây lỗi "Invalid Signature" hoặc "Description too long"): 
         var payoutRequest = new PayoutRequest
         {
             ReferenceId = withdrawalId.ToString(),
             Amount = (long)request.Amount,
             Description = request.Description ?? $"withdrawal-{withdrawalId}",
-            ToBin = request.ToBin,
+            ToBin = ((int)request.ToBin).ToString(),
             ToAccountNumber = request.ToAccountNumber,
-            Category = request.Category ?? new List<string>()
+            Category = request.Category
+        };
+        */
+
+        var payoutRequest = new PayoutRequest
+        {
+            ReferenceId = withdrawalId.ToString("N"),
+            Amount = (long)request.Amount,
+            Description = NormalizeDescription(request.Description, $"AgroTemp RT {withdrawalId.ToString("N").Substring(28)}"),
+            ToBin = ((int)request.ToBin).ToString(),
+            ToAccountNumber = request.ToAccountNumber,
+            Category = request.Category?.Any() == true ? request.Category : null
         };
 
         var payout = await _transferClient.Payouts.CreateAsync(payoutRequest);
@@ -507,7 +526,7 @@ public class PayOSService : IPayOSService
             WalletId = wallet.Id,
             Amount = request.Amount,
             BankAccountNumber = request.ToAccountNumber,
-            BankName = string.IsNullOrWhiteSpace(request.BankName) ? request.ToBin : request.BankName,
+            BankName = string.Empty,// string.IsNullOrWhiteSpace(request.BankName) ? request.ToBin.ToString() : request.BankName,
             AccountHolderName = string.IsNullOrWhiteSpace(request.AccountHolderName)
                 ? payout.Transactions.FirstOrDefault()?.ToAccountName ?? "Unknown"
                 : request.AccountHolderName,
@@ -870,5 +889,26 @@ public class PayOSService : IPayOSService
                 ? new DateTimeOffset(DateTime.SpecifyKind(withdrawal.ProcessedAt.Value, DateTimeKind.Utc))
                 : null
         };
+    }
+    private static string NormalizeDescription(string? description, string fallback)
+    {
+        var source = string.IsNullOrWhiteSpace(description) ? fallback : description;
+        var normalizedString = source.Normalize(System.Text.NormalizationForm.FormD);
+        var stringBuilder = new System.Text.StringBuilder();
+
+        foreach (var c in normalizedString)
+        {
+            var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                if (char.IsLetterOrDigit(c) || c == ' ')
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+        }
+
+        var result = stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC).Trim();
+        return result.Length > 25 ? result.Substring(0, 25).Trim() : result;
     }
 }

@@ -1,3 +1,5 @@
+using AgroTemp.Domain.Entities;
+
 namespace AgroTemp.API.Constants;
 
 public class ApiEndpointConstants
@@ -17,6 +19,8 @@ public class ApiEndpointConstants
         public const string ResetPasswordEndpoint = ApiEndpoint + "/reset";
         public const string ForgetPasswordEndpoint = ApiEndpoint + "/forget";
         public const string LogoutEndpoint = ApiEndpoint + "/logout";
+        public const string VerifyEmailEndpoint = ApiEndpoint + "/verify-email";
+        public const string ResendVerificationEndpoint = ApiEndpoint + "/resend-verification";
     }
 
     public static class User
@@ -32,6 +36,7 @@ public class ApiEndpointConstants
     public static class FarmerProfile
     {
         public const string FarmerProfileEndpoint = ApiEndpoint + "/farmer";
+        public const string GetSpecificFarmerProfileEndpoint = FarmerProfileEndpoint + "/{id}";
         public const string GetFarmerProfileEndpoint = FarmerProfileEndpoint;
         public const string UpdateFarmerProfileEndpoint = FarmerProfileEndpoint;
         public const string UploadAvatarEndpoint = FarmerProfileEndpoint + "/upload-avatar";
@@ -51,6 +56,7 @@ public class ApiEndpointConstants
     public static class WorkerProfile
     {
         public const string WorkerProfileEndpoint = ApiEndpoint + "/worker";
+        public const string GetSpecificWorkerProfileEndpoint = WorkerProfileEndpoint + "/{id}";
         public const string GetWorkerProfileEndpoint = WorkerProfileEndpoint;
         public const string UpdateWorkerProfileEndpoint = WorkerProfileEndpoint;
         public const string UploadAvatarEndpoint = WorkerProfileEndpoint + "/upload-avatar";
@@ -71,7 +77,12 @@ public class ApiEndpointConstants
 
         public const string GetJobCategoryByIdEndpoint = JobCategoryEndpoint + "/{id}";
         public const string GetJobPostByIdEndpoint = JobPostEndpoint + "/{id}";
+        public const string GetJobPostsByFarmerEndpoint = JobPostEndpoint + "/farmer";
+        public const string GetJobPostsByStatusEndpoint = JobPostEndpoint + "/status" + "/{status}";
+        public const string GetFarmerJobHistoryEndpoint = JobPostEndpoint + "/farmer" + "/history";
         public const string GetJobApplicationByIdEndpoint = JobApplicationEndpoint + "/{id}";
+        public const string GetJobApplicationsByWorkerEndpoint = JobApplicationEndpoint + "/worker";
+        public const string GetWorkerApplicationStatsEndpoint = JobApplicationEndpoint + "/worker/stats";
         public const string GetJobDetailByIdEndpoint = JobDetailEndpoint + "/{id}";
 
         public const string CreateJobCategoryEndpoint = JobCategoryEndpoint;
@@ -94,9 +105,10 @@ public class ApiEndpointConstants
         public const string UpdateJobDetailStatusEndpoint = JobDetailEndpoint + "/update-status" + "/{id}";
 
         public const string RespondJobApplicationEndpoint = JobApplicationEndpoint + "/respond" + "/{id}";
-        public const string AutoAcceptUrgentJobApplicationsEndpoint = JobApplicationEndpoint + "/auto-accept/{jobPostId}";
+        public const string AutoAcceptUrgentJobApplicationsEndpoint = JobApplicationEndpoint + "/auto-accept";
 
         public const string GetFilteredJobPostsEndpoint = JobPostEndpoint + "/filter";
+        public const string GetFilteredJobPostsByFarmerEndpoint = JobPostEndpoint + "/filter/farmer";
 
         public const string SaveJobPostDraftEndpoint = JobPostEndpoint + "/draft";
         public const string GetFarmerDraftsEndpoint = JobPostEndpoint + "/drafts";
@@ -108,6 +120,22 @@ public class ApiEndpointConstants
         public const string GetJobsByWageRangeEndpoint = JobPostEndpoint + "/by-wage";
         public const string GetJobsByTypeEndpoint = JobPostEndpoint + "/by-type";
         public const string GetUrgentJobsEndpoint = JobPostEndpoint + "/urgent";
+
+        public const string CancelJobPostEndpoint = JobPostEndpoint + "/cancel" + "/{id}";
+        public const string CancelJobApplicationEndpoint = JobApplicationEndpoint + "/cancel" + "/{id}";
+        public const string CancelJobApplicationForFarmerEndpoint = JobApplicationEndpoint + "/cancel/farmer" + "/{id}";
+
+        public const string GetJobDetailByJobPost = JobDetailEndpoint + "/post" + "/{id}";
+        public const string GetJobDetailByWorker = JobDetailEndpoint + "/worker" + "/{id}";
+        public const string ReportDailyWorkerEndpoint = JobDetailEndpoint + "/report" + "/{id}";
+        public const string ApproveJobDetailEndpoint = JobDetailEndpoint + "/approve" + "/{id}";
+
+        public const string GetJobApplicationsByFarmer = JobApplicationEndpoint + "/farmer";
+
+        public const string GetAcceptedWorkersPerDayEndpoint = JobPostEndpoint + "/{id}/workers-per-day";
+
+        public const string ToggleSaveJobPostEndpoint = JobPostEndpoint + "/{id}/save";
+        public const string GetSavedJobPostsEndpoint = JobPostEndpoint + "/saved";
     }
 
     public static class WorkerAttendance
@@ -147,6 +175,7 @@ public class ApiEndpointConstants
 
         public const string GetMessagesEndpoint = MessagesEndpoint;
         public const string SendMessageEndpoint = MessagesEndpoint;
+        public const string GetRecentConversationsEndpoint = MessagesEndpoint + "/conversations";
 
         // Optional read-receipt endpoint (used later)
         public const string MarkConversationAsReadEndpoint = MessagesEndpoint + "/read";
@@ -176,6 +205,7 @@ public class ApiEndpointConstants
     {
         public const string SkillEndpoint = ApiEndpoint + "/skills";
         public const string GetAllSkillsEndpoint = SkillEndpoint;
+        public const string GetSkillsByCategoryPagedEndpoint = SkillEndpoint + "/category/{categoryId}";
         public const string GetSkillByIdEndpoint = SkillEndpoint + "/{id}";
         public const string CreateSkillEndpoint = SkillEndpoint;
         public const string UpdateSkillEndpoint = SkillEndpoint + "/{id}";
@@ -193,6 +223,8 @@ public class ApiEndpointConstants
 
         public const string GetSpecificRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}";
         public const string GetAllRatingsByUserIdEndpoint = RatingEndpoint + "/user/{userId}/all";
+        public const string GetGivenRatingsByUserEndpoint = RatingEndpoint + "/user/given";
+        public const string GetReceivedRatingsByUserByPostIdEndpoint = RatingEndpoint + "/user/received/post/{postId}";
         public const string GetAverageRatingByUserIdEndpoint = RatingEndpoint + "/user/{userId}/average";
     }
 
@@ -254,5 +286,17 @@ public class ApiEndpointConstants
         public const string GetAllWalletTransactionsEndpoint = WalletTransactionEndpoint;
         public const string GetWalletTransactionByIdEndpoint = WalletTransactionEndpoint + "/{id}";
         public const string GetWalletTransactionsByWalletIdEndpoint = WalletTransactionEndpoint + "/wallet/{walletId}";
+    }
+
+    public static class Dashboard
+    {
+        public const string FarmerDashboardEndpoint = FarmerProfile.FarmerProfileEndpoint + "/dashboard";
+        public const string WorkerDashboardEndpoint = WorkerProfile.WorkerProfileEndpoint + "/dashboard";
+    }
+
+    public static class Admin
+    {
+        public const string AdminEndpoint = ApiEndpoint + "/admin";
+        public const string GetDashboardEndpoint = AdminEndpoint + "/dashboard";
     }
 }

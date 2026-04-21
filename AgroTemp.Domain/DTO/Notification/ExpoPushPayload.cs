@@ -14,13 +14,20 @@ public class ExpoPushPayload
     public string Body { get; set; }
     
     [JsonPropertyName("data")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Dictionary<string, object>? Data { get; set; }
     
     [JsonPropertyName("sound")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Sound { get; set; } = "default";
     
     [JsonPropertyName("priority")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string Priority { get; set; } = "high";
+    
+    [JsonPropertyName("channelId")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string ChannelId { get; set; } = "default";
 }
 
 public class ExpoPushResponse

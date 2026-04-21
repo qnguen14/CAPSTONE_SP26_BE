@@ -15,7 +15,9 @@ namespace AgroTemp.Service.Helpers
             var filtered = jobs.Where(jp => jp.StatusId == (int)JobPostStatus.Published).ToList();
 
             // Filter by distance
-            if (filter.WorkerLatitude.HasValue && filter.WorkerLongitude.HasValue && filter.MaxDistanceKm.HasValue)
+            if (filter.WorkerLatitude.HasValue && filter.WorkerLongitude.HasValue &&
+                filter.MaxDistanceKm.HasValue &&
+                (filter.WorkerLatitude.Value != 0 || filter.WorkerLongitude.Value != 0))
             {
                 filtered = filtered.Where(jp => jp.Farm != null &&
                     DistanceCalculator.GetDistanceInKilometers(
@@ -72,11 +74,11 @@ namespace AgroTemp.Service.Helpers
 
                 switch (filter.DateFilter.ToLower())
                 {
-                    case "today":
+                    case "today" or "hôm nay":
                         dateStart = now.Date;
                         dateEnd = now.Date.AddDays(1).AddTicks(-1);
                         break;
-                    case "tomorrow":
+                    case "tomorrow" or "ngày mai":
                         dateStart = now.Date.AddDays(1);
                         dateEnd = now.Date.AddDays(2).AddTicks(-1);
                         break;

@@ -1,4 +1,5 @@
 using AgroTemp.Domain.Entities;
+using AgroTemp.Domain.Metadata;
 
 namespace AgroTemp.Service.Interfaces
 {
@@ -7,6 +8,6 @@ namespace AgroTemp.Service.Interfaces
         Task CreateAsync(Wallet wallet, Guid? jobDetailId, TransactionType type, decimal amount, decimal balanceAfter, string referenceCode, string description);
         Task<WalletTransaction?> GetByIdAsync(Guid transactionId);
         Task<ICollection<WalletTransaction>> GetAllAsync();
-        Task<ICollection<WalletTransaction>> GetByWalletIdAsync(Guid walletId);
+        Task<PaginatedResponse<WalletTransaction>> GetByWalletIdAsync(Guid walletId, int page, int limit);
     }
 }

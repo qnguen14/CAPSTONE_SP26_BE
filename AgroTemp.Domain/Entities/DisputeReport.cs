@@ -98,7 +98,6 @@ public class DisputeReport
     [Column("accused_user_id")]
     public Guid? AccusedUserId { get; set; }
 
-    // Admin decision: who gets penalized (None / Reporter / Accused)
     [Column("penalty_target")]
     public int PenaltyTargetId { get; set; } = (int)PenaltyTarget.None;
 
@@ -114,4 +113,6 @@ public class DisputeReport
 
     [Column("resolved_at")]
     public DateTime? ResolvedAt { get; set; }
+
+    public virtual ICollection<DisputeReportComment> Comments { get; set; } = new List<DisputeReportComment>();
 }
