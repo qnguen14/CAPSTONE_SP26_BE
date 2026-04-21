@@ -12,7 +12,7 @@
                         .WithOrigins(
                             "http://localhost:3000",
                             "http://localhost:8081",
-                            "https://agrotemp-frontend.vercel.app"
+                            "https://agrotemp-five.vercel.app"
                         )
                         .AllowAnyHeader()
                         .AllowAnyMethod()
