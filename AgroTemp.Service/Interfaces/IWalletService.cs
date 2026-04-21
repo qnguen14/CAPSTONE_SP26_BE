@@ -8,6 +8,7 @@ namespace AgroTemp.Service.Interfaces
         Task<Wallet?> GetByIdAsync(Guid walletId);
         Task<Wallet?> GetByUserIdAsync(Guid userId);
         Task<ICollection<Wallet>> GetAllAsync();
+        Task<AgroTemp.Domain.DTO.Payment.PaginatedAdminWalletsResponse> GetWalletsForAdminAsync(int page = 1, int limit = 20, string? search = null);
         Task LockAmountForJobPostAsync(Guid farmerUserId, Guid jobPostId, decimal amount);
         Task RefundLockedAmountForJobPostAsync(Guid farmerUserId, Guid jobPostId, decimal amount);
         Task ApplyJobSettlementAsync(JobDetail jobDetail, decimal workerPaymentAmount, decimal refundAmount);

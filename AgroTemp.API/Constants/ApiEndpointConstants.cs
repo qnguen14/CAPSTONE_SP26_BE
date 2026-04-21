@@ -292,5 +292,9 @@ public class ApiEndpointConstants
         public const string AdminEndpoint = ApiEndpoint + "/admin";
         public const string GetDashboardEndpoint = AdminEndpoint + "/dashboard";
         public const string GetJobpostEndpoint = AdminEndpoint + "/jobpost";
+        public const string WalletStatsEndpoint = AdminEndpoint + "/wallet/stats";
+        public const string WithdrawalsEndpoint = AdminEndpoint + "/withdrawals";
+        public const string WalletsEndpoint = AdminEndpoint + "/wallets";
+        public const string WalletTransactionsEndpoint = AdminEndpoint + "/wallet-transactions";
     }
 }

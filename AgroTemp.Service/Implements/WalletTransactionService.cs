@@ -5,6 +5,7 @@ using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace AgroTemp.Service.Implements
 {
@@ -55,6 +56,61 @@ namespace AgroTemp.Service.Implements
                 .GetListAsync(
                     predicate: x => x.WalletId == walletId,
                     orderBy: q => q.OrderByDescending(x => x.CreatedAt));
+        }
+
+        public async Task<AgroTemp.Domain.DTO.Payment.PaginatedAdminWalletTransactionsResponse> GetWalletTransactionsForAdminAsync(int page = 1, int limit = 20, TransactionType? type = null, string? status = null, string? search = null)
+        {
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 20;
+
+            var query = _unitOfWork.Context.Set<WalletTransaction>()
+                .Include(x => x.Wallet)
+                    .ThenInclude(w => w.User)
+                        .ThenInclude(u => u.Farmer)
+                .Include(x => x.Wallet)
+                    .ThenInclude(w => w.User)
+                        .ThenInclude(u => u.Worker)
+                .AsQueryable();
+
+            if (type.HasValue)
+            {
+                query = query.Where(t => t.Type == type.Value);
+            }
+
+            // status filtering not applicable directly to WalletTransaction; kept for compatibility
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLowerInvariant();
+                query = query.Where(t => t.Wallet.User.Email.ToLower().Contains(s)
+                || (t.Wallet.User.Worker != null && t.Wallet.User.Worker.FullName.ToLower().Contains(s))
+                || (t.Wallet.User.Farmer != null && t.Wallet.User.Farmer.ContactName.ToLower().Contains(s)));
+            }
+
+            var total = await query.CountAsync();
+            var items = await query.OrderByDescending(t => t.CreatedAt)
+                .Skip((page - 1) * limit)
+                .Take(limit)
+                .ToListAsync();
+
+            var responses = items.Select(t => new AgroTemp.Domain.DTO.Payment.WalletTransactionItemForAdmin
+            {
+                Id = t.Id,
+                WalletId = t.WalletId,
+                JobDetailId = t.JobDetailId,
+                UserName = t.Wallet?.User.Worker != null ? t.Wallet.User.Worker.FullName : t.Wallet?.User.Farmer != null ? t.Wallet.User.Farmer.ContactName : null,
+                Amount = t.Amount,
+                Type = t.Type.ToString(),
+                BalanceAfter = t.BalanceAfter,
+                CreatedAt = new DateTimeOffset(DateTime.SpecifyKind(t.CreatedAt, DateTimeKind.Utc))
+            }).ToList();
+
+            return new AgroTemp.Domain.DTO.Payment.PaginatedAdminWalletTransactionsResponse
+            {
+                Items = responses,
+                TotalCount = total,
+                Page = page,
+                Limit = limit
+            };
         }
     }
 }
