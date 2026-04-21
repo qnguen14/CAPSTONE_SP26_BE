@@ -248,8 +248,50 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial void UpdateSkillRequestToSkill(UpdateSkillRequest request, Skill skill);
 
     // Rating
-    public partial RatingDTO RatingToRatingDto(Rating rating);
-    public partial List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings);
+    public RatingDTO RatingToRatingDto(Rating rating)
+    {
+        if (rating == null) return null;
+
+        return new RatingDTO
+        {
+            Id = rating.Id,
+            RaterId = rating.RaterId,
+            RateeId = rating.RateeId,
+            JobPostId = rating.JobPostId,
+            RatingScore = rating.RatingScore,
+            ReviewText = rating.ReviewText,
+            TypeId = rating.TypeId,
+            CreatedAt = rating.CreatedAt,
+            RaterProfile = MapRatingUserProfile(rating.Rater),
+            RateeProfile = MapRatingUserProfile(rating.Ratee)
+        };
+    }
+
+    public List<RatingDTO> RatingsToRatingDtos(IEnumerable<Rating> ratings)
+    {
+        return ratings?.Select(RatingToRatingDto).ToList() ?? new List<RatingDTO>();
+    }
+
+    private RatingUserProfileDTO? MapRatingUserProfile(User? user)
+    {
+        if (user == null)
+        {
+            return null;
+        }
+
+        return new RatingUserProfileDTO
+        {
+            UserId = user.Id,
+            Role = user.Role.ToString(),
+            FarmerProfile = user.Role == UserRole.Farmer && user.Farmer != null
+                ? FarmerToDto(user.Farmer)
+                : null,
+            WorkerProfile = user.Role == UserRole.Worker && user.Worker != null
+                ? WorkerToDto(user.Worker)
+                : null
+        };
+    }
+
     public partial Rating CreateRatingRequestToRating(CreateRatingRequest request);
     public partial void UpdateRatingRequestToRating(UpdateRatingRequest request, Rating rating);
 
@@ -258,6 +300,37 @@ public partial class MapperlyMapper : IMapperlyMapper
     public partial List<DisputeReportDTO> DisputeReportsToDisputeReportDtos(IEnumerable<DisputeReport> disputeReports);
     public partial DisputeReport CreateDisputeReportRequestToDisputeReport(CreateDisputeReportRequest request);
     public partial void UpdateDisputeReportRequestToDisputeReport(UpdateDisputeReportRequest request, DisputeReport disputeReport);
+
+    // DisputeReportComment
+    public DisputeReportCommentDTO DisputeReportCommentToDto(DisputeReportComment comment)
+    {
+        if (comment == null) return null;
+
+        var dto = new DisputeReportCommentDTO
+        {
+            Id = comment.Id,
+            DisputeReportId = comment.DisputeReportId,
+            UserId = comment.UserId,
+            Content = comment.Content,
+            AttachmentUrl = comment.AttachmentUrl,
+            CreatedAt = comment.CreatedAt,
+            Role = comment.User?.Role ?? UserRole.Worker,
+        };
+
+        if (comment.User != null)
+        {
+            if (comment.User.Role == UserRole.Admin) dto.UserName = "Admin";
+            else if (comment.User.Role == UserRole.Farmer) dto.UserName = comment.User.Farmer?.ContactName ?? "Farmer";
+            else if (comment.User.Role == UserRole.Worker) dto.UserName = comment.User.Worker?.FullName ?? "Worker";
+        }
+
+        return dto;
+    }
+
+    public List<DisputeReportCommentDTO> DisputeReportCommentsToDtos(IEnumerable<DisputeReportComment> comments)
+    {
+        return comments?.Select(DisputeReportCommentToDto).ToList() ?? new List<DisputeReportCommentDTO>();
+    }
 
     // WorkerSession
     [MapProperty(nameof(WorkerSession.JobDetail.JobApplicationId), nameof(WorkerAttendanceDTO.JobApplicationId))]

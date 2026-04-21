@@ -498,14 +498,48 @@ public class UserService : BaseService<User>, IUserService
             var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
                 .FirstOrDefaultAsync(
                     predicate: fp => fp.UserId == userId,
-                    include: fp => fp.Include(x => x.User));
+                    include: fp => fp.Include(x => x.User)
+                                     .Include(x => x.Farms));
 
             if (farmerProfile == null)
             {
                 throw new Exception("Farmer profile not found");
             }
 
-            return _mapper.FarmerToDto(farmerProfile);
+            var farms = farmerProfile.Farms.OrderBy(f => f.CreatedAt).ToList();
+            var mainFarm = farms.FirstOrDefault(predicate: f => f.IsPrimary) ?? farms.FirstOrDefault();
+            var response = _mapper.FarmerToDto(farmerProfile);
+            response.MainFarmId = mainFarm?.Id ?? Guid.Empty;
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<FarmerProfileDTO> GetFarmerProfileById(Guid id)
+    {
+        try
+        {
+            var farmerProfile = await _unitOfWork.GetRepository<Farmer>()
+                .FirstOrDefaultAsync(
+                    predicate: fp => fp.UserId == id,
+                    include: fp => fp.Include(x => x.User)
+                                     .Include(x => x.Farms));
+
+            if (farmerProfile == null)
+            {
+                throw new Exception("Farmer profile not found");
+            }
+
+            var farms = farmerProfile.Farms.OrderBy(f => f.CreatedAt).ToList();
+            var mainFarm = farms.FirstOrDefault(predicate: f => f.IsPrimary) ?? farms.FirstOrDefault();
+            var response = _mapper.FarmerToDto(farmerProfile);
+            response.MainFarmId = mainFarm?.Id ?? Guid.Empty;
+
+            return response;
         }
         catch (Exception ex)
         {
@@ -545,6 +579,8 @@ public class UserService : BaseService<User>, IUserService
             else
             {
                 farmerProfile.ContactName = request.ContactName;
+                farmerProfile.Address = request.Address;
+                farmerProfile.DateOfBirth = request.DateOfBirth;
                 farmerProfile.UpdatedAt = DateTime.UtcNow;
                 farmerProfile.AvatarUrl = request.AvatarUrl;
 
@@ -574,6 +610,37 @@ public class UserService : BaseService<User>, IUserService
             var workerProfile = await _unitOfWork.GetRepository<Worker>()
                 .FirstOrDefaultAsync(
                     predicate: wp => wp.UserId == userId,
+                    include: query => query
+                        .Include(w => w.User)
+                        .Include(w => w.WorkerSkills)
+                            .ThenInclude(ws => ws.Skill)
+                            );
+
+            if (workerProfile == null)
+            {
+                throw new Exception("Worker profile not found");
+            }
+
+            if (workerProfile.User == null)
+            {
+                throw new Exception($"User not loaded! WorkerId: {workerProfile.Id}, UserId: {workerProfile.UserId}");
+            }
+
+            return _mapper.WorkerToDto(workerProfile);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<WorkerProfileDTO> GetWorkerProfileById(Guid id)
+    {
+        try
+        {
+            var workerProfile = await _unitOfWork.GetRepository<Worker>()
+                .FirstOrDefaultAsync(
+                    predicate: wp => wp.UserId == id,
                     include: query => query
                         .Include(w => w.User)
                         .Include(w => w.WorkerSkills)

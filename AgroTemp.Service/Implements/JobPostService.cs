@@ -237,17 +237,17 @@ namespace AgroTemp.Service.Implements
                     jobPost.Id = Guid.NewGuid();
                 }
                 jobPost.FarmerId = farmer.Id;
-                jobPost.StatusId = (int)JobPostStatus.Draft;
+                jobPost.StatusId = request.StatusId;
                 jobPost.CreatedAt = DateTime.UtcNow;
                 jobPost.UpdatedAt = DateTime.UtcNow;
-                jobPost.PublishedAt = default;
+                jobPost.PublishedAt = request.PublishedAt;
 
-                var totalDays = (request.StartDate.HasValue && request.EndDate.HasValue)
-                    ? (request.EndDate.Value.ToDateTime(TimeOnly.MinValue) - request.StartDate.Value.ToDateTime(TimeOnly.MinValue)).TotalDays
-                    : 0;
+                var billableDays = request.JobTypeId == JobType.Daily
+                    ? ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays)
+                    : 1;
                 var lockAmount = request.JobTypeId == JobType.PerJob
                     ? request.WageAmount
-                    : request.WageAmount * request.WorkersNeeded * (decimal)totalDays;
+                    : request.WageAmount * request.WorkersNeeded * billableDays;
                 try
                 {
                     await _walletService.LockAmountForJobPostAsync(farmer.UserId, jobPost.Id, lockAmount);
@@ -417,13 +417,13 @@ namespace AgroTemp.Service.Implements
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
 
                 // Refund the locked amount back to the farmer's wallet
-                var totalDays = (existingJobPost.StartDate.HasValue && existingJobPost.EndDate.HasValue)
-                    ? (existingJobPost.EndDate.Value.ToDateTime(TimeOnly.MinValue) - existingJobPost.StartDate.Value.ToDateTime(TimeOnly.MinValue)).TotalDays
-                    : 0;
+                var billableDays = existingJobPost.JobTypeId == (int)JobType.Daily
+                    ? ResolveBillableDays(existingJobPost.StartDate, existingJobPost.EndDate, existingJobPost.SelectedDays)
+                    : 1;
 
                 var lockedAmount = existingJobPost.JobTypeId == (int)JobType.PerJob
                     ? existingJobPost.WageAmount
-                    : existingJobPost.WageAmount * existingJobPost.WorkersNeeded * (decimal)totalDays;
+                    : existingJobPost.WageAmount * existingJobPost.WorkersNeeded * billableDays;
 
                 if (lockedAmount > 0)
                 {
@@ -1112,6 +1112,23 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        private static int ResolveBillableDays(DateOnly? startDate, DateOnly? endDate, IEnumerable<DateOnly>? selectedDays)
+        {
+            var selectedDayCount = selectedDays?.Distinct().Count() ?? 0;
+            if (selectedDayCount > 0)
+            {
+                return selectedDayCount;
+            }
+
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                var spanDays = endDate.Value.DayNumber - startDate.Value.DayNumber + 1;
+                return Math.Max(1, spanDays);
+            }
+
+            return 1;
+        }
+
         private async Task NotifyMatchingWorkersAsync(JobPost jobPost)
         {
             var jobSkillIds = await _unitOfWork.GetRepository<JobSkillRequirement>()
@@ -1150,6 +1167,141 @@ namespace AgroTemp.Service.Implements
                     Message = $"Một công việc mới \"{jobPost.Title}\" vừa được đăng và phù hợp với kỹ năng của bạn. Hãy xem ngay!",
                     RelatedEntityId = jobPost.Id
                 });
+            }
+        }
+
+        public async Task<List<WorkersPerDayDTO>> GetAcceptedWorkersPerDayAsync(Guid jobPostId)
+        {
+            try
+            {
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(predicate: jp => jp.Id == jobPostId);
+
+                if (jobPost == null)
+                    throw new KeyNotFoundException($"Job post with id '{jobPostId}' was not found.");
+
+                var acceptedApplications = await _unitOfWork.GetRepository<JobApplication>()
+                    .GetListAsync(
+                        predicate: ja =>
+                            ja.JobPostId == jobPostId &&
+                            ja.StatusId == (int)ApplicationStatus.Accepted);
+
+                var workDateCounts = acceptedApplications
+                    .Where(ja => ja.WorkDates != null)
+                    .SelectMany(ja => ja.WorkDates!.Select(dt => DateOnly.FromDateTime(dt)))
+                    .GroupBy(date => date)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                var result = jobPost.SelectedDays
+                    .Select(day => new WorkersPerDayDTO
+                    {
+                        Date = day,
+                        AcceptedWorkerCount = workDateCounts.TryGetValue(day, out var count) ? count : 0
+                    })
+                    .OrderBy(x => x.Date)
+                    .ToList();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<SavedJobPostDTO> ToggleSaveJobPostAsync(Guid jobPostId)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId);
+                if (worker == null)
+                    throw new UnauthorizedAccessException("Only workers can save job posts.");
+
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobPostId,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill));
+                if (jobPost == null)
+                    throw new KeyNotFoundException($"Job post with id '{jobPostId}' was not found.");
+
+                var existing = await _unitOfWork.GetRepository<SavedJobPost>()
+                    .FirstOrDefaultAsync(predicate: s => s.WorkerId == worker.Id && s.JobPostId == jobPostId);
+
+                if (existing != null)
+                {
+                    _unitOfWork.GetRepository<SavedJobPost>().DeleteAsync(existing);
+                    await _unitOfWork.SaveChangesAsync();
+                    return null;
+                }
+
+                var saved = new SavedJobPost
+                {
+                    Id = Guid.NewGuid(),
+                    WorkerId = worker.Id,
+                    JobPostId = jobPostId,
+                    SavedAt = DateTime.UtcNow
+                };
+
+                await _unitOfWork.GetRepository<SavedJobPost>().InsertAsync(saved);
+                await _unitOfWork.SaveChangesAsync();
+
+                return new SavedJobPostDTO
+                {
+                    Id = saved.Id,
+                    WorkerId = saved.WorkerId,
+                    SavedAt = saved.SavedAt,
+                    JobPost = _mapper.JobPostToJobPostDto(jobPost)
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<List<SavedJobPostDTO>> GetSavedJobPostsAsync()
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == Guid.Empty)
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+
+                var worker = await _unitOfWork.GetRepository<Worker>()
+                    .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId);
+                if (worker == null)
+                    throw new UnauthorizedAccessException("Only workers can retrieve saved job posts.");
+
+                var savedPosts = await _unitOfWork.GetRepository<SavedJobPost>()
+                    .GetListAsync(
+                        predicate: s => s.WorkerId == worker.Id,
+                        include: q => q
+                            .Include(s => s.JobPost)
+                            .ThenInclude(jp => jp.Farmer)
+                            .Include(s => s.JobPost)
+                            .ThenInclude(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill),
+                        orderBy: s => s.OrderByDescending(x => x.SavedAt));
+
+                return savedPosts.Select(s => new SavedJobPostDTO
+                {
+                    Id = s.Id,
+                    WorkerId = s.WorkerId,
+                    SavedAt = s.SavedAt,
+                    JobPost = _mapper.JobPostToJobPostDto(s.JobPost)
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
             }
         }
     }

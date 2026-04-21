@@ -1,6 +1,7 @@
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
+using AgroTemp.Domain.Metadata;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
@@ -50,12 +51,41 @@ namespace AgroTemp.Service.Implements
                 .GetListAsync();
         }
 
-        public async Task<ICollection<WalletTransaction>> GetByWalletIdAsync(Guid walletId)
+        public async Task<PaginatedResponse<WalletTransaction>> GetByWalletIdAsync(Guid walletId, int page, int limit)
         {
-            return await _unitOfWork.GetRepository<WalletTransaction>()
-                .GetListAsync(
+            try
+            {
+                page = page < 1 ? 1 : page;
+                limit = limit < 1 ? 10 : limit;
+                var skip = (page - 1) * limit;
+                var total = await _unitOfWork.GetRepository<WalletTransaction>()
+                    .CountAsync(predicate: x => x.WalletId == walletId);
+
+                var query = _unitOfWork.GetRepository<WalletTransaction>().CreateBaseQuery(
                     predicate: x => x.WalletId == walletId,
-                    orderBy: q => q.OrderByDescending(x => x.CreatedAt));
+                    orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                    include: q => q.Include(x => x.Wallet),
+                    asNoTracking: true
+                );
+                
+                var transactions = await query.Skip(skip).Take(limit).ToListAsync();
+                return new PaginatedResponse<WalletTransaction>
+                {
+                    Data = transactions,
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = (int)Math.Ceiling((double)total / limit)
+                    }
+                };
+            } catch (Exception ex)
+            {
+                // Log the exception (you can use a logging framework like Serilog, NLog, etc.)
+                Console.WriteLine($"Error in GetByWalletIdAsync: {ex.Message}");
+                throw; // Rethrow the exception to be handled by the caller
+            }
         }
 
         public async Task<AgroTemp.Domain.DTO.Payment.PaginatedAdminWalletTransactionsResponse> GetWalletTransactionsForAdminAsync(int page = 1, int limit = 20, TransactionType? type = null, string? status = null, string? search = null)
@@ -111,6 +141,11 @@ namespace AgroTemp.Service.Implements
                 Page = page,
                 Limit = limit
             };
+        }
+
+        public Task<ICollection<WalletTransaction>> GetByWalletIdAsync(Guid walletId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

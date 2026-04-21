@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260417060804_AddNullableToRequirementsPrivileges")]
+    partial class AddNullableToRequirementsPrivileges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -622,6 +625,7 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("job_type");
 
                     b.Property<List<string>>("Privileges")
+                        .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("privileges");
 
@@ -630,6 +634,7 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("published_at");
 
                     b.Property<List<string>>("Requirements")
+                        .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("requirements");
 
@@ -1224,35 +1229,6 @@ namespace AgroTemp.Domain.Migrations
                     b.HasIndex("RaterId");
 
                     b.ToTable("Rating", "AgroTempV2");
-                });
-
-            modelBuilder.Entity("AgroTemp.Domain.Entities.SavedJobPost", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("JobPostId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("job_post_id");
-
-                    b.Property<DateTime>("SavedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("saved_at");
-
-                    b.Property<Guid>("WorkerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("worker_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("JobPostId");
-
-                    b.HasIndex("WorkerId", "JobPostId")
-                        .IsUnique();
-
-                    b.ToTable("Saved_Job_Post", "AgroTempV2");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Skill", b =>
@@ -1956,25 +1932,6 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("Rater");
                 });
 
-            modelBuilder.Entity("AgroTemp.Domain.Entities.SavedJobPost", b =>
-                {
-                    b.HasOne("AgroTemp.Domain.Entities.JobPost", "JobPost")
-                        .WithMany("SavedJobPosts")
-                        .HasForeignKey("JobPostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AgroTemp.Domain.Entities.Worker", "Worker")
-                        .WithMany("SavedJobPosts")
-                        .HasForeignKey("WorkerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("JobPost");
-
-                    b.Navigation("Worker");
-                });
-
             modelBuilder.Entity("AgroTemp.Domain.Entities.Skill", b =>
                 {
                     b.HasOne("AgroTemp.Domain.Entities.JobCategory", "Category")
@@ -2107,8 +2064,6 @@ namespace AgroTemp.Domain.Migrations
                     b.Navigation("JobSkillRequirements");
 
                     b.Navigation("Ratings");
-
-                    b.Navigation("SavedJobPosts");
                 });
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.PayOSOrder", b =>
@@ -2160,8 +2115,6 @@ namespace AgroTemp.Domain.Migrations
             modelBuilder.Entity("AgroTemp.Domain.Entities.Worker", b =>
                 {
                     b.Navigation("JobDetails");
-
-                    b.Navigation("SavedJobPosts");
 
                     b.Navigation("WorkerSkills");
                 });

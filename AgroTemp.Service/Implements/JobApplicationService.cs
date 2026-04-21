@@ -470,6 +470,63 @@ namespace AgroTemp.Service.Implements
             }
         }
 
+        public async Task<JobApplicationDTO> CancelJobApplicationForFarmer(Guid id)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+
+                var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
+                    .FirstOrDefaultAsync(
+                        predicate: ja => ja.Id == id,
+                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost).ThenInclude(jp => jp.Farmer));
+
+                if (existingJobApplication == null)
+                    throw new KeyNotFoundException("Job application not found.");
+
+                if (existingJobApplication.JobPost.Farmer.UserId != currentUserId)
+                    throw new UnauthorizedAccessException("You are only authorized to cancel applications for your own job posts.");
+
+                if (existingJobApplication.StatusId == (int)ApplicationStatus.Cancelled || 
+                    existingJobApplication.StatusId == (int)ApplicationStatus.Rejected)
+                {
+                    throw new InvalidOperationException("Cannot cancel an application that is already cancelled or rejected.");
+                }
+
+                if (existingJobApplication.StatusId == (int)ApplicationStatus.Accepted)
+                {
+                    existingJobApplication.JobPost.WorkersAccepted -= 1;
+                    if (existingJobApplication.JobPost.StatusId == (int)JobPostStatus.Closed)
+                    {
+                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Published;
+                    }
+
+                    if (existingJobApplication.Worker != null)
+                    {
+                        await _notificationService.CreateAsync(new CreateNotificationRequest
+                        {
+                            UserId = existingJobApplication.Worker.UserId,
+                            Type = NotificationType.JobAcceptance,
+                            Title = "Đơn tuyển dụng bị HỦY",
+                            Message = $"Đơn tuyển dụng của bạn cho \"{existingJobApplication.JobPost.Title}\" đã bị hủy bởi người nông dân. Vị trí công việc này đã được mở lại.",
+                            RelatedEntityId = existingJobApplication.JobPostId
+                        });
+                    }
+                }
+
+                existingJobApplication.StatusId = (int)ApplicationStatus.Cancelled;
+
+                _unitOfWork.GetRepository<JobApplication>().UpdateAsync(existingJobApplication);
+                await _unitOfWork.SaveChangesAsync();
+
+                return _mapper.JobApplicationToJobApplicationDto(existingJobApplication);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
         public async Task<PaginatedResponse<JobApplicationDTO>> GetJobApplicationsByFarmer(int? statusId, bool includeAll, int page, int limit)
         {
             try

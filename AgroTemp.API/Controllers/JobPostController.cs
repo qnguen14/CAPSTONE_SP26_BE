@@ -611,4 +611,139 @@ public class JobPostController : ControllerBase
             });
         }
     }
+
+    [HttpGet(ApiEndpointConstants.Job.GetAcceptedWorkersPerDayEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<WorkersPerDayDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<WorkersPerDayDTO>>> GetAcceptedWorkersPerDay([FromRoute] Guid id)
+    {
+        try
+        {
+            var response = await _jobPostService.GetAcceptedWorkersPerDayAsync(id);
+            var apiResponse = new ApiResponse<IEnumerable<WorkersPerDayDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Accepted workers per day retrieved successfully",
+                Data = response
+            };
+            return Ok(apiResponse);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving accepted workers per day for job post {Id}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving accepted workers per day",
+                Data = null
+            });
+        }
+    }
+
+    [HttpPost(ApiEndpointConstants.Job.ToggleSaveJobPostEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<SavedJobPostDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<SavedJobPostDTO>> ToggleSaveJobPost([FromRoute] Guid id)
+    {
+        try
+        {
+            var response = await _jobPostService.ToggleSaveJobPostAsync(id);
+            if (response == null)
+            {
+                return Ok(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    Message = "Job post unsaved successfully",
+                    Data = null
+                });
+            }
+            return Ok(new ApiResponse<SavedJobPostDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job post saved successfully",
+                Data = response
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized toggle save job post attempt");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status404NotFound,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error toggling save for job post {Id}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while saving the job post",
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Job.GetSavedJobPostsEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<SavedJobPostDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<SavedJobPostDTO>>> GetSavedJobPosts()
+    {
+        try
+        {
+            var response = await _jobPostService.GetSavedJobPostsAsync();
+            return Ok(new ApiResponse<IEnumerable<SavedJobPostDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Saved job posts retrieved successfully",
+                Data = response
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized get saved job posts attempt");
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving saved job posts");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving saved job posts",
+                Data = null
+            });
+        }
+    }
 }

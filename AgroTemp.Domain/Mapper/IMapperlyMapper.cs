@@ -87,6 +87,10 @@ public interface IMapperlyMapper
     List<DisputeReportDTO> DisputeReportsToDisputeReportDtos(IEnumerable<DisputeReport> disputeReports);
     DisputeReport CreateDisputeReportRequestToDisputeReport(CreateDisputeReportRequest request);
     void UpdateDisputeReportRequestToDisputeReport(UpdateDisputeReportRequest request, DisputeReport disputeReport);
+    
+    // DisputeReportComment
+    DisputeReportCommentDTO DisputeReportCommentToDto(DisputeReportComment comment);
+    List<DisputeReportCommentDTO> DisputeReportCommentsToDtos(IEnumerable<DisputeReportComment> comments);
 
     // WorkerSession
     WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);

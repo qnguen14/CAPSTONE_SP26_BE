@@ -8,7 +8,6 @@ namespace AgroTemp.Domain.DTO.Rating
 {
     public class CreateRatingRequest
     {
-        public Guid RaterId { get; set; }
         public Guid RateeId { get; set; }
         public Guid JobPostId { get; set; }
         public int RatingScore { get; set; }

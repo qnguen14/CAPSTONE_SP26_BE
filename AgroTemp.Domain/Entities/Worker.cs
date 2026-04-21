@@ -71,6 +71,7 @@ public class Worker
 
     public virtual ICollection<WorkerSkill> WorkerSkills { get; set; } = new List<WorkerSkill>();
     public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
+    public virtual ICollection<SavedJobPost> SavedJobPosts { get; set; } = new List<SavedJobPost>();
 
     [Required]
     [Column("avatar_url")]

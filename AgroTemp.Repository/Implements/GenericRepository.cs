@@ -196,6 +196,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
             if (predicate != null)
                 query = query.Where(predicate);
 
+            if (orderBy != null)
+                query = orderBy(query);
+
             if (asNoTracking)
                 query = query.AsNoTracking();
 

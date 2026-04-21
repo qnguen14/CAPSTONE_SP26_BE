@@ -15,6 +15,7 @@ namespace AgroTemp.Service.Interfaces
         Task<List<JobPostDTO>> GetJobPostsByFarmerId();
         Task<List<JobPostDTO>> GetFarmerJobHistory();
         Task<List<JobPostDTO>> GetJobPostsByStatus(JobPostStatus status);
+        Task<List<WorkersPerDayDTO>> GetAcceptedWorkersPerDayAsync(Guid jobPostId);
 
 
         Task<JobPostDTO> CreateJobPost(CreateJobPostRequest request);
@@ -23,6 +24,7 @@ namespace AgroTemp.Service.Interfaces
 
 
         Task<JobPostDTO> CancelJobPost(Guid id);
+
 
         Task<JobPostDTO> UpdateJobPostUrgency(string id, bool isUrgent);
         Task<JobPostDTO> UpdateJobPostStatus(string id, JobPostStatus status);
@@ -44,5 +46,9 @@ namespace AgroTemp.Service.Interfaces
         Task<List<JobDiscoveryDTO>> GetJobsByWageRangeAsync(decimal minWage, decimal? maxWage = null);
         Task<List<JobDiscoveryDTO>> GetJobsByTypeAsync(int jobTypeId);
         Task<List<JobDiscoveryDTO>> GetUrgentJobsAsync(decimal latitude, decimal longitude, double maxDistanceKm = 20);
+
+
+        Task<SavedJobPostDTO> ToggleSaveJobPostAsync(Guid jobPostId);
+        Task<List<SavedJobPostDTO>> GetSavedJobPostsAsync();
     }
 }
