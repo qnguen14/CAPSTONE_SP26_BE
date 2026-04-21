@@ -431,7 +431,7 @@ public class DisputeReportController : ControllerBase
         }
     }
 
-    [HttpGet("{id}/comments")]
+    [HttpGet(ApiEndpointConstants.Dispute.DisputeEndpoint + "/{id:guid}/comments")]
     [Authorize(Roles = "Admin,Farmer,Worker")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<DisputeReportCommentDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -480,7 +480,7 @@ public class DisputeReportController : ControllerBase
         }
     }
 
-    [HttpPost("{id}/comments")]
+    [HttpPost(ApiEndpointConstants.Dispute.DisputeEndpoint + "/{id:guid}/comments")]
     [Authorize(Roles = "Admin,Farmer,Worker")]
     [ProducesResponseType(typeof(ApiResponse<DisputeReportCommentDTO>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
