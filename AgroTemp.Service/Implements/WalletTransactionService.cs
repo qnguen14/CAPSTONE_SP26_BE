@@ -143,9 +143,5 @@ namespace AgroTemp.Service.Implements
             };
         }
 
-        public Task<ICollection<WalletTransaction>> GetByWalletIdAsync(Guid walletId)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
