@@ -17,3 +17,6 @@ REAPPLY-COMPLETE.md
 PLAN_PUSH_NOTIFICATION.md
 *.md
 AgroTemp.API/secrets.json
+AgroTemp.Test/obj/Debug/net8.0/AgroTemp.Test.assets.cache
+AgroTemp.Test/obj/Debug/net8.0/AgroTemp.Test.AssemblyInfoInputs.cache
+AgroTemp.Test/obj/Debug/net8.0/AgroTemp.Test.AssemblyInfo.cs
