@@ -20,3 +20,5 @@ AgroTemp.API/secrets.json
 AgroTemp.Test/obj/Debug/net8.0/AgroTemp.Test.assets.cache
 AgroTemp.Test/obj/Debug/net8.0/AgroTemp.Test.AssemblyInfoInputs.cache
 AgroTemp.Test/obj/Debug/net8.0/AgroTemp.Test.AssemblyInfo.cs
+*.cache
+AgroTemp.Test/obj/Debug/net8.0/AgroTemp.Test.AssemblyInfo.cs
