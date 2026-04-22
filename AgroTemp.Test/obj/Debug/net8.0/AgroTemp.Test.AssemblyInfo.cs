@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AgroTemp.Test")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d736c2308261b0dce40d237989d9e720457742a3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7df5c19db87f4ae00e7ee3949e0d66b5b1f46b3e")]
 [assembly: System.Reflection.AssemblyProductAttribute("AgroTemp.Test")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AgroTemp.Test")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
