@@ -4,7 +4,7 @@ namespace AgroTemp.Service.Interfaces;
 
 public interface IDisputeReportService
 {
-    Task<List<DisputeReportDTO>> GetAllDisputesAsync();
+    Task<CustomDisputeReportDTO> GetAllDisputesAsync();
     Task<DisputeReportDTO?> GetDisputeByIdAsync(Guid id, Guid currentUserId, bool isAdmin);
     Task<DisputeReportDTO> CreateDisputeAsync(Guid currentUserId, CreateDisputeReportRequest request);
     Task<DisputeReportDTO?> UpdateDisputeAsync(Guid id, Guid currentUserId, UpdateDisputeReportRequest request);

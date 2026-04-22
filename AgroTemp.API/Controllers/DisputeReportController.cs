@@ -27,14 +27,14 @@ public class DisputeReportController : ControllerBase
 
     [HttpGet(ApiEndpointConstants.Dispute.GetAllDisputesEndpoint)]
     [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DisputeReportDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<CustomDisputeReportDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<DisputeReportDTO>>> GetAllDisputes()
+    public async Task<ActionResult<CustomDisputeReportDTO>> GetAllDisputes()
     {
         try
         {
             var response = await _disputeReportService.GetAllDisputesAsync();
-            return Ok(new ApiResponse<IEnumerable<DisputeReportDTO>>
+            return Ok(new ApiResponse<CustomDisputeReportDTO>
             {
                 StatusCode = StatusCodes.Status200OK,
                 Message = "Disputes retrieved successfully",

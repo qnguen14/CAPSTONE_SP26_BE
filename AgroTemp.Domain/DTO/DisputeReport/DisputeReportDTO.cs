@@ -2,6 +2,13 @@ using AgroTemp.Domain.Entities;
 
 namespace AgroTemp.Domain.DTO.DisputeReport;
 
+public class CustomDisputeReportDTO
+{
+    public List<DisputeReportDTO>? DisputeReports { get; set; }
+    public List<WorkerProfileDTO> Workers { get; set; }
+    public List<FarmerProfileDTO> Farmers { get; set; }
+}
+
 public class DisputeReportDTO
 {
     public Guid Id { get; set; }
