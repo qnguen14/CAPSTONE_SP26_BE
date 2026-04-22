@@ -178,6 +178,19 @@ namespace AgroTemp.Service.Implements
                     throw new Exception("Worker profile not found for the current user.");
                 }
 
+                // Fetch job post early for capacity check and notification reuse
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == request.JobPostId,
+                        include: q => q.Include(jp => jp.Farmer));
+
+                if (jobPost == null)
+                    throw new KeyNotFoundException("Job post not found.");
+
+                // TC_BE_005: Reject application when job has reached worker capacity
+                if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
+                    throw new InvalidOperationException("This job has already reached its required worker capacity.");
+
                 var jobApplication = _mapper.CreateJobApplicationRequestToJobApplication(request);
 
                 // Set defaults
@@ -190,13 +203,7 @@ namespace AgroTemp.Service.Implements
 
                 await _unitOfWork.GetRepository<JobApplication>().InsertAsync(jobApplication);
 
-                // Get the job post and farmer information for the notification
-                var jobPost = await _unitOfWork.GetRepository<JobPost>()
-                    .FirstOrDefaultAsync(
-                        predicate: jp => jp.Id == jobApplication.JobPostId,
-                        include: q => q.Include(jp => jp.Farmer));
-
-                if (jobPost != null && jobPost.Farmer != null)
+                if (jobPost.Farmer != null)
                 {
                     var notificationRequest = new CreateNotificationRequest
                     {

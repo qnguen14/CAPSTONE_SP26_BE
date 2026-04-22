@@ -1,6 +1,8 @@
 ﻿namespace AgroTemp.Test;
 
+
 using AgroTemp.Domain.Context;
+using AgroTemp.Domain.DTO.Job.JobApplication;
 using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
@@ -11,7 +13,8 @@ using Microsoft.AspNetCore.Http;
 using Moq;
 using System.Security.Claims;
 
-public class JobPostServiceTest
+
+public class JobServiceTest
 {
     private readonly Mock<IUnitOfWork<AgroTempDbContext>> _unitOfWorkMock;
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
@@ -23,12 +26,14 @@ public class JobPostServiceTest
     private readonly Mock<IGenericRepository<Skill>> _skillRepoMock;
     private readonly Mock<IGenericRepository<JobSkillRequirement>> _skillReqRepoMock;
     private readonly Mock<IGenericRepository<JobApplication>> _jobAppRepoMock;
-    private readonly JobPostService _service;
+    private readonly Mock<IGenericRepository<Worker>> _workerRepoMock;
+    private readonly JobPostService _jobPostService;
+    private readonly JobApplicationService _jobApplicationService;
 
     private readonly Guid _currentUserId = Guid.NewGuid();
     private readonly Guid _farmerId = Guid.NewGuid();
 
-    public JobPostServiceTest()
+    public JobServiceTest()
     {
         _unitOfWorkMock = new Mock<IUnitOfWork<AgroTempDbContext>>();
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
@@ -40,6 +45,7 @@ public class JobPostServiceTest
         _skillRepoMock = new Mock<IGenericRepository<Skill>>();
         _skillReqRepoMock = new Mock<IGenericRepository<JobSkillRequirement>>();
         _jobAppRepoMock = new Mock<IGenericRepository<JobApplication>>();
+        _workerRepoMock = new Mock<IGenericRepository<Worker>>();
 
         // User context
         var claims = new[] { new Claim(ClaimTypes.NameIdentifier, _currentUserId.ToString()) };
@@ -54,13 +60,20 @@ public class JobPostServiceTest
         _unitOfWorkMock.Setup(u => u.GetRepository<Skill>()).Returns(_skillRepoMock.Object);
         _unitOfWorkMock.Setup(u => u.GetRepository<JobSkillRequirement>()).Returns(_skillReqRepoMock.Object);
         _unitOfWorkMock.Setup(u => u.GetRepository<JobApplication>()).Returns(_jobAppRepoMock.Object);
+        _unitOfWorkMock.Setup(u => u.GetRepository<Worker>()).Returns(_workerRepoMock.Object);
         _unitOfWorkMock.Setup(u => u.SaveChangesAsync()).ReturnsAsync(1);
 
-        _service = new JobPostService(
+        _jobPostService = new JobPostService(
             _unitOfWorkMock.Object,
             _httpContextAccessorMock.Object,
             _mapperMock.Object,
             _walletServiceMock.Object,
+            _notificationServiceMock.Object);
+
+        _jobApplicationService = new JobApplicationService(
+            _unitOfWorkMock.Object,
+            _httpContextAccessorMock.Object,
+            _mapperMock.Object,
             _notificationServiceMock.Object);
     }
 
@@ -109,7 +122,7 @@ public class JobPostServiceTest
             .ReturnsAsync(jobPosts);
         _mapperMock.Setup(m => m.JobPostsToJobPostDtos(jobPosts)).Returns(dtos);
 
-        var result = await _service.GetAllJobPosts();
+        var result = await _jobPostService.GetAllJobPosts();
 
         Assert.NotNull(result);
         Assert.Equal(2, result.Count);
@@ -122,7 +135,7 @@ public class JobPostServiceTest
             .Setup(r => r.GetListAsync(null, It.IsAny<Func<IQueryable<JobPost>, IOrderedQueryable<JobPost>>>(), It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>(), null))
             .ReturnsAsync(new List<JobPost>());
 
-        var result = await _service.GetAllJobPosts();
+        var result = await _jobPostService.GetAllJobPosts();
 
         Assert.Null(result);
     }
@@ -140,7 +153,7 @@ public class JobPostServiceTest
             .ReturnsAsync(jobPost);
         _mapperMock.Setup(m => m.JobPostToJobPostDto(jobPost)).Returns(dto);
 
-        var result = await _service.GetJobPostById(jobPost.Id.ToString());
+        var result = await _jobPostService.GetJobPostById(jobPost.Id.ToString());
 
         Assert.NotNull(result);
         Assert.Equal(jobPost.Id, result.Id);
@@ -153,7 +166,7 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(), null, It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>()))
             .ReturnsAsync((JobPost)null!);
 
-        var result = await _service.GetJobPostById(Guid.NewGuid().ToString());
+        var result = await _jobPostService.GetJobPostById(Guid.NewGuid().ToString());
 
         Assert.Null(result);
     }
@@ -161,7 +174,7 @@ public class JobPostServiceTest
     [Fact]
     public async Task GetJobPostById_WhenInvalidGuid_ThrowsException()
     {
-        await Assert.ThrowsAsync<Exception>(() => _service.GetJobPostById("not-a-guid"));
+        await Assert.ThrowsAsync<Exception>(() => _jobPostService.GetJobPostById("not-a-guid"));
     }
 
     // GetJobPostsByFarmerId
@@ -181,7 +194,7 @@ public class JobPostServiceTest
             .ReturnsAsync(jobPosts);
         _mapperMock.Setup(m => m.JobPostsToJobPostDtos(jobPosts)).Returns(dtos);
 
-        var result = await _service.GetJobPostsByFarmerId();
+        var result = await _jobPostService.GetJobPostsByFarmerId();
 
         Assert.NotNull(result);
         Assert.Single(result);
@@ -194,7 +207,7 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Farmer, bool>>>(), null, null))
             .ReturnsAsync((Farmer)null!);
 
-        var ex = await Assert.ThrowsAsync<Exception>(() => _service.GetJobPostsByFarmerId());
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.GetJobPostsByFarmerId());
         Assert.Contains("not authorized", ex.Message);
     }
 
@@ -210,7 +223,7 @@ public class JobPostServiceTest
             .Setup(r => r.GetListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(), It.IsAny<Func<IQueryable<JobPost>, IOrderedQueryable<JobPost>>>(), It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>(), null))
             .ReturnsAsync(new List<JobPost>());
 
-        var result = await _service.GetJobPostsByFarmerId();
+        var result = await _jobPostService.GetJobPostsByFarmerId();
 
         Assert.Empty(result);
     }
@@ -247,7 +260,7 @@ public class JobPostServiceTest
             .ReturnsAsync(jobPost);
         _mapperMock.Setup(m => m.JobPostToJobPostDto(jobPost)).Returns(dto);
 
-        var result = await _service.CreateJobPost(request);
+        var result = await _jobPostService.CreateJobPost(request);
 
         Assert.NotNull(result);
         _jobPostRepoMock.Verify(r => r.InsertAsync(jobPost), Times.Once);
@@ -260,7 +273,7 @@ public class JobPostServiceTest
         // Override HttpContext to have empty user
         _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
 
-        var ex = await Assert.ThrowsAsync<Exception>(() => _service.CreateJobPost(new CreateJobPostRequest()));
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.CreateJobPost(new CreateJobPostRequest()));
         Assert.Contains("not authenticated", ex.Message);
     }
 
@@ -271,7 +284,7 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Farmer, bool>>>(), null, null))
             .ReturnsAsync((Farmer)null!);
 
-        var ex = await Assert.ThrowsAsync<Exception>(() => _service.CreateJobPost(new CreateJobPostRequest()));
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.CreateJobPost(new CreateJobPostRequest()));
         Assert.Contains("farmers", ex.Message);
     }
 
@@ -298,7 +311,7 @@ public class JobPostServiceTest
             JobTypeId = JobType.PerJob
         };
 
-        var ex = await Assert.ThrowsAsync<Exception>(() => _service.CreateJobPost(request));
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.CreateJobPost(request));
         Assert.Contains("Invalid skill", ex.Message);
     }
 
@@ -323,7 +336,7 @@ public class JobPostServiceTest
             .Setup(w => w.LockAmountForJobPostAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<decimal>()))
             .ThrowsAsync(new InvalidOperationException("Insufficient balance"));
 
-        var ex = await Assert.ThrowsAsync<Exception>(() => _service.CreateJobPost(request));
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.CreateJobPost(request));
         Assert.Contains("Insufficient wallet balance", ex.Message);
     }
 
@@ -342,7 +355,7 @@ public class JobPostServiceTest
             .ReturnsAsync(jobPost);
         _mapperMock.Setup(m => m.JobPostToJobPostDto(jobPost)).Returns(dto);
 
-        var result = await _service.UpdateJobPost(jobPost.Id, request);
+        var result = await _jobPostService.UpdateJobPost(jobPost.Id, request);
 
         Assert.NotNull(result);
         _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Once);
@@ -355,7 +368,7 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(), null, It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>()))
             .ReturnsAsync((JobPost)null!);
 
-        var result = await _service.UpdateJobPost(Guid.NewGuid(), new UpdateJobPostRequest());
+        var result = await _jobPostService.UpdateJobPost(Guid.NewGuid(), new UpdateJobPostRequest());
 
         Assert.Null(result);
     }
@@ -371,7 +384,7 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(), null, null))
             .ReturnsAsync(jobPost);
 
-        var result = await _service.DeleteJobPost(jobPost.Id.ToString());
+        var result = await _jobPostService.DeleteJobPost(jobPost.Id.ToString());
 
         Assert.True(result);
         _jobPostRepoMock.Verify(r => r.DeleteAsync(jobPost), Times.Once);
@@ -385,7 +398,7 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(), null, null))
             .ReturnsAsync((JobPost)null!);
 
-        var result = await _service.DeleteJobPost(Guid.NewGuid().ToString());
+        var result = await _jobPostService.DeleteJobPost(Guid.NewGuid().ToString());
 
         Assert.False(result);
         _jobPostRepoMock.Verify(r => r.DeleteAsync(It.IsAny<JobPost>()), Times.Never);
@@ -394,7 +407,7 @@ public class JobPostServiceTest
     [Fact]
     public async Task DeleteJobPost_WhenInvalidGuid_ThrowsException()
     {
-        await Assert.ThrowsAsync<Exception>(() => _service.DeleteJobPost("invalid-guid"));
+        await Assert.ThrowsAsync<Exception>(() => _jobPostService.DeleteJobPost("invalid-guid"));
     }
 
     // CancelJobPost
@@ -418,7 +431,7 @@ public class JobPostServiceTest
             .Returns(Task.CompletedTask);
         _mapperMock.Setup(m => m.JobPostToJobPostDto(jobPost)).Returns(dto);
 
-        var result = await _service.CancelJobPost(jobPost.Id);
+        var result = await _jobPostService.CancelJobPost(jobPost.Id);
 
         Assert.NotNull(result);
         Assert.Equal((int)JobPostStatus.Cancelled, result.StatusId);
@@ -432,7 +445,7 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(), null, It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>()))
             .ReturnsAsync((JobPost)null!);
 
-        var ex = await Assert.ThrowsAsync<Exception>(() => _service.CancelJobPost(Guid.NewGuid()));
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.CancelJobPost(Guid.NewGuid()));
         Assert.Contains("not found", ex.Message);
     }
 
@@ -446,7 +459,7 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(), null, It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>()))
             .ReturnsAsync(jobPost);
 
-        var ex = await Assert.ThrowsAsync<Exception>(() => _service.CancelJobPost(jobPost.Id));
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.CancelJobPost(jobPost.Id));
         Assert.Contains("authorized", ex.Message);
     }
 
@@ -460,7 +473,7 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(), null, It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>()))
             .ReturnsAsync(jobPost);
 
-        var ex = await Assert.ThrowsAsync<Exception>(() => _service.CancelJobPost(jobPost.Id));
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.CancelJobPost(jobPost.Id));
         Assert.Contains("cannot be cancelled", ex.Message);
     }
 
@@ -475,7 +488,7 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(), null, It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>()))
             .ReturnsAsync(jobPost);
 
-        var ex = await Assert.ThrowsAsync<Exception>(() => _service.CancelJobPost(jobPost.Id));
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.CancelJobPost(jobPost.Id));
         Assert.Contains("already started", ex.Message);
     }
 
@@ -496,7 +509,7 @@ public class JobPostServiceTest
             .ReturnsAsync(jobPosts);
         _mapperMock.Setup(m => m.JobPostsToJobPostDtos(jobPosts)).Returns(dtos);
 
-        var result = await _service.GetJobPostsByStatus(JobPostStatus.Published);
+        var result = await _jobPostService.GetJobPostsByStatus(JobPostStatus.Published);
 
         Assert.NotNull(result);
         Assert.Single(result);
@@ -509,7 +522,263 @@ public class JobPostServiceTest
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Farmer, bool>>>(), null, null))
             .ReturnsAsync((Farmer)null!);
 
-        var ex = await Assert.ThrowsAsync<Exception>(() => _service.GetJobPostsByStatus(JobPostStatus.Published));
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.GetJobPostsByStatus(JobPostStatus.Published));
         Assert.Contains("not authorized", ex.Message);
+    }
+
+    // TC_BE_003: Create job with start date in the past
+
+    [Fact]
+    public async Task TC_BE_003_CreateJobPost_WithPastStartDate_ThrowsValidationError()
+    {
+        // Arrange
+        var farmer = MakeFarmer();
+        var request = new CreateJobPostRequest
+        {
+            Title = "Old Job",
+            Description = "Past job",
+            Address = "Farm",
+            WageAmount = 100,
+            WorkersNeeded = 1,
+            JobTypeId = JobType.PerJob,
+            SkillIds = new List<Guid>(),
+            StartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-3)), // 3 days in the past
+            StatusId = (int)JobPostStatus.Published
+        };
+
+        _farmerRepoMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Farmer, bool>>>(), null, null))
+            .ReturnsAsync(farmer);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobPostService.CreateJobPost(request));
+        Assert.Contains("start date cannot be in the past", ex.Message);
+    }
+
+    [Fact]
+    public async Task TC_BE_003_CreateJobPost_WithFutureStartDate_Succeeds()
+    {
+        var farmer = MakeFarmer();
+        var jobPost = MakeJobPost();
+        var dto = MakeJobPostDTO(jobPost.Id);
+        var request = new CreateJobPostRequest
+        {
+            Title = "Future Job",
+            Description = "Valid job",
+            Address = "Farm",
+            WageAmount = 100,
+            WorkersNeeded = 1,
+            JobTypeId = JobType.PerJob,
+            SkillIds = new List<Guid>(),
+            StartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7)), // 1 week from now
+            StatusId = (int)JobPostStatus.Published
+        };
+
+        _farmerRepoMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Farmer, bool>>>(), null, null))
+            .ReturnsAsync(farmer);
+        _mapperMock.Setup(m => m.CreateJobPostRequestToJobPost(request)).Returns(jobPost);
+        _walletServiceMock
+            .Setup(w => w.LockAmountForJobPostAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<decimal>()))
+            .Returns(Task.CompletedTask);
+        _jobPostRepoMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(), null, It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>()))
+            .ReturnsAsync(jobPost);
+        _mapperMock.Setup(m => m.JobPostToJobPostDto(jobPost)).Returns(dto);
+
+        // Act
+        var result = await _jobPostService.CreateJobPost(request);
+
+        // Assert
+        Assert.NotNull(result);
+    }
+
+    // TC_BE_004: Geolocation query — only jobs within radius are returned
+
+    [Fact]
+    public async Task TC_BE_004_GetNearbyJobs_ReturnsOnlyJobsWithinRadius()
+    {
+        // Reference point: lat=10.0, lon=106.0 (Ho Chi Minh City), radius=10km
+        decimal userLat = 10.0m;
+        decimal userLon = 106.0m;
+        double radiusKm = 10.0;
+
+        var farmInside1 = new Farm { Id = Guid.NewGuid(), FarmerId = _farmerId, Address = "Farm A",
+            Latitude = 10.05m, Longitude = 106.0m, LocationName = "Near Farm A" }; // ~5.6 km
+
+        var farmInside2 = new Farm { Id = Guid.NewGuid(), FarmerId = _farmerId, Address = "Farm B",
+            Latitude = 10.0m, Longitude = 106.07m, LocationName = "Near Farm B" }; // ~7.7 km
+
+        var farmOutside = new Farm { Id = Guid.NewGuid(), FarmerId = _farmerId, Address = "Farm C",
+            Latitude = 10.2m, Longitude = 106.0m, LocationName = "Far Farm C" }; // ~22 km
+
+        var jobInside1Id = Guid.NewGuid();
+        var jobInside2Id = Guid.NewGuid();
+        var jobOutsideId = Guid.NewGuid();
+
+        var publishedJobs = new List<JobPost>
+        {
+            new JobPost { Id = jobInside1Id, FarmerId = _farmerId, Title = "Job A",
+                StatusId = (int)JobPostStatus.Published, Farm = farmInside1,
+                JobSkillRequirements = new List<JobSkillRequirement>(), Farmer = MakeFarmer() },
+            new JobPost { Id = jobInside2Id, FarmerId = _farmerId, Title = "Job B",
+                StatusId = (int)JobPostStatus.Published, Farm = farmInside2,
+                JobSkillRequirements = new List<JobSkillRequirement>(), Farmer = MakeFarmer() },
+            new JobPost { Id = jobOutsideId, FarmerId = _farmerId, Title = "Job C",
+                StatusId = (int)JobPostStatus.Published, Farm = farmOutside,
+                JobSkillRequirements = new List<JobSkillRequirement>(), Farmer = MakeFarmer() }
+        };
+
+        _jobPostRepoMock
+            .Setup(r => r.GetListAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(),
+                It.IsAny<Func<IQueryable<JobPost>, IOrderedQueryable<JobPost>>>(),
+                It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>(),
+                null))
+            .ReturnsAsync(publishedJobs);
+
+        _mapperMock.Setup(m => m.JobPostToJobDiscoveryDto(It.Is<JobPost>(jp => jp.Id == jobInside1Id)))
+            .Returns(new JobDiscoveryDTO { Id = jobInside1Id, Title = "Job A" });
+        _mapperMock.Setup(m => m.JobPostToJobDiscoveryDto(It.Is<JobPost>(jp => jp.Id == jobInside2Id)))
+            .Returns(new JobDiscoveryDTO { Id = jobInside2Id, Title = "Job B" });
+        _mapperMock.Setup(m => m.JobPostToJobDiscoveryDto(It.Is<JobPost>(jp => jp.Id == jobOutsideId)))
+            .Returns(new JobDiscoveryDTO { Id = jobOutsideId, Title = "Job C" });
+
+        var result = await _jobPostService.GetNearbyJobsAsync(userLat, userLon, radiusKm);
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+        Assert.DoesNotContain(result, j => j.Id == jobOutsideId);
+        Assert.Contains(result, j => j.Id == jobInside1Id);
+        Assert.Contains(result, j => j.Id == jobInside2Id);
+    }
+
+    [Fact]
+    public async Task TC_BE_004_GetNearbyJobs_ResultsSortedByDistanceAscending()
+    {
+        // Arrange — three jobs all inside 10km, sorted nearest first
+        decimal userLat = 10.0m;
+        decimal userLon = 106.0m;
+
+        var farmClose = new Farm { Id = Guid.NewGuid(), FarmerId = _farmerId, Address = "A",
+            Latitude = 10.02m, Longitude = 106.0m, LocationName = "Close" };  // ~2.2 km
+        var farmMid = new Farm { Id = Guid.NewGuid(), FarmerId = _farmerId, Address = "B",
+            Latitude = 10.05m, Longitude = 106.0m, LocationName = "Mid" };    // ~5.6 km
+        var farmFar = new Farm { Id = Guid.NewGuid(), FarmerId = _farmerId, Address = "C",
+            Latitude = 10.08m, Longitude = 106.0m, LocationName = "Far" };    // ~8.9 km
+
+        var closeId = Guid.NewGuid();
+        var midId   = Guid.NewGuid();
+        var farId   = Guid.NewGuid();
+
+        var publishedJobs = new List<JobPost>
+        {
+            new JobPost { Id = farId,   FarmerId = _farmerId, Title = "Far",   StatusId = (int)JobPostStatus.Published, Farm = farmFar,   JobSkillRequirements = new List<JobSkillRequirement>(), Farmer = MakeFarmer() },
+            new JobPost { Id = closeId, FarmerId = _farmerId, Title = "Close", StatusId = (int)JobPostStatus.Published, Farm = farmClose, JobSkillRequirements = new List<JobSkillRequirement>(), Farmer = MakeFarmer() },
+            new JobPost { Id = midId,   FarmerId = _farmerId, Title = "Mid",   StatusId = (int)JobPostStatus.Published, Farm = farmMid,   JobSkillRequirements = new List<JobSkillRequirement>(), Farmer = MakeFarmer() }
+        };
+
+        _jobPostRepoMock
+            .Setup(r => r.GetListAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(),
+                It.IsAny<Func<IQueryable<JobPost>, IOrderedQueryable<JobPost>>>(),
+                It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>(),
+                null))
+            .ReturnsAsync(publishedJobs);
+
+        _mapperMock.Setup(m => m.JobPostToJobDiscoveryDto(It.Is<JobPost>(jp => jp.Id == closeId))).Returns(new JobDiscoveryDTO { Id = closeId });
+        _mapperMock.Setup(m => m.JobPostToJobDiscoveryDto(It.Is<JobPost>(jp => jp.Id == midId))).Returns(new JobDiscoveryDTO { Id = midId });
+        _mapperMock.Setup(m => m.JobPostToJobDiscoveryDto(It.Is<JobPost>(jp => jp.Id == farId))).Returns(new JobDiscoveryDTO { Id = farId });
+
+        var result = await _jobPostService.GetNearbyJobsAsync(userLat, userLon, 10.0);
+
+        Assert.Equal(3, result.Count);
+        Assert.True(result[0].DistanceKm <= result[1].DistanceKm);
+        Assert.True(result[1].DistanceKm <= result[2].DistanceKm);
+        Assert.Equal(closeId, result[0].Id);
+    }
+
+    // TC_BE_005: Apply to a full-capacity job is rejected
+
+    [Fact]
+    public async Task TC_BE_005_CreateJobApplication_WhenJobAtCapacity_ThrowsException()
+    {
+        // Arrange — job has WorkersNeeded=2 and WorkersAccepted=2 (full)
+        var worker = new Worker { Id = Guid.NewGuid(), UserId = _currentUserId, FullName = "Test Worker" };
+        var jobPostId = Guid.NewGuid();
+        var fullJobPost = new JobPost
+        {
+            Id = jobPostId,
+            FarmerId = _farmerId,
+            Title = "Full Job",
+            WorkersNeeded = 2,
+            WorkersAccepted = 2,   // already at capacity
+            StatusId = (int)JobPostStatus.Published,
+            JobSkillRequirements = new List<JobSkillRequirement>(),
+            Farmer = MakeFarmer()
+        };
+
+        _workerRepoMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Worker, bool>>>(), null, null))
+            .ReturnsAsync(worker);
+        _jobPostRepoMock
+            .Setup(r => r.FirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(),
+                null,
+                It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>()))
+            .ReturnsAsync(fullJobPost);
+
+        var request = new CreateJobApplicationRequest { JobPostId = jobPostId };
+
+        var ex = await Assert.ThrowsAsync<Exception>(() => _jobApplicationService.CreateJobApplication(request));
+        Assert.Contains("required worker capacity", ex.Message);
+    }
+
+    [Fact]
+    public async Task TC_BE_005_CreateJobApplication_WhenJobHasOpenSlots_Succeeds()
+    {
+        // Arrange — job has WorkersNeeded=3, WorkersAccepted=1 (still open)
+        var worker = new Worker { Id = Guid.NewGuid(), UserId = _currentUserId, FullName = "Test Worker" };
+        var jobPostId = Guid.NewGuid();
+        var openJobPost = new JobPost
+        {
+            Id = jobPostId,
+            FarmerId = _farmerId,
+            Title = "Open Job",
+            WorkersNeeded = 3,
+            WorkersAccepted = 1,   // 2 slots still available
+            StatusId = (int)JobPostStatus.Published,
+            JobSkillRequirements = new List<JobSkillRequirement>(),
+            Farmer = MakeFarmer()
+        };
+        var jobApplication = new JobApplication
+        {
+            Id = Guid.NewGuid(), WorkerId = worker.Id, JobPostId = jobPostId,
+            StatusId = (int)ApplicationStatus.Pending, AppliedAt = DateTime.UtcNow
+        };
+        var dto = new JobApplicationDTO { Id = jobApplication.Id };
+
+        _workerRepoMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Worker, bool>>>(), null, null))
+            .ReturnsAsync(worker);
+        _jobPostRepoMock
+            .Setup(r => r.FirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<JobPost, bool>>>(),
+                null,
+                It.IsAny<Func<IQueryable<JobPost>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<JobPost, object>>>()))
+            .ReturnsAsync(openJobPost);
+
+        var request = new CreateJobApplicationRequest { JobPostId = jobPostId };
+        _mapperMock.Setup(m => m.CreateJobApplicationRequestToJobApplication(request)).Returns(jobApplication);
+        _mapperMock.Setup(m => m.JobApplicationToJobApplicationDto(jobApplication)).Returns(dto);
+        _notificationServiceMock
+            .Setup(n => n.CreateAsync(It.IsAny<AgroTemp.Domain.DTO.Notification.CreateNotificationRequest>()))
+            .ReturnsAsync(new AgroTemp.Domain.DTO.Notification.NotificationDTO());
+
+        var result = await _jobApplicationService.CreateJobApplication(request);
+
+        Assert.NotNull(result);
+        _jobAppRepoMock.Verify(r => r.InsertAsync(jobApplication), Times.Once);
+        _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Once);
     }
 }
