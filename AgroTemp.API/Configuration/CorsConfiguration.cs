@@ -1,4 +1,4 @@
-﻿namespace AgroTemp.API.Configuration
+namespace AgroTemp.API.Configuration
 {
     public static class CorsConfiguration
     {
