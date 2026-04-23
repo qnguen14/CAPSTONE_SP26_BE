@@ -14,6 +14,7 @@ namespace AgroTemp.API.Configuration
                             "http://localhost:8081",
                             "https://agrotemp-five.vercel.app",
                             "https://www.agrotemp.dev",
+                            "https://agrotemp.dev",
                             "https://api.banklookup.net"
                         )
                         .AllowAnyHeader()
