@@ -8,6 +8,8 @@ public interface IDisputeReportService
     Task<DisputeReportDTO?> GetDisputeByIdAsync(Guid id, Guid currentUserId, bool isAdmin);
     Task<DisputeReportDTO> CreateDisputeAsync(Guid currentUserId, CreateDisputeReportRequest request);
     Task<DisputeReportDTO?> UpdateDisputeAsync(Guid id, Guid currentUserId, UpdateDisputeReportRequest request);
+    Task<DisputeReportDTO?> UpdateDisputeStatusAsync(Guid id, Guid adminUserId, int statusId);
+    Task<List<DisputeStatusSummaryDTO>> GetDisputeCountsByStatusAsync();
     Task<bool> DeleteDisputeAsync(Guid id, Guid currentUserId, bool isAdmin);
     Task<DisputeReportDTO?> ReviewDisputeAsync(Guid id, Guid adminUserId, ReviewDisputeReportRequest request);
     Task<DisputeReportDTO?> ResolveDisputeAsync(Guid id, Guid adminUserId, ResolveDisputeRequest request);

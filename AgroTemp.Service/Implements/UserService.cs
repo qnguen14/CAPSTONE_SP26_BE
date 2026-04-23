@@ -710,8 +710,9 @@ public class UserService : BaseService<User>, IUserService
             else
             {
                 Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Found profile for UserId: {userId}. WorkerId: {workerProfile.Id}");
-                
-                await _unitOfWork.ExecuteInTransactionAsync(async () => {
+
+                await _unitOfWork.ExecuteInTransactionAsync(async () =>
+                {
                     workerProfile.FullName = request.FullName;
                     workerProfile.DateOfBirth = DateOnly.Parse(request.DateOfBirth);
                     workerProfile.PrimaryLocation = request.PrimaryLocation;
@@ -769,6 +770,28 @@ public class UserService : BaseService<User>, IUserService
                             );
 
             return _mapper.WorkerToDto(finalProfile ?? workerProfile);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task WarnUserAsync(Guid id)
+    {
+        try
+        {
+            var user = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.Id == id);
+
+            if (user == null)
+                throw new Exception("User not found");
+
+            user.LastWarnedAt = DateTime.UtcNow;
+            user.WarningCount = user.WarningCount + 1;
+
+            _unitOfWork.GetRepository<User>().UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
         }
         catch (Exception ex)
         {

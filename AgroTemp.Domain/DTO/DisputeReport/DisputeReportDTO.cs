@@ -1,3 +1,4 @@
+using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
 
 namespace AgroTemp.Domain.DTO.DisputeReport;
@@ -15,6 +16,7 @@ public class DisputeReportDTO
     public Guid? FarmerId { get; set; }
     public Guid? WorkerId { get; set; }
     public Guid JobPostId { get; set; }
+    public JobPostDTO JobPost { get; set; }
     public int DisputeTypeId { get; set; }
     public DisputeType DisputeType => (DisputeType)DisputeTypeId;
     public string Reason { get; set; }

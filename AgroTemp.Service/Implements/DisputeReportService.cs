@@ -7,6 +7,9 @@ using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AgroTemp.Service.Implements;
 
@@ -233,6 +236,90 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
         return _mapper.DisputeReportToDisputeReportDto(dispute);
     }
 
+    public async Task<DisputeReportDTO?> UpdateDisputeStatusAsync(Guid id, Guid adminUserId, int statusId)
+    {
+        var dispute = await _unitOfWork.GetRepository<DisputeReport>()
+            .FirstOrDefaultAsync(predicate: d => d.Id == id, include: d => d.Include(x => x.JobPost).Include(x => x.Farmer).Include(x => x.Worker));
+
+        if (dispute == null)
+        {
+            return null;
+        }
+
+        dispute.StatusId = statusId;
+
+        if (statusId == (int)DisputeStatus.Resolved)
+        {
+            dispute.ResolvedAt = DateTime.UtcNow;
+            dispute.ResolvedById = adminUserId;
+
+            // If resolved, update warning for the relevant user.
+            // Prefer explicit penalty target if set; otherwise default to the accused user.
+            Guid? userToWarnId = dispute.AccusedUserId;
+
+            if (userToWarnId.HasValue)
+            {
+                var userToWarn = await _unitOfWork.GetRepository<User>()
+                    .FirstOrDefaultAsync(predicate: u => u.Id == userToWarnId.Value);
+
+                // If user missing, silently skip (do not throw).
+                if (userToWarn != null)
+                {
+                    userToWarn.WarningCount += 1;
+                    userToWarn.LastWarnedAt = DateTime.UtcNow;
+
+                    _unitOfWork.GetRepository<User>().UpdateAsync(userToWarn);
+                }
+            }
+        }
+        else if (statusId == (int)DisputeStatus.Rejected)
+        {
+            // For rejected disputes, set resolved metadata but do NOT update/warn any user.
+            dispute.ResolvedAt = DateTime.UtcNow;
+            dispute.ResolvedById = adminUserId;
+        }
+        else if (statusId == (int)DisputeStatus.UnderReview)
+        {
+            dispute.ResolvedById = adminUserId;
+            dispute.ResolvedAt = null;
+        }
+        else
+        {
+            dispute.ResolvedAt = null;
+            dispute.ResolvedById = null;
+        }
+
+        _unitOfWork.GetRepository<DisputeReport>().UpdateAsync(dispute);
+        await _unitOfWork.SaveChangesAsync();
+
+        return _mapper.DisputeReportToDisputeReportDto(dispute);
+    }
+
+    public async Task<List<DisputeStatusSummaryDTO>> GetDisputeCountsByStatusAsync()
+    {
+        var raw = await _unitOfWork.Context.Set<DisputeReport>()
+            .GroupBy(d => d.StatusId)
+            .Select(g => new { StatusId = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var dict = raw.ToDictionary(x => x.StatusId, x => x.Count);
+
+        var results = new List<DisputeStatusSummaryDTO>();
+        foreach (DisputeStatus status in Enum.GetValues(typeof(DisputeStatus)))
+        {
+            var sid = (int)status;
+            dict.TryGetValue(sid, out var cnt);
+            results.Add(new DisputeStatusSummaryDTO
+            {
+                StatusId = sid,
+                StatusName = status.ToString(),
+                Count = cnt
+            });
+        }
+
+        return results;
+    }
+
     public async Task<bool> DeleteDisputeAsync(Guid id, Guid currentUserId, bool isAdmin)
     {
         var dispute = await _unitOfWork.GetRepository<DisputeReport>()
@@ -335,34 +422,12 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
         dispute.PenaltyTargetId = (int)request.PenaltyTarget;
 
 
-        if (request.PenaltyTarget != PenaltyTarget.None)
-        {
-            Guid? userToBanId = request.PenaltyTarget == PenaltyTarget.Reporter
-                ? dispute.ReporterUserId
-                : dispute.AccusedUserId;
-
-            if (userToBanId.HasValue)
-            {
-                var userToBan = await _unitOfWork.GetRepository<User>()
-                    .FirstOrDefaultAsync(predicate: u => u.Id == userToBanId.Value);
-
-                if (userToBan == null)
-                    throw new KeyNotFoundException($"User to ban not found (UserId={userToBanId})");
-
-                userToBan.WarningCount += 1;
-                userToBan.LastWarnedAt = DateTime.UtcNow;
-                if (userToBan.WarningCount >= 2)
-                {
-                    userToBan.IsActive = false;
-                }
-                _unitOfWork.GetRepository<User>().UpdateAsync(userToBan);
-            }
-        }
-
+        // Persist admin note and penalty target first so status-update logic can see them.
         _unitOfWork.GetRepository<DisputeReport>().UpdateAsync(dispute);
         await _unitOfWork.SaveChangesAsync();
 
-        return _mapper.DisputeReportToDisputeReportDto(dispute);
+        // Delegate status handling (including warnings for resolved disputes) to the centralized method.
+        return await UpdateDisputeStatusAsync(id, adminUserId, dispute.StatusId);
     }
 
     private async Task EnsureIsOwnerAsync(DisputeReport dispute, Guid currentUserId)
