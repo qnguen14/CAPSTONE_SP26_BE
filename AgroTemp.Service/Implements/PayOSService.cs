@@ -70,9 +70,7 @@ public class PayOSService : IPayOSService
         }
 
         var farmer = await _unitOfWork.GetRepository<Farmer>()
-            .FirstOrDefaultAsync(
-                predicate: f => f.UserId == currentUserId.Value,
-                include: query => query.Include(f => f.User));
+            .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId.Value);
 
         if (farmer == null)
         {
@@ -84,8 +82,8 @@ public class PayOSService : IPayOSService
 
         var buyerName = farmer.ContactName;
         var buyerCompanyName = primaryFarm?.LocationName;
-        var buyerEmail = farmer.User?.Email;
-        var buyerPhone = farmer.User?.PhoneNumber;
+        var buyerEmail = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
+        var buyerPhone = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.MobilePhone)?.Value;
 
         var orderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var returnUrl = "https://www.agrotemp.dev/farmer/payments/success";
