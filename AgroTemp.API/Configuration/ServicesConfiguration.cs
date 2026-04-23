@@ -43,6 +43,34 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IExpoPushService, ExpoPushService>();
             services.AddScoped<IDashboardService, DashboardService>();
 
+            // Setup static IP proxy for PayOS if running on Heroku
+            HttpClient? payOsProxyClient = null;
+            var fixieUrl = Environment.GetEnvironmentVariable("FIXIE_URL");
+            if (!string.IsNullOrEmpty(fixieUrl))
+            {
+                var proxyUri = new Uri(fixieUrl);
+                var proxy = new System.Net.WebProxy(proxyUri.Host, proxyUri.Port);
+                
+                if (!string.IsNullOrEmpty(proxyUri.UserInfo))
+                {
+                    var authParts = proxyUri.UserInfo.Split(':');
+                    if (authParts.Length == 2)
+                    {
+                        proxy.Credentials = new System.Net.NetworkCredential(authParts[0], authParts[1]);
+                    }
+                }
+
+                var handler = new HttpClientHandler
+                {
+                    Proxy = proxy,
+                    UseProxy = true,
+                    PreAuthenticate = true
+                };
+                
+                var loggingHandler = new PayOSLoggingHandler(handler);
+                payOsProxyClient = new HttpClient(loggingHandler);
+            }
+
             // payOS client for payment link flow (deposit/top-up)
             services.AddKeyedSingleton<PayOSClient>("OrderClient", (sp, _) => new PayOSClient(new PayOSOptions
             {
@@ -55,7 +83,8 @@ namespace AgroTemp.API.Configuration
                 ChecksumKey = configuration["PayOS:ChecksumKey"]
                     ?? Environment.GetEnvironmentVariable("PAYOS_CHECKSUM_KEY")
                     ?? string.Empty,
-                LogLevel = LogLevel.Debug
+                LogLevel = LogLevel.Debug,
+                HttpClient = payOsProxyClient
             }));
 
             // payOS client for payout flow (withdraw)
@@ -64,16 +93,20 @@ namespace AgroTemp.API.Configuration
                 ClientId = configuration["PayOS:PayoutClientId"]
                     ?? Environment.GetEnvironmentVariable("PAYOS_PAYOUT_CLIENT_ID")
                     ?? configuration["PayOS:ClientId"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_CLIENT_ID")
                     ?? string.Empty,
                 ApiKey = configuration["PayOS:PayoutApiKey"]
                     ?? Environment.GetEnvironmentVariable("PAYOS_PAYOUT_API_KEY")
                     ?? configuration["PayOS:ApiKey"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_API_KEY")
                     ?? string.Empty,
                 ChecksumKey = configuration["PayOS:PayoutChecksumKey"]
                     ?? Environment.GetEnvironmentVariable("PAYOS_PAYOUT_CHECKSUM_KEY")
                     ?? configuration["PayOS:ChecksumKey"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_CHECKSUM_KEY")
                     ?? string.Empty,
-                LogLevel = LogLevel.Debug
+                LogLevel = LogLevel.Debug,
+                HttpClient = payOsProxyClient
             }));
 
             services.AddScoped<IPayOSService, PayOSService>();
@@ -103,7 +136,8 @@ namespace AgroTemp.API.Configuration
             {
                 ClientId = configuration["PayOS:ClientId"] ?? string.Empty,
                 ApiKey = configuration["PayOS:ApiKey"] ?? string.Empty,
-                ChecksumKey = configuration["PayOS:ChecksumKey"] ?? string.Empty
+                ChecksumKey = configuration["PayOS:ChecksumKey"] ?? string.Empty,
+                HttpClient = payOsProxyClient
             }));
 
             // Third-Party Services
@@ -127,6 +161,34 @@ namespace AgroTemp.API.Configuration
             //    options.ChecksumKey = configuration["PayOS:ChecksumKey"];
             //});
             //PayOSSetting.Instance = services.BuildServiceProvider().GetService<IOptions<PayOSSetting>>().Value;
+        }
+    }
+
+    public class PayOSLoggingHandler : DelegatingHandler
+    {
+        public PayOSLoggingHandler(HttpMessageHandler innerHandler) : base(innerHandler)
+        {
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Console.WriteLine($"[PayOS Request] {request.Method} {request.RequestUri}");
+            if (request.Content != null)
+            {
+                var requestContent = await request.Content.ReadAsStringAsync(cancellationToken);
+                Console.WriteLine($"[PayOS Request Content] {requestContent}");
+            }
+
+            var response = await base.SendAsync(request, cancellationToken);
+
+            Console.WriteLine($"[PayOS Response] {response.StatusCode}");
+            if (response.Content != null)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                Console.WriteLine($"[PayOS Response Content] {responseContent}");
+            }
+
+            return response;
         }
     }
 }
