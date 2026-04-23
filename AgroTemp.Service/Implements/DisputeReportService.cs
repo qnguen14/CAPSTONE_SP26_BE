@@ -459,12 +459,25 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
             await EnsureIsOwnerAsync(dispute, currentUserId);
         }
 
-        var comments = await _unitOfWork.Context.Set<DisputeReportComment>()
+        var query = _unitOfWork.Context.Set<DisputeReportComment>()
             .Include(c => c.User)
             .ThenInclude(u => u.Farmer)
             .Include(c => c.User)
             .ThenInclude(u => u.Worker)
-            .Where(c => c.DisputeReportId == disputeId)
+            .Where(c => c.DisputeReportId == disputeId);
+
+        if (!isAdmin)
+        {
+            // Non-admins only see:
+            // 1. Messages they sent themselves
+            // 2. Admin messages specifically addressed to them (TargetUserId == their userId)
+            // 3. Legacy messages with no target (TargetUserId == null) that THEY sent
+            query = query.Where(c =>
+                c.UserId == currentUserId ||          // messages I sent
+                c.TargetUserId == currentUserId);     // admin messages directed at me
+        }
+
+        var comments = await query
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
@@ -483,6 +496,21 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
             await EnsureIsOwnerAsync(dispute, currentUserId);
         }
 
+        // Validate that TargetUserId (if supplied by admin) is actually a party on this dispute
+        Guid? targetUserId = null;
+        if (isAdmin && request.TargetUserId.HasValue)
+        {
+            var validTargets = new[] { dispute.ReporterUserId, dispute.AccusedUserId }
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToHashSet();
+
+            if (!validTargets.Contains(request.TargetUserId.Value))
+                throw new UnauthorizedAccessException("TargetUserId is not a party on this dispute.");
+
+            targetUserId = request.TargetUserId.Value;
+        }
+
         var comment = new DisputeReportComment
         {
             Id = Guid.NewGuid(),
@@ -490,6 +518,7 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
             UserId = currentUserId,
             Content = request.Content,
             AttachmentUrl = request.AttachmentUrl,
+            TargetUserId = targetUserId,
             CreatedAt = DateTime.UtcNow
         };
 

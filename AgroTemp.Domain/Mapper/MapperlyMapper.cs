@@ -315,6 +315,7 @@ public partial class MapperlyMapper : IMapperlyMapper
             AttachmentUrl = comment.AttachmentUrl,
             CreatedAt = comment.CreatedAt,
             Role = comment.User?.Role ?? UserRole.Worker,
+            TargetUserId = comment.TargetUserId,   // ← private-thread target
         };
 
         if (comment.User != null)
