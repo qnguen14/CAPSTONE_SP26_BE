@@ -8079,23 +8079,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Admin\\.nuget\\packages\\": {},
+    "C:\\Users\\pc\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "F:\\C# Projects\\SP26_AgroTemp\\CAPSTONE_SP26_BE\\AgroTemp.Test\\AgroTemp.Test.csproj",
+      "projectUniqueName": "C:\\Users\\pc\\Desktop\\CamTu\\CAPSTONE_SP26_BE\\AgroTemp.Test\\AgroTemp.Test.csproj",
       "projectName": "AgroTemp.Test",
-      "projectPath": "F:\\C# Projects\\SP26_AgroTemp\\CAPSTONE_SP26_BE\\AgroTemp.Test\\AgroTemp.Test.csproj",
-      "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-      "outputPath": "F:\\C# Projects\\SP26_AgroTemp\\CAPSTONE_SP26_BE\\AgroTemp.Test\\obj\\",
+      "projectPath": "C:\\Users\\pc\\Desktop\\CamTu\\CAPSTONE_SP26_BE\\AgroTemp.Test\\AgroTemp.Test.csproj",
+      "packagesPath": "C:\\Users\\pc\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\pc\\Desktop\\CamTu\\CAPSTONE_SP26_BE\\AgroTemp.Test\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\pc\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -8104,21 +8104,20 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "F:\\C# Projects\\SP26_AgroTemp\\CAPSTONE_SP26_BE\\AgroTemp.Domain\\AgroTemp.Domain.csproj": {
-              "projectPath": "F:\\C# Projects\\SP26_AgroTemp\\CAPSTONE_SP26_BE\\AgroTemp.Domain\\AgroTemp.Domain.csproj"
+            "C:\\Users\\pc\\Desktop\\CamTu\\CAPSTONE_SP26_BE\\AgroTemp.Domain\\AgroTemp.Domain.csproj": {
+              "projectPath": "C:\\Users\\pc\\Desktop\\CamTu\\CAPSTONE_SP26_BE\\AgroTemp.Domain\\AgroTemp.Domain.csproj"
             },
-            "F:\\C# Projects\\SP26_AgroTemp\\CAPSTONE_SP26_BE\\AgroTemp.Repository\\AgroTemp.Repository.csproj": {
-              "projectPath": "F:\\C# Projects\\SP26_AgroTemp\\CAPSTONE_SP26_BE\\AgroTemp.Repository\\AgroTemp.Repository.csproj"
+            "C:\\Users\\pc\\Desktop\\CamTu\\CAPSTONE_SP26_BE\\AgroTemp.Repository\\AgroTemp.Repository.csproj": {
+              "projectPath": "C:\\Users\\pc\\Desktop\\CamTu\\CAPSTONE_SP26_BE\\AgroTemp.Repository\\AgroTemp.Repository.csproj"
             },
-            "F:\\C# Projects\\SP26_AgroTemp\\CAPSTONE_SP26_BE\\AgroTemp.Service\\AgroTemp.Service.csproj": {
-              "projectPath": "F:\\C# Projects\\SP26_AgroTemp\\CAPSTONE_SP26_BE\\AgroTemp.Service\\AgroTemp.Service.csproj"
+            "C:\\Users\\pc\\Desktop\\CamTu\\CAPSTONE_SP26_BE\\AgroTemp.Service\\AgroTemp.Service.csproj": {
+              "projectPath": "C:\\Users\\pc\\Desktop\\CamTu\\CAPSTONE_SP26_BE\\AgroTemp.Service\\AgroTemp.Service.csproj"
             }
           }
         }
