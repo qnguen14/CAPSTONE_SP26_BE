@@ -128,18 +128,37 @@ public class PayOSService : IPayOSService
             return req;
         }
 
+        static bool IsGatewayUnavailable(Exception ex) =>
+            ex.Message.Contains("Cổng thanh toán không tồn tại", StringComparison.OrdinalIgnoreCase)
+            || ex.Message.Contains("tạm dừng", StringComparison.OrdinalIgnoreCase);
+
         CreatePaymentLinkResponse paymentResponse;
         try
         {
             // First try with richer payload for better invoice metadata.
             paymentResponse = await _orderClient.PaymentRequests.CreateAsync(BuildPaymentRequest(minimal: false));
         }
-        catch (Exception ex) when (ex.Message.Contains("Cổng thanh toán không tồn tại", StringComparison.OrdinalIgnoreCase)
-                                   || ex.Message.Contains("tạm dừng", StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex) when (IsGatewayUnavailable(ex))
         {
-            // Merchant gateways can be strict on optional buyer/invoice fields.
-            // Retry with minimal required payload before failing the request.
-            paymentResponse = await _orderClient.PaymentRequests.CreateAsync(BuildPaymentRequest(minimal: true));
+            try
+            {
+                // Retry with minimal required payload using OrderClient.
+                paymentResponse = await _orderClient.PaymentRequests.CreateAsync(BuildPaymentRequest(minimal: true));
+            }
+            catch (Exception exOrderMinimal) when (IsGatewayUnavailable(exOrderMinimal))
+            {
+                try
+                {
+                    // Final fallback: try TransferClient keys in case merchant only enabled one channel/key-set.
+                    paymentResponse = await _transferClient.PaymentRequests.CreateAsync(BuildPaymentRequest(minimal: true));
+                }
+                catch (Exception exTransfer) when (IsGatewayUnavailable(exTransfer))
+                {
+                    throw new InvalidOperationException(
+                        "PayOS gateway for this merchant is unavailable (not found or suspended). Please activate VietQR/payment gateway in PayOS Dashboard.",
+                        exTransfer);
+                }
+            }
         }
 
         var order = new PayOSOrder
