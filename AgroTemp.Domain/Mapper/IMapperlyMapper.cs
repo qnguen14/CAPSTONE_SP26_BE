@@ -11,6 +11,7 @@ using AgroTemp.Domain.DTO.Rating;
 using AgroTemp.Domain.DTO.Skill;
 using AgroTemp.Domain.DTO.WorkerAttendance;
 using AgroTemp.Domain.Entities;
+using System.Collections.Generic;
 using JobApplicationEntity = AgroTemp.Domain.Entities.JobApplication;
 
 namespace AgroTemp.Domain.Mapper;
@@ -23,6 +24,7 @@ public interface IMapperlyMapper
 
     // Farmer
     FarmerProfileDTO FarmerToDto(Farmer farmer);
+    List<FarmerProfileDTO> FarmerToDto(IEnumerable<Farmer> farmer);
 
     //Farm
     FarmDTO FarmToDto(Farm farm);
@@ -30,6 +32,7 @@ public interface IMapperlyMapper
 
     // Worker
     WorkerProfileDTO WorkerToDto(Worker worker);
+    List<WorkerProfileDTO> WorkerToDto(IEnumerable<Worker> worker);
 
     LoginResponse UserToLoginResponse(User user);
     // User RegisterRequestToUser(RegisterRequest resquest);
@@ -87,7 +90,7 @@ public interface IMapperlyMapper
     List<DisputeReportDTO> DisputeReportsToDisputeReportDtos(IEnumerable<DisputeReport> disputeReports);
     DisputeReport CreateDisputeReportRequestToDisputeReport(CreateDisputeReportRequest request);
     void UpdateDisputeReportRequestToDisputeReport(UpdateDisputeReportRequest request, DisputeReport disputeReport);
-    
+
     // DisputeReportComment
     DisputeReportCommentDTO DisputeReportCommentToDto(DisputeReportComment comment);
     List<DisputeReportCommentDTO> DisputeReportCommentsToDtos(IEnumerable<DisputeReportComment> comments);
