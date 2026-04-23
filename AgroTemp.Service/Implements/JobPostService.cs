@@ -239,10 +239,14 @@ namespace AgroTemp.Service.Implements
                 throw new ArgumentException($"Invalid skill ID(s): {string.Join(", ", invalidSkillIds)}");
             }
 
-                // TC_BE_003: Reject job posts with a start date in the past
                 if (request.StartDate.HasValue && request.StartDate.Value < DateOnly.FromDateTime(DateTime.UtcNow))
                 {
                     throw new ArgumentException("Job start date cannot be in the past.");
+                }
+
+                if (request.WorkersNeeded <= 0)
+                {
+                    throw new ArgumentException("WorkersNeeded must be greater than 0.");
                 }
 
                 var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
@@ -250,6 +254,10 @@ namespace AgroTemp.Service.Implements
                 {
                     jobPost.Id = Guid.NewGuid();
                 }
+
+                var workdays = ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays);
+
+                jobPost.WorkersNeeded = request.WorkersNeeded * workdays;
                 jobPost.FarmerId = farmer.Id;
                 jobPost.StatusId = request.StatusId;
                 jobPost.CreatedAt = DateTime.UtcNow;
@@ -257,7 +265,7 @@ namespace AgroTemp.Service.Implements
                 jobPost.PublishedAt = request.PublishedAt;
 
             var billableDays = request.JobTypeId == JobType.Daily
-                ? ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays)
+                ? workdays
                 : 1;
             var lockAmount = request.JobTypeId == JobType.PerJob
                 ? request.WageAmount
