@@ -1,5 +1,6 @@
 using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO;
+using AgroTemp.Domain.DTO.Admin;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Implements;
@@ -22,63 +23,38 @@ public class UserController : Controller
     }
 
     [HttpGet(ApiEndpointConstants.User.GetAllUsersEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<UserDTO>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<UserDTO>>> GetAllUsers()
+    [ProducesResponseType(typeof(AdminUserListResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<AdminUserListResponse>> GetAllUsers([FromQuery] AdminUserListQuery query)
     {
         try
         {
-            var users = await _userService.GetAllUsers();
-
-            var apiResponse = new ApiResponse<IEnumerable<UserDTO>>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Users retrieved successfully",
-                Data = users
-            };
-            return Ok(apiResponse);
+            var users = await _userService.GetAdminUsers(query);
+            return Ok(users);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving users");
-            var apiResponse = new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = ex.Message,
-                Data = null
-            };
-            return StatusCode(StatusCodes.Status500InternalServerError, apiResponse);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
         }
     }
 
     [HttpGet(ApiEndpointConstants.User.GetUserByIdEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<UserDTO>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserDTO>> GetUserById([FromRoute] Guid id)
+    [ProducesResponseType(typeof(AdminUserDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<AdminUserDetailDto>> GetUserById([FromRoute] Guid id)
     {
         try
         {
-            var user = await _userService.GetUserById(id);
-
-            var apiResponse = new ApiResponse<UserDTO>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "User retrieved successfully",
-                Data = user
-            };
-            return Ok(apiResponse);
+            var user = await _userService.GetAdminUserById(id);
+            return Ok(user);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving user {UserId}", id);
-            var apiResponse = new ApiResponse<object>
-            {
-                StatusCode = ex.Message.Contains("not found") ? StatusCodes.Status404NotFound : StatusCodes.Status500InternalServerError,
-                Message = ex.Message,
-                Data = null
-            };
-            return StatusCode(apiResponse.StatusCode, apiResponse);
+            var statusCode = ex.Message.Contains("not found") ? StatusCodes.Status404NotFound : StatusCodes.Status500InternalServerError;
+            return StatusCode(statusCode, new { message = ex.Message });
         }
     }
 
@@ -125,34 +101,21 @@ public class UserController : Controller
     }
 
     [HttpPut(ApiEndpointConstants.User.UpdateUserEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<UserDTO>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserDTO>> UpdateUser([FromRoute] Guid id, [FromBody] UpdateUserRequest request)
+    [ProducesResponseType(typeof(AdminUserDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<AdminUserDetailDto>> UpdateUser([FromRoute] Guid id, [FromBody] UpdateUserRequest request)
     {
         try
         {
             if (!ModelState.IsValid)
             {
-                var apiResponse = new ApiResponse<object>
-                {
-                    StatusCode = StatusCodes.Status400BadRequest,
-                    Message = "Invalid request data",
-                    Data = ModelState
-                };
-                return BadRequest(apiResponse);
+                return BadRequest(new { message = "Invalid request data", errors = ModelState });
             }
 
-            var user = await _userService.UpdateUser(id, request);
-
-            var successResponse = new ApiResponse<UserDTO>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "User updated successfully",
-                Data = user
-            };
-            return Ok(successResponse);
+            var user = await _userService.UpdateAdminUser(id, request);
+            return Ok(user);
         }
         catch (Exception ex)
         {
@@ -166,44 +129,26 @@ public class UserController : Controller
             else
                 statusCode = StatusCodes.Status500InternalServerError;
 
-            var apiResponse = new ApiResponse<object>
-            {
-                StatusCode = statusCode,
-                Message = ex.Message,
-                Data = null
-            };
-            return StatusCode(statusCode, apiResponse);
+            return StatusCode(statusCode, new { message = ex.Message });
         }
     }
 
     [HttpDelete(ApiEndpointConstants.User.DeleteUserEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<bool>> DeleteUser([FromRoute] Guid id)
     {
         try
         {
-            var result = await _userService.DeleteUser(id);
-
-            var apiResponse = new ApiResponse<bool>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "User deactivated successfully",
-                Data = result
-            };
-            return Ok(apiResponse);
+            var result = await _userService.DeleteAdminUser(id);
+            return Ok(new { success = result });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting user {UserId}", id);
-            var apiResponse = new ApiResponse<object>
-            {
-                StatusCode = ex.Message.Contains("not found") ? StatusCodes.Status404NotFound : StatusCodes.Status500InternalServerError,
-                Message = ex.Message,
-                Data = null
-            };
-            return StatusCode(apiResponse.StatusCode, apiResponse);
+            var statusCode = ex.Message.Contains("not found") ? StatusCodes.Status404NotFound : StatusCodes.Status500InternalServerError;
+            return StatusCode(statusCode, new { message = ex.Message });
         }
     }
 }

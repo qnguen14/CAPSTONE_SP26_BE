@@ -315,6 +315,7 @@ public partial class MapperlyMapper : IMapperlyMapper
             AttachmentUrl = comment.AttachmentUrl,
             CreatedAt = comment.CreatedAt,
             Role = comment.User?.Role ?? UserRole.Worker,
+            TargetUserId = comment.TargetUserId,   // ← private-thread target
         };
 
         if (comment.User != null)
@@ -336,4 +337,8 @@ public partial class MapperlyMapper : IMapperlyMapper
     [MapProperty(nameof(WorkerSession.JobDetail.JobApplicationId), nameof(WorkerAttendanceDTO.JobApplicationId))]
     public partial WorkerAttendanceDTO WorkerSessionToDto(WorkerSession workerSession);
     public partial List<WorkerAttendanceDTO> WorkerSessionsToDtos(IEnumerable<WorkerSession> workerSessions);
+
+    public partial List<FarmerProfileDTO> FarmerToDto(IEnumerable<Farmer> farmer);
+
+    public partial List<WorkerProfileDTO> WorkerToDto(IEnumerable<Worker> worker);
 }

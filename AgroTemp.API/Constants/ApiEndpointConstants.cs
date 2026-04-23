@@ -31,6 +31,7 @@ public class ApiEndpointConstants
         public const string CreateUserEndpoint = UserEndpoint;
         public const string UpdateUserEndpoint = UserEndpoint + "/{id}";
         public const string DeleteUserEndpoint = UserEndpoint + "/{id}";
+        public const string WarnUserEndpoint = UserEndpoint + "/{id}/warn";
     }
 
     public static class FarmerProfile
@@ -109,6 +110,8 @@ public class ApiEndpointConstants
 
         public const string GetFilteredJobPostsEndpoint = JobPostEndpoint + "/filter";
         public const string GetFilteredJobPostsByFarmerEndpoint = JobPostEndpoint + "/filter/farmer";
+
+        public const string GetJobPostsForAdminEndpoint = JobPostEndpoint + "/admin";
 
         public const string SaveJobPostDraftEndpoint = JobPostEndpoint + "/draft";
         public const string GetFarmerDraftsEndpoint = JobPostEndpoint + "/drafts";
@@ -235,9 +238,11 @@ public class ApiEndpointConstants
         public const string GetMyDisputesEndpoint = DisputeEndpoint + "/mine";
         public const string GetDisputeByIdEndpoint = DisputeEndpoint + "/{id:guid}";
         public const string CreateDisputeEndpoint = DisputeEndpoint;
+        public const string GetDisputeSummaryEndpoint = DisputeEndpoint + "/summary";
         public const string UpdateDisputeEndpoint = DisputeEndpoint + "/{id:guid}";
         public const string DeleteDisputeEndpoint = DisputeEndpoint + "/{id:guid}";
         public const string ReviewDisputeEndpoint = DisputeEndpoint + "/{id:guid}/review";
+        public const string UpdateDisputeStatusEndpoint = DisputeEndpoint + "/{id:guid}/status";
         public const string ResolveDisputeEndpoint = DisputeEndpoint + "/{id:guid}/resolve";
     }
 
@@ -298,5 +303,10 @@ public class ApiEndpointConstants
     {
         public const string AdminEndpoint = ApiEndpoint + "/admin";
         public const string GetDashboardEndpoint = AdminEndpoint + "/dashboard";
+        public const string GetJobpostEndpoint = AdminEndpoint + "/jobpost";
+        public const string WalletStatsEndpoint = AdminEndpoint + "/wallet/stats";
+        public const string WithdrawalsEndpoint = AdminEndpoint + "/withdrawals";
+        public const string WalletsEndpoint = AdminEndpoint + "/wallets";
+        public const string WalletTransactionsEndpoint = AdminEndpoint + "/wallet-transactions";
     }
 }

@@ -139,7 +139,7 @@ namespace AgroTemp.Service.Implements
 
                 var jobPosts = await _unitOfWork.GetRepository<JobPost>()
                     .GetListAsync(
-                        predicate: jp => jp.FarmerId == farmer.Id && 
+                        predicate: jp => jp.FarmerId == farmer.Id &&
                                          (jp.StatusId == (int)JobPostStatus.Completed || jp.StatusId == (int)JobPostStatus.Cancelled),
                         include: q => q
                             .Include(jp => jp.Farmer)
@@ -199,36 +199,50 @@ namespace AgroTemp.Service.Implements
 
         public async Task<JobPostDTO> CreateJobPost(CreateJobPostRequest request)
         {
-            try
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == Guid.Empty)
             {
-                var currentUserId = GetCurrentUserId();
-                if (currentUserId == Guid.Empty)
+                throw new UnauthorizedAccessException("User is not authenticated.");
+            }
+
+            var farmer = await _unitOfWork.GetRepository<Farmer>()
+                .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId, include: f => f.Include(x => x.User));
+
+            if (farmer == null)
+            {
+                throw new UnauthorizedAccessException("Only farmers can create job posts.");
+            }
+
+            if (farmer.User.WarningCount > 3)
+            {
+                throw new UnauthorizedAccessException("Farmer over warning dispute");
+            }
+
+            if (DateTime.Now <= farmer.User.LastWarnedAt?.AddDays(farmer.User.WarningCount * 3))
+            {
+                throw new UnauthorizedAccessException($"Farmer can't create job post before {farmer.User.LastWarnedAt?.AddDays(farmer.User.WarningCount * 3)}");
+            }
+
+            var requestedSkillIds = request.SkillIds?
+                .Distinct()
+                .ToList() ?? new List<Guid>();
+
+            var skills = requestedSkillIds.Any()
+                ? await _unitOfWork.GetRepository<Skill>()
+                    .GetListAsync(predicate: s => requestedSkillIds.Contains(s.Id))
+                : new List<Skill>();
+
+            if (skills.Count != requestedSkillIds.Count)
+            {
+                var foundSkillIds = skills.Select(s => s.Id).ToHashSet();
+                var invalidSkillIds = requestedSkillIds.Where(id => !foundSkillIds.Contains(id));
+                throw new ArgumentException($"Invalid skill ID(s): {string.Join(", ", invalidSkillIds)}");
+            }
+
+                // TC_BE_003: Reject job posts with a start date in the past
+                if (request.StartDate.HasValue && request.StartDate.Value < DateOnly.FromDateTime(DateTime.UtcNow))
                 {
-                    throw new UnauthorizedAccessException("User is not authenticated.");
-                }
-
-                var farmer = await _unitOfWork.GetRepository<Farmer>()
-                    .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
-
-                if (farmer == null)
-                {
-                    throw new UnauthorizedAccessException("Only farmers can create job posts.");
-                }
-
-                var requestedSkillIds = request.SkillIds?
-                    .Distinct()
-                    .ToList() ?? new List<Guid>();
-
-                var skills = requestedSkillIds.Any()
-                    ? await _unitOfWork.GetRepository<Skill>()
-                        .GetListAsync(predicate: s => requestedSkillIds.Contains(s.Id))
-                    : new List<Skill>();
-
-                if (skills.Count != requestedSkillIds.Count)
-                {
-                    var foundSkillIds = skills.Select(s => s.Id).ToHashSet();
-                    var invalidSkillIds = requestedSkillIds.Where(id => !foundSkillIds.Contains(id));
-                    throw new ArgumentException($"Invalid skill ID(s): {string.Join(", ", invalidSkillIds)}");
+                    throw new ArgumentException("Job start date cannot be in the past.");
                 }
 
                 var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
@@ -242,55 +256,50 @@ namespace AgroTemp.Service.Implements
                 jobPost.UpdatedAt = DateTime.UtcNow;
                 jobPost.PublishedAt = request.PublishedAt;
 
-                var billableDays = request.JobTypeId == JobType.Daily
-                    ? ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays)
-                    : 1;
-                var lockAmount = request.JobTypeId == JobType.PerJob
-                    ? request.WageAmount
-                    : request.WageAmount * request.WorkersNeeded * billableDays;
-                try
-                {
-                    await _walletService.LockAmountForJobPostAsync(farmer.UserId, jobPost.Id, lockAmount);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    throw new Exception("Insufficient wallet balance to create job post. Please top up your wallet.", ex);
-                }
-
-
-                if (skills.Any())
-                {
-                    var jobSkillRequirements = skills.Select(skill => new JobSkillRequirement
-                    {
-                        Id = Guid.NewGuid(),
-                        JobPostId = jobPost.Id,
-                        SkillId = skill.Id,
-                        RequiredLevelId = (int)ProficiencyLevel.Beginner,
-                        IsMandatory = true
-                    }).ToList();
-
-                    await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
-                }
-
-                await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
-                await _unitOfWork.SaveChangesAsync();
-
-
-                var createdJobPost = await _unitOfWork.GetRepository<JobPost>()
-                    .FirstOrDefaultAsync(
-                        predicate: jp => jp.Id == jobPost.Id,
-                        include: q => q
-                            .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill));
-
-                var result = _mapper.JobPostToJobPostDto(createdJobPost ?? jobPost);
-
-                return result;
-            }
-            catch (Exception ex)
+            var billableDays = request.JobTypeId == JobType.Daily
+                ? ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays)
+                : 1;
+            var lockAmount = request.JobTypeId == JobType.PerJob
+                ? request.WageAmount
+                : request.WageAmount * request.WorkersNeeded * billableDays;
+            try
             {
-                throw new Exception(ex.Message);
+                await _walletService.LockAmountForJobPostAsync(farmer.UserId, jobPost.Id, lockAmount);
             }
+            catch (InvalidOperationException ex)
+            {
+                throw new Exception("Insufficient wallet balance to create job post. Please top up your wallet.", ex);
+            }
+
+
+            if (skills.Any())
+            {
+                var jobSkillRequirements = skills.Select(skill => new JobSkillRequirement
+                {
+                    Id = Guid.NewGuid(),
+                    JobPostId = jobPost.Id,
+                    SkillId = skill.Id,
+                    RequiredLevelId = (int)ProficiencyLevel.Beginner,
+                    IsMandatory = true
+                }).ToList();
+
+                await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
+            }
+
+            await _unitOfWork.GetRepository<JobPost>().InsertAsync(jobPost);
+            await _unitOfWork.SaveChangesAsync();
+
+
+            var createdJobPost = await _unitOfWork.GetRepository<JobPost>()
+                .FirstOrDefaultAsync(
+                    predicate: jp => jp.Id == jobPost.Id,
+                    include: q => q
+                        .Include(jp => jp.JobSkillRequirements)
+                        .ThenInclude(jsr => jsr.Skill));
+
+            var result = _mapper.JobPostToJobPostDto(createdJobPost ?? jobPost);
+
+            return result;
         }
 
         public async Task<JobPostDTO> UpdateJobPost(Guid id, UpdateJobPostRequest request)
@@ -335,7 +344,7 @@ namespace AgroTemp.Service.Implements
                             RequiredLevelId = (int)ProficiencyLevel.Beginner,
                             IsMandatory = true
                         }).ToList();
-                        
+
                         await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(newJobSkillRequirements);
                     }
 
@@ -351,12 +360,12 @@ namespace AgroTemp.Service.Implements
                 _mapper.UpdateJobPostRequestToJobPost(request, existingJobPost);
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
                 await _unitOfWork.SaveChangesAsync();
-                
+
                 var updatedJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
                         predicate: jp => jp.Id == id,
                         include: q => q.Include(jp => jp.JobSkillRequirements).ThenInclude(jsr => jsr.Skill));
-                
+
                 var result = _mapper.JobPostToJobPostDto(updatedJobPost ?? existingJobPost);
 
                 return result;
@@ -597,7 +606,8 @@ namespace AgroTemp.Service.Implements
                 var currentUserId = GetCurrentUserId();
                 var farmer = await _unitOfWork.GetRepository<Farmer>()
                     .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
-                if (farmer == null) {
+                if (farmer == null)
+                {
                     throw new UnauthorizedAccessException("No farmer profile created to view these job posts.");
                 }
 
@@ -650,7 +660,7 @@ namespace AgroTemp.Service.Implements
                 {
                     jobPost.Id = Guid.NewGuid();
                 }
-                
+
                 jobPost.FarmerId = farmer.Id;
                 jobPost.StatusId = (int)JobPostStatus.Draft;
                 jobPost.CreatedAt = DateTime.UtcNow;
@@ -683,7 +693,7 @@ namespace AgroTemp.Service.Implements
 
                         await _unitOfWork.GetRepository<JobSkillRequirement>().InsertRangeAsync(jobSkillRequirements);
                         await _unitOfWork.SaveChangesAsync();
-                        
+
                         _unitOfWork.GetRepository<JobPost>().UpdateAsync(jobPost);
                         await _unitOfWork.SaveChangesAsync();
                     }
@@ -741,6 +751,61 @@ namespace AgroTemp.Service.Implements
 
                 var result = _mapper.JobPostsToJobPostDtos(drafts);
                 return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<PaginatedAdminJobPostsResponse> GetJobPostsForAdmin(int page = 1, int limit = 20)
+        {
+            try
+            {
+                page = page < 1 ? 1 : page;
+                limit = limit < 1 ? 1 : limit;
+                var skip = (page - 1) * limit;
+
+                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                    .GetListAsync(
+                        predicate: null,
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobDetails)
+                            .ThenInclude(jd => jd.Worker),
+                        orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
+
+                var total = jobPosts?.Count ?? 0;
+                var active = jobPosts?.Count(jp => jp.StatusId == (int)JobPostStatus.Published || jp.StatusId == (int)JobPostStatus.InProgress) ?? 0;
+                var completed = jobPosts?.Count(jp => jp.StatusId == (int)JobPostStatus.Completed) ?? 0;
+                var completionRate = total > 0 ? Math.Round((double)completed / total * 100, 1) : 0.0;
+
+                var pageItems = jobPosts?.Skip(skip).Take(limit).Select(jp => new AdminJobPostItemDTO
+                {
+                    Id = jp.Id,
+                    Title = jp.Title,
+                    Farmer = jp.Farmer != null ? new SimpleUserDto { Id = jp.Farmer.Id, FullName = jp.Farmer.ContactName } : null,
+                    Worker = jp.JobDetails?.FirstOrDefault()?.Worker != null ? new SimpleUserDto { Id = jp.JobDetails.First().Worker.Id, FullName = jp.JobDetails.First().Worker.FullName } : null,
+                    Status = ((JobPostStatus)jp.StatusId).ToString(),
+                    Salary = jp.WageAmount,
+                    StartDate = jp.StartDate,
+                    EndDate = jp.EndDate
+                }).ToList() ?? new List<AdminJobPostItemDTO>();
+
+                return new PaginatedAdminJobPostsResponse
+                {
+                    Data = pageItems,
+                    Summary = new AdminJobPostSummaryDto
+                    {
+                        Total = total,
+                        Active = active,
+                        Completed = completed,
+                        CompletionRate = completionRate
+                    },
+                    Total = total,
+                    Page = page,
+                    Limit = limit
+                };
             }
             catch (Exception ex)
             {
@@ -884,7 +949,7 @@ namespace AgroTemp.Service.Implements
                         var dayOfWeek = (int)now.DayOfWeek;
                         var daysUntilFriday = (5 - dayOfWeek + 7) % 7;
                         if (daysUntilFriday == 0 && now.Hour >= 18) daysUntilFriday = 7;
-                        
+
                         dateStart = DateOnly.FromDateTime(now.Date.AddDays(daysUntilFriday));
                         dateEnd = DateOnly.FromDateTime(now.Date.AddDays(daysUntilFriday + 2));
                         break;

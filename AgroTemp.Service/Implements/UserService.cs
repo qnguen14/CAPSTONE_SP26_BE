@@ -1,5 +1,6 @@
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO;
+using AgroTemp.Domain.DTO.Admin;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
 using AgroTemp.Repository.Interfaces;
@@ -88,6 +89,92 @@ public class UserService : BaseService<User>, IUserService
             }
 
             return _mapper.UserToUserDto(user);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<AdminUserListResponse> GetAdminUsers(AdminUserListQuery query)
+    {
+        try
+        {
+            var page = query.Page <= 0 ? 1 : query.Page;
+            var limit = query.Limit <= 0 ? 20 : Math.Min(query.Limit, 100);
+
+            var usersQuery = BuildAdminUsersQuery();
+
+            if (!string.IsNullOrWhiteSpace(query.Role))
+            {
+                var normalizedRole = query.Role.Trim().ToLowerInvariant();
+                usersQuery = normalizedRole switch
+                {
+                    "farmer" => usersQuery.Where(x => x.RoleId == (int)UserRole.Farmer),
+                    "worker" => usersQuery.Where(x => x.RoleId == (int)UserRole.Worker),
+                    "admin" => usersQuery.Where(x => x.RoleId == (int)UserRole.Admin),
+                    _ => throw new Exception("Invalid role filter. Supported values: farmer, worker, admin")
+                };
+            }
+
+            if (query.IsActive.HasValue)
+            {
+                usersQuery = usersQuery.Where(x => x.IsActive == query.IsActive.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var search = query.Search.Trim().ToLower();
+                usersQuery = usersQuery.Where(x =>
+                    x.Email.ToLower().Contains(search) ||
+                    x.PhoneNumber.ToLower().Contains(search) ||
+                    (x.Worker != null && x.Worker.FullName.ToLower().Contains(search)) ||
+                    (x.Farmer != null && x.Farmer.ContactName.ToLower().Contains(search)));
+            }
+
+            var total = await usersQuery.CountAsync();
+            var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit);
+
+            var data = await usersQuery
+                .OrderByDescending(x => x.CreatedAt)
+                .Skip((page - 1) * limit)
+                .Take(limit)
+                .Select(x => new AdminUserListItemDto
+                {
+                    Id = x.Id,
+                    FullName = x.Worker != null ? x.Worker.FullName : (x.Farmer != null ? x.Farmer.ContactName : x.Email),
+                    Email = x.Email,
+                    Role = GetRoleName(x.RoleId),
+                    IsActive = x.IsActive,
+                    IsVerified = x.IsVerified,
+                    AvatarUrl = x.Worker != null ? x.Worker.AvatarUrl : (x.Farmer != null ? x.Farmer.AvatarUrl : null),
+                    PhoneNumber = x.PhoneNumber,
+                    Rating = x.Worker != null ? x.Worker.AverageRating : (x.Farmer != null ? x.Farmer.AverageRating : null),
+                    CreatedAt = x.CreatedAt
+                })
+                .ToListAsync();
+
+            return new AdminUserListResponse
+            {
+                Data = data,
+                Total = total,
+                Page = page,
+                Limit = limit,
+                TotalPages = totalPages
+            };
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<AdminUserDetailDto> GetAdminUserById(Guid id)
+    {
+        try
+        {
+            var user = await GetAdminUserEntityById(id);
+            return MapAdminUserDetail(user);
         }
         catch (Exception ex)
         {
@@ -216,6 +303,27 @@ public class UserService : BaseService<User>, IUserService
         }
     }
 
+    public async Task<AdminUserDetailDto> UpdateAdminUser(Guid id, UpdateUserRequest request)
+    {
+        try
+        {
+            var user = await GetAdminUserEntityById(id);
+
+            await ValidateAndUpdateCoreUserFields(id, user, request);
+            ApplyAddressUpdate(user, request.Address);
+
+            _unitOfWork.GetRepository<User>().UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            var updatedUser = await GetAdminUserEntityById(id);
+            return MapAdminUserDetail(updatedUser);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
     public async Task<bool> DeleteUser(Guid id)
     {
         try
@@ -238,6 +346,148 @@ public class UserService : BaseService<User>, IUserService
         {
             throw new Exception(ex.Message);
         }
+    }
+
+    public async Task<bool> DeleteAdminUser(Guid id)
+    {
+        try
+        {
+            var user = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.Id == id);
+
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+
+            user.IsActive = false;
+            _unitOfWork.GetRepository<User>().UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    private IQueryable<User> BuildAdminUsersQuery()
+    {
+        return _unitOfWork.Context.Set<User>()
+            .AsNoTracking()
+            .Include(x => x.Worker)
+            .Include(x => x.Farmer);
+    }
+
+    private async Task<User> GetAdminUserEntityById(Guid id)
+    {
+        var user = await _unitOfWork.Context.Set<User>()
+            .Include(x => x.Worker)
+            .Include(x => x.Farmer)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (user == null)
+        {
+            throw new Exception("User not found");
+        }
+
+        return user;
+    }
+
+    private async Task ValidateAndUpdateCoreUserFields(Guid id, User user, UpdateUserRequest request)
+    {
+        if (!string.IsNullOrWhiteSpace(request.Email) && request.Email != user.Email)
+        {
+            var existingEmail = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.Email == request.Email && u.Id != id);
+
+            if (existingEmail != null)
+            {
+                throw new Exception("Email already exists");
+            }
+
+            user.Email = request.Email;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && request.PhoneNumber != user.PhoneNumber)
+        {
+            var existingPhone = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.PhoneNumber == request.PhoneNumber && u.Id != id);
+
+            if (existingPhone != null)
+            {
+                throw new Exception("Phone number already exists");
+            }
+
+            user.PhoneNumber = request.PhoneNumber;
+        }
+
+        if (request.RoleId.HasValue)
+        {
+            user.RoleId = request.RoleId.Value;
+            user.Role = (UserRole)request.RoleId.Value;
+        }
+
+        if (request.IsActive.HasValue)
+        {
+            user.IsActive = request.IsActive.Value;
+        }
+
+        if (request.IsVerified.HasValue)
+        {
+            user.IsVerified = request.IsVerified.Value;
+        }
+    }
+
+    private static void ApplyAddressUpdate(User user, string? address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return;
+        }
+
+        if (user.Worker != null)
+        {
+            user.Worker.PrimaryLocation = address;
+            user.Worker.UpdatedAt = DateTime.UtcNow;
+            return;
+        }
+
+        if (user.Farmer != null)
+        {
+            user.Farmer.Address = address;
+            user.Farmer.UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
+    private static AdminUserDetailDto MapAdminUserDetail(User user)
+    {
+        return new AdminUserDetailDto
+        {
+            Id = user.Id,
+            FullName = user.Worker != null ? user.Worker.FullName : (user.Farmer != null ? user.Farmer.ContactName : user.Email),
+            Email = user.Email,
+            Role = GetRoleName(user.RoleId),
+            IsActive = user.IsActive,
+            IsVerified = user.IsVerified,
+            AvatarUrl = user.Worker != null ? user.Worker.AvatarUrl : (user.Farmer != null ? user.Farmer.AvatarUrl : null),
+            PhoneNumber = user.PhoneNumber,
+            Rating = user.Worker != null ? user.Worker.AverageRating : (user.Farmer != null ? user.Farmer.AverageRating : null),
+            CreatedAt = user.CreatedAt,
+            Address = user.Worker != null ? user.Worker.PrimaryLocation : (user.Farmer != null ? user.Farmer.Address : null)
+        };
+    }
+
+    private static string GetRoleName(int roleId)
+    {
+        return roleId switch
+        {
+            (int)UserRole.Admin => "admin",
+            (int)UserRole.Farmer => "farmer",
+            (int)UserRole.Worker => "worker",
+            _ => "unknown"
+        };
     }
 
     public async Task<FarmerProfileDTO> GetFarmerProfile()
@@ -460,8 +710,9 @@ public class UserService : BaseService<User>, IUserService
             else
             {
                 Console.WriteLine($"[DEBUG] UpdateWorkerProfile: Found profile for UserId: {userId}. WorkerId: {workerProfile.Id}");
-                
-                await _unitOfWork.ExecuteInTransactionAsync(async () => {
+
+                await _unitOfWork.ExecuteInTransactionAsync(async () =>
+                {
                     workerProfile.FullName = request.FullName;
                     workerProfile.DateOfBirth = DateOnly.Parse(request.DateOfBirth);
                     workerProfile.PrimaryLocation = request.PrimaryLocation;
@@ -519,6 +770,28 @@ public class UserService : BaseService<User>, IUserService
                             );
 
             return _mapper.WorkerToDto(finalProfile ?? workerProfile);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task WarnUserAsync(Guid id)
+    {
+        try
+        {
+            var user = await _unitOfWork.GetRepository<User>()
+                .FirstOrDefaultAsync(predicate: u => u.Id == id);
+
+            if (user == null)
+                throw new Exception("User not found");
+
+            user.LastWarnedAt = DateTime.UtcNow;
+            user.WarningCount = user.WarningCount + 1;
+
+            _unitOfWork.GetRepository<User>().UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
         }
         catch (Exception ex)
         {

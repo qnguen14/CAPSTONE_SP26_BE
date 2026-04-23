@@ -229,6 +229,49 @@ namespace AgroTemp.Service.Implements
             return wallet;
         }
 
+        public async Task<AgroTemp.Domain.DTO.Payment.PaginatedAdminWalletsResponse> GetWalletsForAdminAsync(int page = 1, int limit = 20, string? search = null)
+        {
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 20;
+
+            var query = _unitOfWork.Context.Set<Wallet>()
+                .Include(w => w.User)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLowerInvariant();
+                query = query.Where(w => w.User.Email.ToLower().Contains(s)
+                || (w.User.Worker != null && w.User.Worker.FullName.ToLower().Contains(s))
+                || (w.User.Farmer != null && w.User.Farmer.ContactName.ToLower().Contains(s)));
+               
+            }
+
+            var total = await query.CountAsync();
+            var items = await query.OrderByDescending(w => w.CreatedAt)
+                .Skip((page - 1) * limit)
+                .Take(limit)
+                .ToListAsync();
+
+            var responses = items.Select(w => new AgroTemp.Domain.DTO.Payment.WalletItemForAdmin
+            {
+                Id = w.Id,
+                UserId = w.UserId,
+                UserName = w.User.Worker != null ? w.User.Worker.FullName : w.User.Farmer != null ? w.User.Farmer.ContactName : null,
+                Email = w.User?.Email,
+                Balance = w.Balance,
+                LockedBalance = w.LockedBalance
+            }).ToList();
+
+            return new AgroTemp.Domain.DTO.Payment.PaginatedAdminWalletsResponse
+            {
+                Items = responses,
+                TotalCount = total,
+                Page = page,
+                Limit = limit
+            };
+        }
+
         public async Task LockAmountForJobPostAsync(Guid farmerUserId, Guid jobPostId, decimal amount)
         {
             if (amount <= 0)

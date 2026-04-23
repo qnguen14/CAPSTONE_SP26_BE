@@ -19,36 +19,7 @@ public class WalletController : ControllerBase
         _logger = logger;
     }
 
-    [HttpGet(ApiEndpointConstants.Wallet.GetAllWalletsEndpoint)]
-    [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lay danh sach wallets danh cho admin.")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Thuc hien chuc nang get all wallets danh cho admin.")]
-    [Microsoft.AspNetCore.Routing.EndpointName("WalletGetAllWallets")]
-    public async Task<ActionResult> GetAllWallets()
-    {
-        try
-        {
-            var wallets = await _walletService.GetAllAsync();
-            return Ok(new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Wallets retrieved successfully",
-                Data = wallets
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to retrieve wallets");
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = "Failed to retrieve wallets",
-                Data = ex.Message
-            });
-        }
-    }
+    // Admin wallet listing moved to AdminController
 
     [HttpGet(ApiEndpointConstants.Wallet.GetWalletByIdEndpoint)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
