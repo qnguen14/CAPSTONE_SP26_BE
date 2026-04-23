@@ -43,6 +43,19 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IExpoPushService, ExpoPushService>();
             services.AddScoped<IDashboardService, DashboardService>();
 
+            // Setup static IP proxy for PayOS if running on Heroku
+            HttpClient? payOsProxyClient = null;
+            var fixieUrl = Environment.GetEnvironmentVariable("FIXIE_URL");
+            if (!string.IsNullOrEmpty(fixieUrl))
+            {
+                var handler = new HttpClientHandler
+                {
+                    Proxy = new System.Net.WebProxy(fixieUrl, true),
+                    UseProxy = true
+                };
+                payOsProxyClient = new HttpClient(handler);
+            }
+
             // payOS client for payment link flow (deposit/top-up)
             services.AddKeyedSingleton<PayOSClient>("OrderClient", (sp, _) => new PayOSClient(new PayOSOptions
             {
@@ -55,7 +68,8 @@ namespace AgroTemp.API.Configuration
                 ChecksumKey = configuration["PayOS:ChecksumKey"]
                     ?? Environment.GetEnvironmentVariable("PAYOS_CHECKSUM_KEY")
                     ?? string.Empty,
-                LogLevel = LogLevel.Debug
+                LogLevel = LogLevel.Debug,
+                HttpClient = payOsProxyClient
             }));
 
             // payOS client for payout flow (withdraw)
@@ -73,7 +87,8 @@ namespace AgroTemp.API.Configuration
                     ?? Environment.GetEnvironmentVariable("PAYOS_PAYOUT_CHECKSUM_KEY")
                     ?? configuration["PayOS:ChecksumKey"]
                     ?? string.Empty,
-                LogLevel = LogLevel.Debug
+                LogLevel = LogLevel.Debug,
+                HttpClient = payOsProxyClient
             }));
 
             services.AddScoped<IPayOSService, PayOSService>();
@@ -103,7 +118,8 @@ namespace AgroTemp.API.Configuration
             {
                 ClientId = configuration["PayOS:ClientId"] ?? string.Empty,
                 ApiKey = configuration["PayOS:ApiKey"] ?? string.Empty,
-                ChecksumKey = configuration["PayOS:ChecksumKey"] ?? string.Empty
+                ChecksumKey = configuration["PayOS:ChecksumKey"] ?? string.Empty,
+                HttpClient = payOsProxyClient
             }));
 
             // Third-Party Services
