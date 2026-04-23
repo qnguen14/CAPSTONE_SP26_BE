@@ -12,9 +12,9 @@ namespace AgroTemp.API.Configuration
                         .WithOrigins(
                             "http://localhost:3000",
                             "http://localhost:8081",
-                            "https://agrotemp-frontend.vercel.app",
+                            "https://agrotemp-five.vercel.app",
                             "https://www.agrotemp.dev",
-                            "https://agrotemp.dev"
+                            "https://api.banklookup.net"
                         )
                         .AllowAnyHeader()
                         .AllowAnyMethod()
