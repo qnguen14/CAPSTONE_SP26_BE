@@ -171,7 +171,7 @@ namespace AgroTemp.Service.Implements
             {
                 var userId = GetCurrentUserId();
                 var worker = await _unitOfWork.GetRepository<Worker>()
-                    .FirstOrDefaultAsync(predicate:w => w.UserId == userId);
+                    .FirstOrDefaultAsync(predicate: w => w.UserId == userId, include: w => w.Include(x => x.User));
 
                 if (worker == null)
                 {
@@ -190,6 +190,16 @@ namespace AgroTemp.Service.Implements
                 // TC_BE_005: Reject application when job has reached worker capacity
                 if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
                     throw new InvalidOperationException("This job has already reached its required worker capacity.");
+
+                if (worker.User.WarningCount > 3)
+                {
+                    throw new UnauthorizedAccessException("Worker over warning dispute");
+                }
+
+                if (DateTime.Now <= worker.User.LastWarnedAt?.AddDays(worker.User.WarningCount * 3))
+                {
+                    throw new UnauthorizedAccessException($"Worker can't apply job post before {worker.User.LastWarnedAt?.AddDays(worker.User.WarningCount * 3)}");
+                }
 
                 var jobApplication = _mapper.CreateJobApplicationRequestToJobApplication(request);
 
@@ -292,7 +302,7 @@ namespace AgroTemp.Service.Implements
                 {
                     return null;
                 }
-                
+
                 existingJobApplication.StatusId = request.StatusId;
                 existingJobApplication.RespondedAt = request.RespondedAt;
                 existingJobApplication.ResponseMessage = request.ResponseMessage;
@@ -311,8 +321,8 @@ namespace AgroTemp.Service.Implements
 
                 if (existingJobApplication.Worker != null)
                 {
-                    var statusMessage = request.StatusId == (int)ApplicationStatus.Accepted 
-                        ? "chấp nhận" 
+                    var statusMessage = request.StatusId == (int)ApplicationStatus.Accepted
+                        ? "chấp nhận"
                         : "từ chối";
 
                     var notificationRequest = new CreateNotificationRequest
@@ -419,7 +429,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<JobApplicationDTO> CancelJobApplication (Guid id)
+        public async Task<JobApplicationDTO> CancelJobApplication(Guid id)
         {
             try
             {
@@ -436,7 +446,7 @@ namespace AgroTemp.Service.Implements
                 if (existingJobApplication.Worker.UserId != currentUserId)
                     throw new UnauthorizedAccessException("You are only authorized to cancel your own applications.");
 
-                if (existingJobApplication.StatusId == (int)ApplicationStatus.Cancelled || 
+                if (existingJobApplication.StatusId == (int)ApplicationStatus.Cancelled ||
                     existingJobApplication.StatusId == (int)ApplicationStatus.Rejected)
                 {
                     throw new InvalidOperationException("Cannot cancel an application that is already cancelled or rejected.");
@@ -494,7 +504,7 @@ namespace AgroTemp.Service.Implements
                 if (existingJobApplication.JobPost.Farmer.UserId != currentUserId)
                     throw new UnauthorizedAccessException("You are only authorized to cancel applications for your own job posts.");
 
-                if (existingJobApplication.StatusId == (int)ApplicationStatus.Cancelled || 
+                if (existingJobApplication.StatusId == (int)ApplicationStatus.Cancelled ||
                     existingJobApplication.StatusId == (int)ApplicationStatus.Rejected)
                 {
                     throw new InvalidOperationException("Cannot cancel an application that is already cancelled or rejected.");

@@ -231,9 +231,10 @@ public class JobPostController : ControllerBase
                 Data = null
             });
         }
+
         catch (Exception ex)
         {
-            if (ex.Message != null && ex.Message.Contains("Insufficient wallet balance to create job post"))
+            if (ex.Message != null && ex.Message.Contains("Insufficient wallet balance to create job post") || ex is UnauthorizedAccessException)
             {
                 _logger.LogWarning(ex, "Insufficient wallet balance for job post");
                 return BadRequest(new ApiResponse<object>
