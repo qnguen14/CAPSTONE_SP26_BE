@@ -31,6 +31,7 @@ public class ApiEndpointConstants
         public const string CreateUserEndpoint = UserEndpoint;
         public const string UpdateUserEndpoint = UserEndpoint + "/{id}";
         public const string DeleteUserEndpoint = UserEndpoint + "/{id}";
+        public const string WarnUserEndpoint = UserEndpoint + "/{id}/warn";
     }
 
     public static class FarmerProfile
@@ -237,9 +238,11 @@ public class ApiEndpointConstants
         public const string GetMyDisputesEndpoint = DisputeEndpoint + "/mine";
         public const string GetDisputeByIdEndpoint = DisputeEndpoint + "/{id:guid}";
         public const string CreateDisputeEndpoint = DisputeEndpoint;
+        public const string GetDisputeSummaryEndpoint = DisputeEndpoint + "/summary";
         public const string UpdateDisputeEndpoint = DisputeEndpoint + "/{id:guid}";
         public const string DeleteDisputeEndpoint = DisputeEndpoint + "/{id:guid}";
         public const string ReviewDisputeEndpoint = DisputeEndpoint + "/{id:guid}/review";
+        public const string UpdateDisputeStatusEndpoint = DisputeEndpoint + "/{id:guid}/status";
         public const string ResolveDisputeEndpoint = DisputeEndpoint + "/{id:guid}/resolve";
     }
 

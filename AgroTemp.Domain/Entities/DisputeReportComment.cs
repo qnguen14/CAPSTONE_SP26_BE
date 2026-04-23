@@ -22,6 +22,13 @@ public class DisputeReportComment
     public Guid UserId { get; set; }
     public virtual User User { get; set; }
 
+    /// <summary>
+    /// Optional. When set by Admin, only that user (and Admin) can see this message.
+    /// Null = visible to all parties (legacy / public comment).
+    /// </summary>
+    [Column("target_user_id")]
+    public Guid? TargetUserId { get; set; }
+
     [Required]
     [Column("content")]
     public string Content { get; set; }

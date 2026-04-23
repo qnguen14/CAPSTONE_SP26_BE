@@ -27,4 +27,5 @@ public interface IUserService
 
     Task<string> UploadFarmerAvatar(IFormFile file);
     Task<string> UploadWorkerAvatar(IFormFile file);
+    Task WarnUserAsync(Guid id);
 }

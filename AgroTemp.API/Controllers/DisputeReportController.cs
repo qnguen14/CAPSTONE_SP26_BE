@@ -2,6 +2,7 @@ using System.Security.Claims;
 using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.DisputeReport;
 using AgroTemp.Domain.Metadata;
+using AgroTemp.Service.Implements;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,13 +14,16 @@ public class DisputeReportController : ControllerBase
 {
     private readonly ILogger<DisputeReportController> _logger;
     private readonly IDisputeReportService _disputeReportService;
+    private readonly IUserService _userService;
 
     public DisputeReportController(
         ILogger<DisputeReportController> logger,
-        IDisputeReportService disputeReportService)
+        IDisputeReportService disputeReportService,
+        IUserService userService)
     {
         _logger = logger;
         _disputeReportService = disputeReportService;
+        _userService = userService;
     }
 
     private Guid CurrentUserId =>
@@ -53,6 +57,26 @@ public class DisputeReportController : ControllerBase
         }
     }
 
+    [HttpPost(ApiEndpointConstants.User.WarnUserEndpoint)]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> WarnUser([FromRoute] Guid id)
+    {
+        try
+        {
+            await _userService.WarnUserAsync(id);
+            return Ok(new { success = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error warning user {UserId}", id);
+            var statusCode = ex.Message.Contains("not found") ? StatusCodes.Status404NotFound : StatusCodes.Status500InternalServerError;
+            return StatusCode(statusCode, new { message = ex.Message });
+        }
+    }
+
     [HttpGet(ApiEndpointConstants.Dispute.GetMyDisputesEndpoint)]
     [Authorize(Roles = "Farmer,Worker")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<DisputeReportDTO>>), StatusCodes.Status200OK)]
@@ -76,6 +100,34 @@ public class DisputeReportController : ControllerBase
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = "An error occurred while retrieving your disputes",
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Dispute.GetDisputeSummaryEndpoint)]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DisputeStatusSummaryDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<DisputeStatusSummaryDTO>>> GetDisputeSummary()
+    {
+        try
+        {
+            var response = await _disputeReportService.GetDisputeCountsByStatusAsync();
+            return Ok(new ApiResponse<IEnumerable<DisputeStatusSummaryDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Dispute summary retrieved successfully",
+                Data = response
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving dispute summary");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while retrieving dispute summary",
                 Data = null
             });
         }
@@ -426,6 +478,56 @@ public class DisputeReportController : ControllerBase
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = "An error occurred while resolving the dispute",
+                Data = null
+            });
+        }
+    }
+
+    [HttpPut(ApiEndpointConstants.Dispute.UpdateDisputeStatusEndpoint)]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<DisputeReportDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DisputeReportDTO>> UpdateDisputeStatus([FromRoute] Guid id, [FromBody] UpdateDisputeStatusRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = "Invalid status request",
+                Data = ModelState
+            });
+        }
+
+        try
+        {
+            var response = await _disputeReportService.UpdateDisputeStatusAsync(id, CurrentUserId, request.StatusId);
+            if (response == null)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = "Dispute not found",
+                    Data = null
+                });
+            }
+
+            return Ok(new ApiResponse<DisputeReportDTO>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Dispute status updated successfully",
+                Data = response
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating dispute status {DisputeId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while updating the dispute status",
                 Data = null
             });
         }
