@@ -66,7 +66,9 @@ namespace AgroTemp.API.Configuration
                     UseProxy = true,
                     PreAuthenticate = true
                 };
-                payOsProxyClient = new HttpClient(handler);
+                
+                var loggingHandler = new PayOSLoggingHandler(handler);
+                payOsProxyClient = new HttpClient(loggingHandler);
             }
 
             // payOS client for payment link flow (deposit/top-up)
@@ -156,6 +158,34 @@ namespace AgroTemp.API.Configuration
             //    options.ChecksumKey = configuration["PayOS:ChecksumKey"];
             //});
             //PayOSSetting.Instance = services.BuildServiceProvider().GetService<IOptions<PayOSSetting>>().Value;
+        }
+    }
+
+    public class PayOSLoggingHandler : DelegatingHandler
+    {
+        public PayOSLoggingHandler(HttpMessageHandler innerHandler) : base(innerHandler)
+        {
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Console.WriteLine($"[PayOS Request] {request.Method} {request.RequestUri}");
+            if (request.Content != null)
+            {
+                var requestContent = await request.Content.ReadAsStringAsync(cancellationToken);
+                Console.WriteLine($"[PayOS Request Content] {requestContent}");
+            }
+
+            var response = await base.SendAsync(request, cancellationToken);
+
+            Console.WriteLine($"[PayOS Response] {response.StatusCode}");
+            if (response.Content != null)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                Console.WriteLine($"[PayOS Response Content] {responseContent}");
+            }
+
+            return response;
         }
     }
 }
