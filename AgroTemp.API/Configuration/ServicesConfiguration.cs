@@ -48,10 +48,23 @@ namespace AgroTemp.API.Configuration
             var fixieUrl = Environment.GetEnvironmentVariable("FIXIE_URL");
             if (!string.IsNullOrEmpty(fixieUrl))
             {
+                var proxyUri = new Uri(fixieUrl);
+                var proxy = new System.Net.WebProxy(proxyUri.Host, proxyUri.Port);
+                
+                if (!string.IsNullOrEmpty(proxyUri.UserInfo))
+                {
+                    var authParts = proxyUri.UserInfo.Split(':');
+                    if (authParts.Length == 2)
+                    {
+                        proxy.Credentials = new System.Net.NetworkCredential(authParts[0], authParts[1]);
+                    }
+                }
+
                 var handler = new HttpClientHandler
                 {
-                    Proxy = new System.Net.WebProxy(fixieUrl, true),
-                    UseProxy = true
+                    Proxy = proxy,
+                    UseProxy = true,
+                    PreAuthenticate = true
                 };
                 payOsProxyClient = new HttpClient(handler);
             }
