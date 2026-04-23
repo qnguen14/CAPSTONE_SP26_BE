@@ -88,8 +88,8 @@ public class PayOSService : IPayOSService
         var buyerPhone = farmer.User?.PhoneNumber;
 
         var orderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var returnUrl = "http://localhost:3000/farmer/payments/success";
-        var cancelUrl = "http://localhost:3000/farmer/payments/cancel";
+        var returnUrl = "https://www.agrotemp.dev/farmer/payments/success";
+        var cancelUrl = "https://www.agrotemp.dev/farmer/payments/cancel";
         var expiredAt = DateTimeOffset.UtcNow.AddHours(2);
         var buyerNotGetInvoice = false;
         int? taxPercentage = null;
@@ -111,10 +111,7 @@ public class PayOSService : IPayOSService
             ReturnUrl = returnUrl,
             CancelUrl = cancelUrl,
             BuyerName = buyerName,
-            BuyerCompanyName = buyerCompanyName,
             BuyerEmail = buyerEmail,
-            //BuyerPhone = buyerPhone,
-            // BuyerAddress = buyerAddress,
             ExpiredAt = expiredAt.ToUnixTimeSeconds(),
             Items = new List<PaymentLinkItem> { hardcodedItem }
         };
