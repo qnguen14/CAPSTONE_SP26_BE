@@ -83,7 +83,6 @@ public class PayOSService : IPayOSService
         var buyerName = farmer.ContactName;
         var buyerCompanyName = primaryFarm?.LocationName;
         var buyerEmail = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
-        var buyerPhone = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.MobilePhone)?.Value;
 
         var orderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var returnUrl = "https://www.agrotemp.dev/farmer/payments/success";
@@ -91,6 +90,7 @@ public class PayOSService : IPayOSService
         var expiredAt = DateTimeOffset.UtcNow.AddHours(2);
         var buyerNotGetInvoice = false;
         int? taxPercentage = null;
+        var normalizedDescription = NormalizeDescription(request.Description, $"AgroTemp DP {orderCode}");
 
         var hardcodedItem = new PaymentLinkItem
         {
@@ -101,26 +101,46 @@ public class PayOSService : IPayOSService
             TaxPercentage = null
         };
 
-        var paymentRequest = new CreatePaymentLinkRequest
+        CreatePaymentLinkRequest BuildPaymentRequest(bool minimal)
         {
-            OrderCode = orderCode,
-            Amount = request.TotalAmount,
-            Description = request.Description ?? $"order {orderCode}",
-            ReturnUrl = returnUrl,
-            CancelUrl = cancelUrl,
-            BuyerName = buyerName,
-            BuyerEmail = buyerEmail,
-            ExpiredAt = expiredAt.ToUnixTimeSeconds(),
-            Items = new List<PaymentLinkItem> { hardcodedItem }
-        };
+            var req = new CreatePaymentLinkRequest
+            {
+                OrderCode = orderCode,
+                Amount = request.TotalAmount,
+                Description = normalizedDescription,
+                ReturnUrl = returnUrl,
+                CancelUrl = cancelUrl,
+                ExpiredAt = expiredAt.ToUnixTimeSeconds(),
+                Items = new List<PaymentLinkItem> { hardcodedItem }
+            };
 
-        paymentRequest.Invoice = new InvoiceRequest
+            if (!minimal)
+            {
+                req.BuyerName = buyerName;
+                req.BuyerEmail = buyerEmail;
+                req.Invoice = new InvoiceRequest
+                {
+                    BuyerNotGetInvoice = buyerNotGetInvoice,
+                    TaxPercentage = taxPercentage.HasValue ? (TaxPercentage?)taxPercentage.Value : null
+                };
+            }
+
+            return req;
+        }
+
+        CreatePaymentLinkResponse paymentResponse;
+        try
         {
-            BuyerNotGetInvoice = buyerNotGetInvoice,
-            TaxPercentage = taxPercentage.HasValue ? (TaxPercentage?)taxPercentage.Value : null
-        };
-
-        var paymentResponse = await _orderClient.PaymentRequests.CreateAsync(paymentRequest);
+            // First try with richer payload for better invoice metadata.
+            paymentResponse = await _orderClient.PaymentRequests.CreateAsync(BuildPaymentRequest(minimal: false));
+        }
+        catch (Exception ex) when (ex.Message.Contains("Cổng thanh toán không tồn tại", StringComparison.OrdinalIgnoreCase)
+                                   || ex.Message.Contains("tạm dừng", StringComparison.OrdinalIgnoreCase))
+        {
+            // Merchant gateways can be strict on optional buyer/invoice fields.
+            // Retry with minimal required payload before failing the request.
+            paymentResponse = await _orderClient.PaymentRequests.CreateAsync(BuildPaymentRequest(minimal: true));
+        }
 
         var order = new PayOSOrder
         {
