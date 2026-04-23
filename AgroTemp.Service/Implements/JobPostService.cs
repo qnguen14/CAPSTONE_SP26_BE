@@ -9,12 +9,6 @@ using AgroTemp.Service.Helpers;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AgroTemp.Service.Implements
 {
@@ -239,30 +233,38 @@ namespace AgroTemp.Service.Implements
                 throw new ArgumentException($"Invalid skill ID(s): {string.Join(", ", invalidSkillIds)}");
             }
 
-                if (request.StartDate.HasValue && request.StartDate.Value < DateOnly.FromDateTime(DateTime.UtcNow))
-                {
-                    throw new ArgumentException("Job start date cannot be in the past.");
-                }
+            if (request.StartDate.HasValue && request.StartDate.Value < DateOnly.FromDateTime(DateTime.UtcNow))
+            {
+                throw new ArgumentException("Job start date cannot be in the past.");
+            }
 
-                if (request.WorkersNeeded <= 0)
-                {
-                    throw new ArgumentException("WorkersNeeded must be greater than 0.");
-                }
+            if (request.WorkersNeeded <= 0)
+            {
+                throw new ArgumentException("WorkersNeeded must be greater than 0.");
+            }
 
-                var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
-                if (jobPost.Id == Guid.Empty)
-                {
-                    jobPost.Id = Guid.NewGuid();
-                }
+            var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
+            if (jobPost.Id == Guid.Empty)
+            {
+                jobPost.Id = Guid.NewGuid();
+            }
 
-                var workdays = ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays);
+            var workdays = ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays);
 
+            if (request.JobTypeId == JobType.PerJob)
+            {
+                jobPost.WorkersNeeded = request.WorkersNeeded;
+            }
+            else if (request.JobTypeId == JobType.Daily)
+            {
                 jobPost.WorkersNeeded = request.WorkersNeeded * workdays;
-                jobPost.FarmerId = farmer.Id;
-                jobPost.StatusId = request.StatusId;
-                jobPost.CreatedAt = DateTime.UtcNow;
-                jobPost.UpdatedAt = DateTime.UtcNow;
-                jobPost.PublishedAt = request.PublishedAt;
+            }
+
+            jobPost.FarmerId = farmer.Id;
+            jobPost.StatusId = request.StatusId;
+            jobPost.CreatedAt = DateTime.UtcNow;
+            jobPost.UpdatedAt = DateTime.UtcNow;
+            jobPost.PublishedAt = request.PublishedAt;
 
             var billableDays = request.JobTypeId == JobType.Daily
                 ? workdays
