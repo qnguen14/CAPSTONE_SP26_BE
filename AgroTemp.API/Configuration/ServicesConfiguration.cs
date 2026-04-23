@@ -134,9 +134,15 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IPayOSService, PayOSService>();
             services.AddSingleton<PayOSClient>(_ => new PayOSClient(new PayOSOptions
             {
-                ClientId = configuration["PayOS:ClientId"] ?? string.Empty,
-                ApiKey = configuration["PayOS:ApiKey"] ?? string.Empty,
-                ChecksumKey = configuration["PayOS:ChecksumKey"] ?? string.Empty,
+                ClientId = configuration["PayOS:ClientId"] 
+                    ?? Environment.GetEnvironmentVariable("PAYOS_CLIENT_ID") 
+                    ?? string.Empty,
+                ApiKey = configuration["PayOS:ApiKey"] 
+                    ?? Environment.GetEnvironmentVariable("PAYOS_API_KEY") 
+                    ?? string.Empty,
+                ChecksumKey = configuration["PayOS:ChecksumKey"] 
+                    ?? Environment.GetEnvironmentVariable("PAYOS_CHECKSUM_KEY") 
+                    ?? string.Empty,
                 HttpClient = payOsProxyClient
             }));
 
