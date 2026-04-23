@@ -13,7 +13,8 @@
                             "http://localhost:3000",
                             "http://localhost:8081",
                             "https://agrotemp-five.vercel.app",
-                            "https://www.agrotemp.dev"
+                            "https://www.agrotemp.dev",
+                            "https://api.banklookup.net"
                         )
                         .AllowAnyHeader()
                         .AllowAnyMethod()
