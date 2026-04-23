@@ -93,14 +93,17 @@ namespace AgroTemp.API.Configuration
                 ClientId = configuration["PayOS:PayoutClientId"]
                     ?? Environment.GetEnvironmentVariable("PAYOS_PAYOUT_CLIENT_ID")
                     ?? configuration["PayOS:ClientId"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_CLIENT_ID")
                     ?? string.Empty,
                 ApiKey = configuration["PayOS:PayoutApiKey"]
                     ?? Environment.GetEnvironmentVariable("PAYOS_PAYOUT_API_KEY")
                     ?? configuration["PayOS:ApiKey"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_API_KEY")
                     ?? string.Empty,
                 ChecksumKey = configuration["PayOS:PayoutChecksumKey"]
                     ?? Environment.GetEnvironmentVariable("PAYOS_PAYOUT_CHECKSUM_KEY")
                     ?? configuration["PayOS:ChecksumKey"]
+                    ?? Environment.GetEnvironmentVariable("PAYOS_CHECKSUM_KEY")
                     ?? string.Empty,
                 LogLevel = LogLevel.Debug,
                 HttpClient = payOsProxyClient
