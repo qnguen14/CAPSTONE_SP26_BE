@@ -70,9 +70,7 @@ public class PayOSService : IPayOSService
         }
 
         var farmer = await _unitOfWork.GetRepository<Farmer>()
-            .FirstOrDefaultAsync(
-                predicate: f => f.UserId == currentUserId.Value,
-                include: query => query.Include(f => f.User));
+            .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId.Value);
 
         if (farmer == null)
         {
@@ -84,15 +82,15 @@ public class PayOSService : IPayOSService
 
         var buyerName = farmer.ContactName;
         var buyerCompanyName = primaryFarm?.LocationName;
-        var buyerEmail = farmer.User?.Email;
-        var buyerPhone = farmer.User?.PhoneNumber;
+        var buyerEmail = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
 
         var orderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var returnUrl = "http://localhost:3000/farmer/payments/success";
-        var cancelUrl = "http://localhost:3000/farmer/payments/cancel";
+        var returnUrl = "https://www.agrotemp.dev/farmer/payments/success";
+        var cancelUrl = "https://www.agrotemp.dev/farmer/payments/cancel";
         var expiredAt = DateTimeOffset.UtcNow.AddHours(2);
         var buyerNotGetInvoice = false;
         int? taxPercentage = null;
+        var normalizedDescription = NormalizeDescription(request.Description, $"AgroTemp DP {orderCode}");
 
         var hardcodedItem = new PaymentLinkItem
         {
@@ -103,29 +101,65 @@ public class PayOSService : IPayOSService
             TaxPercentage = null
         };
 
-        var paymentRequest = new CreatePaymentLinkRequest
+        CreatePaymentLinkRequest BuildPaymentRequest(bool minimal)
         {
-            OrderCode = orderCode,
-            Amount = request.TotalAmount,
-            Description = request.Description ?? $"order {orderCode}",
-            ReturnUrl = returnUrl,
-            CancelUrl = cancelUrl,
-            BuyerName = buyerName,
-            BuyerCompanyName = buyerCompanyName,
-            BuyerEmail = buyerEmail,
-            //BuyerPhone = buyerPhone,
-            // BuyerAddress = buyerAddress,
-            ExpiredAt = expiredAt.ToUnixTimeSeconds(),
-            Items = new List<PaymentLinkItem> { hardcodedItem }
-        };
+            var req = new CreatePaymentLinkRequest
+            {
+                OrderCode = orderCode,
+                Amount = request.TotalAmount,
+                Description = normalizedDescription,
+                ReturnUrl = returnUrl,
+                CancelUrl = cancelUrl,
+                ExpiredAt = expiredAt.ToUnixTimeSeconds(),
+                Items = new List<PaymentLinkItem> { hardcodedItem }
+            };
 
-        paymentRequest.Invoice = new InvoiceRequest
+            if (!minimal)
+            {
+                req.BuyerName = buyerName;
+                req.BuyerEmail = buyerEmail;
+                req.Invoice = new InvoiceRequest
+                {
+                    BuyerNotGetInvoice = buyerNotGetInvoice,
+                    TaxPercentage = taxPercentage.HasValue ? (TaxPercentage?)taxPercentage.Value : null
+                };
+            }
+
+            return req;
+        }
+
+        static bool IsGatewayUnavailable(Exception ex) =>
+            ex.Message.Contains("Cổng thanh toán không tồn tại", StringComparison.OrdinalIgnoreCase)
+            || ex.Message.Contains("tạm dừng", StringComparison.OrdinalIgnoreCase);
+
+        CreatePaymentLinkResponse paymentResponse;
+        try
         {
-            BuyerNotGetInvoice = buyerNotGetInvoice,
-            TaxPercentage = taxPercentage.HasValue ? (TaxPercentage?)taxPercentage.Value : null
-        };
-
-        var paymentResponse = await _orderClient.PaymentRequests.CreateAsync(paymentRequest);
+            // First try with richer payload for better invoice metadata.
+            paymentResponse = await _orderClient.PaymentRequests.CreateAsync(BuildPaymentRequest(minimal: false));
+        }
+        catch (Exception ex) when (IsGatewayUnavailable(ex))
+        {
+            try
+            {
+                // Retry with minimal required payload using OrderClient.
+                paymentResponse = await _orderClient.PaymentRequests.CreateAsync(BuildPaymentRequest(minimal: true));
+            }
+            catch (Exception exOrderMinimal) when (IsGatewayUnavailable(exOrderMinimal))
+            {
+                try
+                {
+                    // Final fallback: try TransferClient keys in case merchant only enabled one channel/key-set.
+                    paymentResponse = await _transferClient.PaymentRequests.CreateAsync(BuildPaymentRequest(minimal: true));
+                }
+                catch (Exception exTransfer) when (IsGatewayUnavailable(exTransfer))
+                {
+                    throw new InvalidOperationException(
+                        "PayOS gateway for this merchant is unavailable (not found or suspended). Please activate VietQR/payment gateway in PayOS Dashboard.",
+                        exTransfer);
+                }
+            }
+        }
 
         var order = new PayOSOrder
         {
