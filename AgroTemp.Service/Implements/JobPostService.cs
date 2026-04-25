@@ -1204,21 +1204,34 @@ namespace AgroTemp.Service.Implements
                     .GetListAsync(
                         predicate: ja =>
                             ja.JobPostId == jobPostId &&
-                            ja.StatusId == (int)ApplicationStatus.Accepted);
-
-                var workDateCounts = acceptedApplications
-                    .Where(ja => ja.WorkDates != null)
-                    .SelectMany(ja => ja.WorkDates!.Select(dt => DateOnly.FromDateTime(dt)))
-                    .GroupBy(date => date)
-                    .ToDictionary(g => g.Key, g => g.Count());
+                            ja.StatusId == (int)ApplicationStatus.Accepted,
+                        include: q => q
+                            .Include(ja => ja.Worker)
+                                .ThenInclude(w => w.User));
 
                 var result = jobPost.SelectedDays
-                    .Select(day => new WorkersPerDayDTO
+                    .OrderBy(day => day)
+                    .Select(day =>
                     {
-                        Date = day,
-                        AcceptedWorkerCount = workDateCounts.TryGetValue(day, out var count) ? count : 0
+                        var workersOnDay = acceptedApplications
+                            .Where(ja => ja.WorkDates != null &&
+                                         ja.WorkDates.Any(dt => DateOnly.FromDateTime(dt) == day))
+                            .Select(ja => new WorkerSummaryDTO
+                            {
+                                WorkerId   = ja.Worker.Id,
+                                FullName   = ja.Worker.FullName,
+                                PhoneNumber = ja.Worker.User?.PhoneNumber ?? string.Empty,
+                                AvatarUrl  = ja.Worker.AvatarUrl
+                            })
+                            .ToList();
+
+                        return new WorkersPerDayDTO
+                        {
+                            Date = day,
+                            AcceptedWorkerCount = workersOnDay.Count,
+                            Workers = workersOnDay
+                        };
                     })
-                    .OrderBy(x => x.Date)
                     .ToList();
 
                 return result;
