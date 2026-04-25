@@ -187,8 +187,38 @@ namespace AgroTemp.Service.Implements
                 if (jobPost == null)
                     throw new KeyNotFoundException("Job post not found.");
 
-                if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
-                    throw new InvalidOperationException("This job has already reached its required worker capacity.");
+                // Per-day capacity check (Daily jobs)
+                if (request.WorkDates != null && request.WorkDates.Any())
+                {
+                    var activeApplications = await _unitOfWork.GetRepository<JobApplication>()
+                        .GetListAsync(
+                            predicate: ja => ja.JobPostId == request.JobPostId &&
+                                             ja.StatusId != (int)ApplicationStatus.Rejected &&
+                                             ja.StatusId != (int)ApplicationStatus.Cancelled);
+
+                    var requestedDates = request.WorkDates
+                        .Select(dt => DateOnly.FromDateTime(dt))
+                        .Distinct()
+                        .ToList();
+
+                    foreach (var date in requestedDates)
+                    {
+                        var filledSlots = activeApplications
+                            .Count(ja => ja.WorkDates != null &&
+                                         ja.WorkDates.Any(wd => DateOnly.FromDateTime(wd) == date));
+
+                        if (filledSlots >= jobPost.WorkersNeeded)
+                            throw new InvalidOperationException(
+                                $"The job post has already reached its worker capacity for {date:yyyy-MM-dd}.");
+                    }
+                }
+                else
+                {
+                    // PerJob type — fall back to the global accepted-worker check
+                    if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
+                        throw new InvalidOperationException(
+                            "This job has already reached its required worker capacity.");
+                }
 
                 if (worker.User.WarningCount > 3)
                 {
