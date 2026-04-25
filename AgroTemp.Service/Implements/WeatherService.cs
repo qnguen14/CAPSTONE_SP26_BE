@@ -100,6 +100,12 @@ public class WeatherService : IWeatherService
         if (string.IsNullOrWhiteSpace(apiKey))
             apiKey = _configuration["OpenWeather:SecretKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
+            apiKey = Environment.GetEnvironmentVariable("OPENWEATHER_API_KEY");
+        if (string.IsNullOrWhiteSpace(apiKey))
+            apiKey = Environment.GetEnvironmentVariable("OPEN_WEATHER_API_KEY");
+        if (string.IsNullOrWhiteSpace(apiKey))
+            apiKey = Environment.GetEnvironmentVariable("OPENWEATHER_SECRET_KEY");
+        if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("OpenWeather API key is not configured.");
         return apiKey;
     }
