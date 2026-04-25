@@ -187,15 +187,77 @@ namespace AgroTemp.Service.Implements
                 if (jobPost == null)
                     throw new KeyNotFoundException("Job post not found.");
 
-                if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
-                    throw new InvalidOperationException("This job has already reached its required worker capacity.");
+                var activeApplications = await _unitOfWork.GetRepository<JobApplication>()
+                    .GetListAsync(
+                        predicate: ja => ja.JobPostId == request.JobPostId &&
+                                         ja.StatusId != (int)ApplicationStatus.Rejected &&
+                                         ja.StatusId != (int)ApplicationStatus.Cancelled);
+
+                // Daily job: enforce day-level validation and capacity checks.
+                if (jobPost.JobTypeId == (int)JobType.Daily)
+                {
+                    if (request.WorkDates == null || !request.WorkDates.Any())
+                        throw new InvalidOperationException("Work dates are required for daily jobs.");
+
+                    var requestedDates = request.WorkDates
+                        .Select(dt => DateOnly.FromDateTime(dt))
+                        .Distinct()
+                        .ToList();
+
+                    if (requestedDates.Count != request.WorkDates.Count)
+                        throw new InvalidOperationException("Duplicate work dates are not allowed in one application.");
+
+                    // Requested dates must belong to the job post selected days.
+                    var invalidDates = requestedDates
+                        .Where(d => !jobPost.SelectedDays.Contains(d))
+                        .ToList();
+                    if (invalidDates.Any())
+                        throw new InvalidOperationException(
+                            $"Invalid work date(s): {string.Join(", ", invalidDates.Select(d => d.ToString("yyyy-MM-dd")))}.");
+
+                    // A worker cannot apply to the same job post for overlapping dates.
+                    var workerExistingDates = activeApplications
+                        .Where(ja => ja.WorkerId == worker.Id && ja.WorkDates != null)
+                        .SelectMany(ja => ja.WorkDates!.Select(wd => DateOnly.FromDateTime(wd)))
+                        .ToHashSet();
+
+                    var overlappingDates = requestedDates
+                        .Where(d => workerExistingDates.Contains(d))
+                        .ToList();
+                    if (overlappingDates.Any())
+                        throw new InvalidOperationException(
+                            $"You have already applied for date(s): {string.Join(", ", overlappingDates.Select(d => d.ToString("yyyy-MM-dd")))}.");
+
+                    foreach (var date in requestedDates)
+                    {
+                        var filledSlots = activeApplications
+                            .Count(ja => ja.WorkDates != null &&
+                                         ja.WorkDates.Any(wd => DateOnly.FromDateTime(wd) == date));
+
+                        if (filledSlots >= jobPost.WorkersNeeded)
+                            throw new InvalidOperationException(
+                                $"The job post has already reached its worker capacity for {date:yyyy-MM-dd}.");
+                    }
+                }
+                else
+                {
+                    // PerJob type
+                    var alreadyApplied = activeApplications
+                        .Any(ja => ja.WorkerId == worker.Id);
+                    if (alreadyApplied)
+                        throw new InvalidOperationException("You have already applied for this job post.");
+
+                    if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
+                        throw new InvalidOperationException(
+                            "This job has already reached its required worker capacity.");
+                }
 
                 if (worker.User.WarningCount > 3)
                 {
                     throw new UnauthorizedAccessException("Worker over warning dispute");
                 }
 
-                if (DateTime.Now <= worker.User.LastWarnedAt?.AddDays(worker.User.WarningCount * 3))
+                if (DateTime.UtcNow <= worker.User.LastWarnedAt?.AddDays(worker.User.WarningCount * 3))
                 {
                     throw new UnauthorizedAccessException($"Worker can't apply job post before {worker.User.LastWarnedAt?.AddDays(worker.User.WarningCount * 3)}");
                 }
