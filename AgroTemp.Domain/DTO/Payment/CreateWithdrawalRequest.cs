@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AgroTemp.Domain.DTO.Payment;
 
@@ -41,6 +43,7 @@ public class CreateWithdrawalRequest
     [Range(1, long.MaxValue, ErrorMessage = "Amount must be greater than 0")]
     public decimal Amount { get; set; }
 
+    [JsonConverter(typeof(BinBankJsonConverter))]
     [EnumDataType(typeof(BinBank), ErrorMessage = "ToBin must be a valid bank BIN from BinBank enum")]
     public BinBank ToBin { get; set; }
 
@@ -52,4 +55,51 @@ public class CreateWithdrawalRequest
     public List<string> Category { get; set; } = new();
 
     public string? AccountHolderName { get; set; }
+}
+
+public sealed class BinBankJsonConverter : JsonConverter<BinBank>
+{
+    public override BinBank Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out var numericBin))
+        {
+            return ParseBinValue(numericBin);
+        }
+
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var rawValue = reader.GetString()?.Trim();
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                throw new JsonException("ToBin must not be empty.");
+            }
+
+            if (int.TryParse(rawValue, out var parsedNumericBin))
+            {
+                return ParseBinValue(parsedNumericBin);
+            }
+
+            if (Enum.TryParse<BinBank>(rawValue, true, out var parsedByName))
+            {
+                return parsedByName;
+            }
+        }
+
+        throw new JsonException("ToBin must be a valid bank BIN.");
+    }
+
+    public override void Write(Utf8JsonWriter writer, BinBank value, JsonSerializerOptions options)
+    {
+        writer.WriteNumberValue((int)value);
+    }
+
+    private static BinBank ParseBinValue(int numericBin)
+    {
+        if (!Enum.IsDefined(typeof(BinBank), numericBin))
+        {
+            throw new JsonException("ToBin must be a valid bank BIN.");
+        }
+
+        return (BinBank)numericBin;
+    }
 }
