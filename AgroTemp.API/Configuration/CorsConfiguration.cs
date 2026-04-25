@@ -1,4 +1,4 @@
-﻿namespace AgroTemp.API.Configuration
+namespace AgroTemp.API.Configuration
 {
     public static class CorsConfiguration
     {
@@ -12,7 +12,9 @@
                         .WithOrigins(
                             "http://localhost:3000",
                             "http://localhost:8081",
-                            "https://agrotemp-frontend.vercel.app"
+                            "https://agrotemp-five.vercel.app",
+                            "https://www.agrotemp.dev",
+                            "https://api.banklookup.net"
                         )
                         .AllowAnyHeader()
                         .AllowAnyMethod()

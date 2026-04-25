@@ -187,7 +187,6 @@ namespace AgroTemp.Service.Implements
                 if (jobPost == null)
                     throw new KeyNotFoundException("Job post not found.");
 
-                // TC_BE_005: Reject application when job has reached worker capacity
                 if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
                     throw new InvalidOperationException("This job has already reached its required worker capacity.");
 
