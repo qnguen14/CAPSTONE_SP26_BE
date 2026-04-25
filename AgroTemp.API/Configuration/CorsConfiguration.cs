@@ -12,10 +12,10 @@ namespace AgroTemp.API.Configuration
                         .WithOrigins(
                             "http://localhost:3000",
                             "http://localhost:8081",
-                            "https://agrotemp-five.vercel.app",
+                            "https://capstone-sp-26-fe.vercel.app",
                             "https://www.agrotemp.dev",
-                            "https://agrotemp.dev",
-                            "https://api.banklookup.net"
+                            "https://api.banklookup.net",
+                            "https://trillion-clamor-sinister.ngrok-free.dev"
                         )
                         .AllowAnyHeader()
                         .AllowAnyMethod()
