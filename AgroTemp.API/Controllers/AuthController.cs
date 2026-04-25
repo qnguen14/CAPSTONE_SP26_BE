@@ -202,7 +202,7 @@ public class AuthController : Controller
             var apiResponse = new ApiResponse<LoginResponse>
             {
                 StatusCode = StatusCodes.Status200OK,
-                Message = "Google login successful",
+                Message = "Đăng nhập bằng Google thành công",
                 Data = response
             };
             return Ok(apiResponse);

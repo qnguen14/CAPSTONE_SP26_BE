@@ -9,7 +9,6 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
     public class UpdateJobPostRequest
     {
         public Guid FarmerProfileId { get; set; }
-        public string ContactName { get; set; }
         public List<Guid> SkillIds { get; set; } = new();
         public Guid FarmId { get; set; }
         public Guid JobCategoryId { get; set; }

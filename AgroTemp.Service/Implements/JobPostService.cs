@@ -316,14 +316,58 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
+                if (request == null)
+                {
+                    throw new ArgumentNullException(nameof(request));
+                }
+
+                if (!Enum.IsDefined(typeof(JobType), request.JobTypeId))
+                {
+                    throw new ArgumentException("Invalid job type.");
+                }
+
+                if (request.WorkersNeeded <= 0)
+                {
+                    throw new ArgumentException("WorkersNeeded must be greater than 0.");
+                }
+
+                if (request.JobCategoryId == Guid.Empty)
+                {
+                    throw new ArgumentException("JobCategoryId is required.");
+                }
+
+                if (request.FarmId == Guid.Empty)
+                {
+                    throw new ArgumentException("FarmId is required.");
+                }
+
                 var existingJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
                         predicate: jp => jp.Id == id,
-                        include: q => q.Include(jp => jp.JobSkillRequirements).ThenInclude(jsr => jsr.Skill));
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill));
 
                 if (existingJobPost == null)
                 {
                     return null;
+                }
+
+                var existingCategory = await _unitOfWork.GetRepository<JobCategory>()
+                    .FirstOrDefaultAsync(predicate: jc => jc.Id == request.JobCategoryId);
+
+                if (existingCategory == null)
+                {
+                    throw new ArgumentException($"Invalid job category ID: {request.JobCategoryId}");
+                }
+
+                var existingFarm = await _unitOfWork.GetRepository<Farm>()
+                    .FirstOrDefaultAsync(predicate: f => f.Id == request.FarmId);
+
+                if (existingFarm == null)
+                {
+                    throw new ArgumentException($"Invalid farm ID: {request.FarmId}");
                 }
 
                 if (request.SkillIds != null)
@@ -367,14 +411,30 @@ namespace AgroTemp.Service.Implements
                     }
                 }
 
+                var currentCreatedAt = existingJobPost.CreatedAt;
+                var currentPublishedAt = existingJobPost.PublishedAt;
                 _mapper.UpdateJobPostRequestToJobPost(request, existingJobPost);
+
+                var billableDays = ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays);
+                existingJobPost.WorkersNeeded = request.JobTypeId == (int)JobType.Daily
+                    ? request.WorkersNeeded * billableDays
+                    : request.WorkersNeeded;
+
+                // Keep system-managed timestamps stable on update.
+                existingJobPost.CreatedAt = currentCreatedAt;
+                existingJobPost.PublishedAt = currentPublishedAt;
+                existingJobPost.UpdatedAt = DateTime.UtcNow;
+
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
                 await _unitOfWork.SaveChangesAsync();
 
                 var updatedJobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
                         predicate: jp => jp.Id == id,
-                        include: q => q.Include(jp => jp.JobSkillRequirements).ThenInclude(jsr => jsr.Skill));
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobSkillRequirements)
+                            .ThenInclude(jsr => jsr.Skill));
 
                 var result = _mapper.JobPostToJobPostDto(updatedJobPost ?? existingJobPost);
 
