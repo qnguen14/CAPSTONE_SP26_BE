@@ -354,6 +354,13 @@ namespace AgroTemp.Service.Implements
                     return null;
                 }
 
+                var originalWageAmount = existingJobPost.WageAmount;
+                var originalWorkersNeeded = existingJobPost.WorkersNeeded;
+                var originalJobTypeId = existingJobPost.JobTypeId;
+                var originalStartDate = existingJobPost.StartDate;
+                var originalEndDate = existingJobPost.EndDate;
+                var originalSelectedDays = existingJobPost.SelectedDays?.ToList() ?? new List<DateOnly>();
+
                 var existingCategory = await _unitOfWork.GetRepository<JobCategory>()
                     .FirstOrDefaultAsync(predicate: jc => jc.Id == request.JobCategoryId);
 
@@ -419,6 +426,36 @@ namespace AgroTemp.Service.Implements
                 existingJobPost.WorkersNeeded = request.JobTypeId == (int)JobType.Daily
                     ? request.WorkersNeeded * billableDays
                     : request.WorkersNeeded;
+
+                var originalBillableDays = originalJobTypeId == (int)JobType.Daily
+                    ? ResolveBillableDays(originalStartDate, originalEndDate, originalSelectedDays)
+                    : 1;
+
+                var oldLockAmount = originalJobTypeId == (int)JobType.PerJob
+                    ? originalWageAmount
+                    : originalWageAmount * originalWorkersNeeded * originalBillableDays;
+
+                var newLockAmount = request.JobTypeId == (int)JobType.PerJob
+                    ? request.WageAmount
+                    : request.WageAmount * request.WorkersNeeded * billableDays;
+
+                var lockDelta = newLockAmount - oldLockAmount;
+
+                if (lockDelta > 0)
+                {
+                    try
+                    {
+                        await _walletService.LockAmountForJobPostAsync(existingJobPost.Farmer.UserId, existingJobPost.Id, lockDelta);
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        throw new Exception("Insufficient wallet balance to update job post. Please top up your wallet.", ex);
+                    }
+                }
+                else if (lockDelta < 0)
+                {
+                    await _walletService.RefundLockedAmountForJobPostAsync(existingJobPost.Farmer.UserId, existingJobPost.Id, Math.Abs(lockDelta));
+                }
 
                 // Keep system-managed timestamps stable on update.
                 existingJobPost.CreatedAt = currentCreatedAt;
