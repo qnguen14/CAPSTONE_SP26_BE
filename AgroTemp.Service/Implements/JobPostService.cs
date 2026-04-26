@@ -354,6 +354,10 @@ namespace AgroTemp.Service.Implements
                     return null;
                 }
 
+                var originalWageAmount = existingJobPost.WageAmount;
+                var originalWorkersNeeded = existingJobPost.WorkersNeeded;
+                var originalJobTypeId = existingJobPost.JobTypeId;
+
                 var existingCategory = await _unitOfWork.GetRepository<JobCategory>()
                     .FirstOrDefaultAsync(predicate: jc => jc.Id == request.JobCategoryId);
 
@@ -419,6 +423,32 @@ namespace AgroTemp.Service.Implements
                 existingJobPost.WorkersNeeded = request.JobTypeId == (int)JobType.Daily
                     ? request.WorkersNeeded * billableDays
                     : request.WorkersNeeded;
+
+                var oldLockAmount = originalJobTypeId == (int)JobType.PerJob
+                    ? originalWageAmount
+                    : originalWageAmount * originalWorkersNeeded;
+
+                var newLockAmount = request.JobTypeId == (int)JobType.PerJob
+                    ? request.WageAmount
+                    : request.WageAmount * existingJobPost.WorkersNeeded;
+
+                var lockDelta = newLockAmount - oldLockAmount;
+
+                if (lockDelta > 0)
+                {
+                    try
+                    {
+                        await _walletService.LockAmountForJobPostAsync(existingJobPost.Farmer.UserId, existingJobPost.Id, lockDelta);
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        throw new Exception("Insufficient wallet balance to update job post. Please top up your wallet.", ex);
+                    }
+                }
+                else if (lockDelta < 0)
+                {
+                    await _walletService.RefundLockedAmountForJobPostAsync(existingJobPost.Farmer.UserId, existingJobPost.Id, Math.Abs(lockDelta));
+                }
 
                 // Keep system-managed timestamps stable on update.
                 existingJobPost.CreatedAt = currentCreatedAt;
@@ -496,13 +526,9 @@ namespace AgroTemp.Service.Implements
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
 
                 // Refund the locked amount back to the farmer's wallet
-                var billableDays = existingJobPost.JobTypeId == (int)JobType.Daily
-                    ? ResolveBillableDays(existingJobPost.StartDate, existingJobPost.EndDate, existingJobPost.SelectedDays)
-                    : 1;
-
                 var lockedAmount = existingJobPost.JobTypeId == (int)JobType.PerJob
                     ? existingJobPost.WageAmount
-                    : existingJobPost.WageAmount * existingJobPost.WorkersNeeded * billableDays;
+                    : existingJobPost.WageAmount * existingJobPost.WorkersNeeded;
 
                 if (lockedAmount > 0)
                 {
