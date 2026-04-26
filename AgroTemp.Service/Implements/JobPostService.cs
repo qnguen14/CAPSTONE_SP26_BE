@@ -357,9 +357,6 @@ namespace AgroTemp.Service.Implements
                 var originalWageAmount = existingJobPost.WageAmount;
                 var originalWorkersNeeded = existingJobPost.WorkersNeeded;
                 var originalJobTypeId = existingJobPost.JobTypeId;
-                var originalStartDate = existingJobPost.StartDate;
-                var originalEndDate = existingJobPost.EndDate;
-                var originalSelectedDays = existingJobPost.SelectedDays?.ToList() ?? new List<DateOnly>();
 
                 var existingCategory = await _unitOfWork.GetRepository<JobCategory>()
                     .FirstOrDefaultAsync(predicate: jc => jc.Id == request.JobCategoryId);
@@ -427,17 +424,13 @@ namespace AgroTemp.Service.Implements
                     ? request.WorkersNeeded * billableDays
                     : request.WorkersNeeded;
 
-                var originalBillableDays = originalJobTypeId == (int)JobType.Daily
-                    ? ResolveBillableDays(originalStartDate, originalEndDate, originalSelectedDays)
-                    : 1;
-
                 var oldLockAmount = originalJobTypeId == (int)JobType.PerJob
                     ? originalWageAmount
-                    : originalWageAmount * originalWorkersNeeded * originalBillableDays;
+                    : originalWageAmount * originalWorkersNeeded;
 
                 var newLockAmount = request.JobTypeId == (int)JobType.PerJob
                     ? request.WageAmount
-                    : request.WageAmount * request.WorkersNeeded * billableDays;
+                    : request.WageAmount * existingJobPost.WorkersNeeded;
 
                 var lockDelta = newLockAmount - oldLockAmount;
 
@@ -533,13 +526,9 @@ namespace AgroTemp.Service.Implements
                 _unitOfWork.GetRepository<JobPost>().UpdateAsync(existingJobPost);
 
                 // Refund the locked amount back to the farmer's wallet
-                var billableDays = existingJobPost.JobTypeId == (int)JobType.Daily
-                    ? ResolveBillableDays(existingJobPost.StartDate, existingJobPost.EndDate, existingJobPost.SelectedDays)
-                    : 1;
-
                 var lockedAmount = existingJobPost.JobTypeId == (int)JobType.PerJob
                     ? existingJobPost.WageAmount
-                    : existingJobPost.WageAmount * existingJobPost.WorkersNeeded * billableDays;
+                    : existingJobPost.WageAmount * existingJobPost.WorkersNeeded;
 
                 if (lockedAmount > 0)
                 {
