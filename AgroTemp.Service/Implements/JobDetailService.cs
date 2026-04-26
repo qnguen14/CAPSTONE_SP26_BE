@@ -493,6 +493,11 @@ namespace AgroTemp.Service.Implements
                     }
                 }
 
+                if (jobType == JobType.PerJob && !isLastDetail)
+                {
+                    throw new Exception("Per-plot jobs can only be approved on the last report day");
+                }
+
                 await _walletService.ReleaseEscrowAndPayWorkerAsync(jobDetail, workerPayment, refund, isLastDetail);
 
                 _unitOfWork.GetRepository<JobDetail>().UpdateAsync(jobDetail);
