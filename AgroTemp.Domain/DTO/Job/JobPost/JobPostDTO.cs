@@ -8,6 +8,13 @@ using AgroTemp.Domain.DTO.FarmerProfile;
 
 namespace AgroTemp.Domain.DTO.Job.JobPost
 {
+    public class WorkerJobPostDTO {
+        public Guid Id { get; set; }
+        public string FullName { get; set; }
+        public string PhoneNumber { get; set; }
+        public string AvatarUrl { get; set; }
+    }
+
     public class JobPostDTO
     {
         public Guid Id { get; set; }
@@ -27,6 +34,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public TimeOnly EndTime { get; set; }
         public int WorkersNeeded { get; set; }
         public int WorkersAccepted { get; set; }
+        public List<WorkerJobPostDTO> Workers { get; set; } = new List<WorkerJobPostDTO>();
         public int JobTypeId { get; set; }
         public decimal WageAmount { get; set; }
         public List<string>? Requirements { get; set; } = new List<string>();

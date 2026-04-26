@@ -3,6 +3,7 @@ using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.DTO.Notification;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
+using AgroTemp.Domain.Metadata;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Helpers;
@@ -42,7 +43,10 @@ namespace AgroTemp.Service.Implements
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobApplications)
+                                .ThenInclude(ja => ja.Worker)
+                                    .ThenInclude(w => w.User),
                         orderBy: jp => jp.OrderBy(x => x.Title));
                 if (jobPosts == null || !jobPosts.Any())
                 {
@@ -68,7 +72,10 @@ namespace AgroTemp.Service.Implements
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill));
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobApplications)
+                                .ThenInclude(ja => ja.Worker)
+                                    .ThenInclude(w => w.User));
                 if (jobPost == null)
                 {
                     return null;
@@ -100,7 +107,10 @@ namespace AgroTemp.Service.Implements
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobApplications)
+                                .ThenInclude(ja => ja.Worker)
+                                    .ThenInclude(w => w.User),
                         orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -138,7 +148,10 @@ namespace AgroTemp.Service.Implements
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobApplications)
+                                .ThenInclude(ja => ja.Worker)
+                                    .ThenInclude(w => w.User),
                         orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -174,7 +187,10 @@ namespace AgroTemp.Service.Implements
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobApplications)
+                                .ThenInclude(ja => ja.Worker)
+                                    .ThenInclude(w => w.User),
                         orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -680,7 +696,10 @@ namespace AgroTemp.Service.Implements
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobApplications)
+                                .ThenInclude(ja => ja.Worker)
+                                    .ThenInclude(w => w.User),
                         orderBy: jp => sortByDateDesc ? jp.OrderByDescending(x => x.CreatedAt) : jp.OrderBy(x => x.CreatedAt));
                 if (jobPosts == null || !jobPosts.Any())
                 {
@@ -695,10 +714,13 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true)
+        public async Task<PaginatedResponse<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true, int page = 1, int limit = 10)
         {
             try
             {
+                page = page < 1 ? 1 : page;
+                limit = limit < 1 ? 10 : limit;
+
                 var currentUserId = GetCurrentUserId();
                 var farmer = await _unitOfWork.GetRepository<Farmer>()
                     .FirstOrDefaultAsync(predicate: f => f.UserId == currentUserId);
@@ -718,14 +740,46 @@ namespace AgroTemp.Service.Implements
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobApplications)
+                                .ThenInclude(ja => ja.Worker)
+                                    .ThenInclude(w => w.User),
                         orderBy: jp => sortByDateDesc ? jp.OrderByDescending(x => x.CreatedAt) : jp.OrderBy(x => x.CreatedAt));
+
                 if (jobPosts == null || !jobPosts.Any())
                 {
-                    return null;
+                    return new PaginatedResponse<JobPostDTO>
+                    {
+                        Data = new List<JobPostDTO>(),
+                        Pagination = new PaginationMetadata
+                        {
+                            Page = page,
+                            Limit = limit,
+                            Total = 0,
+                            TotalPages = 0
+                        }
+                    };
                 }
-                var result = _mapper.JobPostsToJobPostDtos(jobPosts);
-                return result;
+
+                var total = jobPosts.Count;
+                var pagedJobPosts = jobPosts
+                    .Skip((page - 1) * limit)
+                    .Take(limit)
+                    .ToList();
+
+                var result = _mapper.JobPostsToJobPostDtos(pagedJobPosts);
+
+                return new PaginatedResponse<JobPostDTO>
+                {
+                    Data = result,
+                    Pagination = new PaginationMetadata
+                    {
+                        Page = page,
+                        Limit = limit,
+                        Total = total,
+                        TotalPages = (int)Math.Ceiling((double)total / limit)
+                    }
+                };
             }
             catch (Exception ex)
             {
