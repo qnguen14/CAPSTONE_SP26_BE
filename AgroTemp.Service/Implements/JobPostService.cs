@@ -967,9 +967,47 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
+                filter ??= new JobSearchFilterRequest();
+
+                Worker? currentWorker = null;
                 filter.PageNumber = filter.PageNumber < 1 ? 1 : filter.PageNumber;
                 filter.PageSize = filter.PageSize < 1 ? 10 : Math.Min(filter.PageSize, 100); // Min 1, max 100 items per page
                 var skip = (filter.PageNumber - 1) * filter.PageSize;
+
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId != Guid.Empty)
+                {
+                    currentWorker = await _unitOfWork.GetRepository<Worker>()
+                        .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId);
+
+                    if (currentWorker != null)
+                    {
+                        if (!filter.MaxDistanceKm.HasValue || filter.MaxDistanceKm.Value <= 0)
+                        {
+                            filter.MaxDistanceKm = currentWorker.TravelRadiusKmPreference ?? 20;
+                        }
+
+                        var hasCoordinates =
+                            filter.WorkerLatitude.HasValue &&
+                            filter.WorkerLongitude.HasValue &&
+                            (filter.WorkerLatitude.Value != 0 || filter.WorkerLongitude.Value != 0);
+
+                        if (!hasCoordinates && !string.IsNullOrWhiteSpace(currentWorker.PrimaryLocation))
+                        {
+                            var primaryLocation = currentWorker.PrimaryLocation.Trim();
+                            var locationFarm = await _unitOfWork.GetRepository<Farm>()
+                                .FirstOrDefaultAsync(predicate:
+                                    f => f.LocationName.ToLower() == primaryLocation.ToLower() ||
+                                         f.Address.ToLower().Contains(primaryLocation.ToLower()));
+
+                            if (locationFarm != null)
+                            {
+                                filter.WorkerLatitude = locationFarm.Latitude;
+                                filter.WorkerLongitude = locationFarm.Longitude;
+                            }
+                        }
+                    }
+                }
 
                 // Get all published and in-progress job posts with related data
                 var query = await _unitOfWork.GetRepository<JobPost>()
@@ -995,6 +1033,23 @@ namespace AgroTemp.Service.Implements
 
                 // Apply filters
                 var filtered = JobDiscoveryHelper.ApplyJobFilters(query.ToList(), filter);
+
+                // Fallback: if worker has a primary location but coordinates cannot be resolved,
+                // default to that location name/address text filter.
+                var hasFinalCoordinates =
+                    filter.WorkerLatitude.HasValue &&
+                    filter.WorkerLongitude.HasValue &&
+                    (filter.WorkerLatitude.Value != 0 || filter.WorkerLongitude.Value != 0);
+
+                if (!hasFinalCoordinates && currentWorker != null && !string.IsNullOrWhiteSpace(currentWorker.PrimaryLocation))
+                {
+                    var primaryLocation = currentWorker.PrimaryLocation.Trim();
+                    filtered = filtered
+                        .Where(jp => jp.Farm != null &&
+                                     ((!string.IsNullOrWhiteSpace(jp.Farm.LocationName) && jp.Farm.LocationName.Contains(primaryLocation, StringComparison.OrdinalIgnoreCase)) ||
+                                      (!string.IsNullOrWhiteSpace(jp.Farm.Address) && jp.Farm.Address.Contains(primaryLocation, StringComparison.OrdinalIgnoreCase))))
+                        .ToList();
+                }
 
                 // Convert to DTOs using mapper
                 var jobDtos = _mapper.JobPostsToJobDiscoveryDtos(filtered);
