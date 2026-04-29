@@ -19,6 +19,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
     {
         public Guid Id { get; set; }
         public Guid FarmerProfileId { get; set; }
+        public Guid FarmerUserId { get; set; }
         public FarmerProfileSummaryDTO FarmerProfile { get; set; }
         public string ContactName { get; set; }
         public List<JobSkillRequirementSummaryDTO> JobSkillRequirements { get; set; } = new();
