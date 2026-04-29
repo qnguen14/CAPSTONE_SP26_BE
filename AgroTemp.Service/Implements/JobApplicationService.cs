@@ -338,11 +338,66 @@ namespace AgroTemp.Service.Implements
 
                 if (request.StatusId == (int)ApplicationStatus.Accepted)
                 {
-                    existingJobApplication.JobPost.WorkersAccepted += 1;
+                    var jobPost = existingJobApplication.JobPost;
 
-                    if (existingJobApplication.JobPost.WorkersAccepted >= existingJobApplication.JobPost.WorkersNeeded)
+                    var acceptedApplications = await _unitOfWork.GetRepository<JobApplication>()
+                        .GetListAsync(predicate: ja =>
+                            ja.JobPostId == jobPost.Id &&
+                            ja.StatusId == (int)ApplicationStatus.Accepted &&
+                            ja.Id != existingJobApplication.Id);
+
+                    if (jobPost.JobTypeId == (int)JobType.Daily)
                     {
-                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Closed;
+                        var requestedDates = (existingJobApplication.WorkDates ?? new List<DateTime>())
+                            .Select(d => DateOnly.FromDateTime(d))
+                            .Distinct()
+                            .ToList();
+
+                        if (!requestedDates.Any())
+                            throw new InvalidOperationException("Cannot accept a daily job application without work dates.");
+
+                        foreach (var date in requestedDates)
+                        {
+                            var acceptedCountForDate = acceptedApplications
+                                .Count(ja => ja.WorkDates != null &&
+                                             ja.WorkDates.Any(wd => DateOnly.FromDateTime(wd) == date));
+
+                            if (acceptedCountForDate >= jobPost.WorkersNeeded)
+                                throw new InvalidOperationException($"Cannot accept application: worker capacity for {date:yyyy-MM-dd} is full.");
+                        }
+
+                        var acceptedDateCounts = acceptedApplications
+                            .Where(ja => ja.WorkDates != null)
+                            .SelectMany(ja => ja.WorkDates!.Select(wd => DateOnly.FromDateTime(wd)))
+                            .GroupBy(d => d)
+                            .ToDictionary(g => g.Key, g => g.Count());
+
+                        foreach (var date in requestedDates)
+                        {
+                            acceptedDateCounts.TryGetValue(date, out var current);
+                            acceptedDateCounts[date] = current + 1;
+                        }
+
+                        var maxAcceptedOnAnyDay = acceptedDateCounts.Any() ? acceptedDateCounts.Values.Max() : 0;
+                        jobPost.WorkersAccepted = maxAcceptedOnAnyDay;
+
+                        var allDaysFull = (jobPost.SelectedDays ?? new List<DateOnly>())
+                            .Distinct()
+                            .All(day => acceptedDateCounts.TryGetValue(day, out var count) && count >= jobPost.WorkersNeeded);
+
+                        if (allDaysFull)
+                        {
+                            jobPost.StatusId = (int)JobPostStatus.Closed;
+                        }
+                    }
+                    else
+                    {
+                        jobPost.WorkersAccepted += 1;
+
+                        if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
+                        {
+                            jobPost.StatusId = (int)JobPostStatus.Closed;
+                        }
                     }
                 }
 
