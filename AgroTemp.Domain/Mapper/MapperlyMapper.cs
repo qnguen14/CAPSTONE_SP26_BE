@@ -120,9 +120,33 @@ public partial class MapperlyMapper : IMapperlyMapper
 
     // JobPost
     [MapProperty(nameof(JobPost.FarmerId), nameof(JobPostDTO.FarmerProfileId))]
+    [MapProperty(nameof(JobPost.Farmer.UserId), nameof(JobPostDTO.FarmerUserId))]
     [MapProperty(nameof(JobPost.Farmer.ContactName), nameof(JobPostDTO.ContactName))]
     [MapProperty(nameof(JobPost.Farmer), nameof(JobPostDTO.FarmerProfile))]
-    public partial JobPostDTO JobPostToJobPostDto(JobPost jobPost);
+    public partial JobPostDTO JobPostToJobPostDtoManual(JobPost jobPost);
+
+    public JobPostDTO JobPostToJobPostDto(JobPost jobPost)
+    {
+        if (jobPost == null) return null;
+        var dto = JobPostToJobPostDtoManual(jobPost);
+        
+        if (jobPost.JobApplications != null)
+        {
+            dto.Workers = jobPost.JobApplications
+                .Where(ja => ja.StatusId == (int)ApplicationStatus.Accepted && ja.Worker != null)
+                .Select(ja => new WorkerJobPostDTO
+                {
+                    Id = ja.Worker.Id,
+                    FullName = ja.Worker.FullName,
+                    PhoneNumber = ja.Worker.User?.PhoneNumber ?? string.Empty,
+                    AvatarUrl = ja.Worker.AvatarUrl
+                })
+                .ToList();
+        }
+
+        return dto;
+    }
+
     public partial List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
 
     // JobDiscovery

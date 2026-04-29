@@ -85,6 +85,26 @@ namespace AgroTemp.API.Configuration
                 return !string.IsNullOrWhiteSpace(val) ? val : (fallback ?? string.Empty);
             }
 
+            string GetConfigFromMany(string key, string[] envKeys, string? fallback = null)
+            {
+                var val = configuration[key];
+                if (!string.IsNullOrWhiteSpace(val))
+                {
+                    return val;
+                }
+
+                foreach (var envKey in envKeys)
+                {
+                    val = Environment.GetEnvironmentVariable(envKey);
+                    if (!string.IsNullOrWhiteSpace(val))
+                    {
+                        return val;
+                    }
+                }
+
+                return fallback ?? string.Empty;
+            }
+
             // payOS client for payment link flow (deposit/top-up)
             services.AddKeyedSingleton<PayOSClient>("OrderClient", (sp, _) => new PayOSClient(new PayOSOptions
             {
@@ -98,9 +118,18 @@ namespace AgroTemp.API.Configuration
             // payOS client for payout flow (withdraw)
             services.AddKeyedSingleton<PayOSClient>("TransferClient", (sp, _) => new PayOSClient(new PayOSOptions
             {
-                ClientId = GetConfig("PayOS:PayoutClientId", "PAYOS_PAYOUT_CLIENT_ID", GetConfig("PayOS:ClientId", "PAYOS_CLIENT_ID")),
-                ApiKey = GetConfig("PayOS:PayoutApiKey", "PAYOS_PAYOUT_API_KEY", GetConfig("PayOS:ApiKey", "PAYOS_API_KEY")),
-                ChecksumKey = GetConfig("PayOS:PayoutChecksumKey", "PAYOS_PAYOUT_CHECKSUM_KEY", GetConfig("PayOS:ChecksumKey", "PAYOS_CHECKSUM_KEY")),
+                ClientId = GetConfigFromMany(
+                    "PayOS:PayoutClientId",
+                    new[] { "PAYOS_PAYOUT_CLIENT_ID", "PAYOS_TRANSFER_CLIENT_ID" },
+                    GetConfig("PayOS:ClientId", "PAYOS_CLIENT_ID")),
+                ApiKey = GetConfigFromMany(
+                    "PayOS:PayoutApiKey",
+                    new[] { "PAYOS_PAYOUT_API_KEY", "PAYOS_TRANSFER_API_KEY" },
+                    GetConfig("PayOS:ApiKey", "PAYOS_API_KEY")),
+                ChecksumKey = GetConfigFromMany(
+                    "PayOS:PayoutChecksumKey",
+                    new[] { "PAYOS_PAYOUT_CHECKSUM_KEY", "PAYOS_TRANSFER_CHECKSUM_KEY" },
+                    GetConfig("PayOS:ChecksumKey", "PAYOS_CHECKSUM_KEY")),
                 LogLevel = LogLevel.Debug,
                 HttpClient = payoutProxyClient
             }));

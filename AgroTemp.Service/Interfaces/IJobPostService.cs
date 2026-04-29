@@ -1,5 +1,6 @@
 ﻿using AgroTemp.Domain.DTO.Job.JobPost;
 using AgroTemp.Domain.Entities;
+using AgroTemp.Domain.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,7 +32,7 @@ namespace AgroTemp.Service.Interfaces
 
 
         Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true);
-        Task<List<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true);
+        Task<PaginatedResponse<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true, int page = 1, int limit = 10);
 
 
         Task<JobPostDTO> SaveJobPostDraft(CreateJobPostRequest request);

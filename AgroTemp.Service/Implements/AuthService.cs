@@ -201,6 +201,7 @@ public class AuthService : BaseService<User>, IAuthService
             Token = token,
             ExpiresAt = DateTime.UtcNow.AddHours(24),
             Email = user.Email,
+            UserId = user.Id,
             Role = user.Role.ToString(),
             IsVerified = user.IsVerified
         };
