@@ -1,4 +1,3 @@
-using AgroTemp.Domain.Metadata;
 using System.ComponentModel.DataAnnotations;
 
 namespace AgroTemp.Domain.DTO.Farm
@@ -16,7 +15,7 @@ namespace AgroTemp.Domain.DTO.Farm
 
         public List<string>? ImageUrl { get; set; }
 
-        public FarmType? FarmType { get; set; }
+        public Guid? FarmTypeId { get; set; }
 
         public int? LivestockCount { get; set; }
 

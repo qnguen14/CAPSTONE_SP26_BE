@@ -31,8 +31,11 @@ public class Farm
     public decimal Longitude { get; set; }
 
     [Required]
-    [Column("farm_type")]
-    public FarmType FarmType { get; set; }
+    [Column("farm_type_id")]
+    public Guid FarmTypeId { get; set; }
+
+    [ForeignKey(nameof(FarmTypeId))]
+    public JobCategory FarmType { get; set; }
 
     [Column("livestock_count")]
     public int? LivestockCount { get; set; }

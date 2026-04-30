@@ -472,7 +472,7 @@ namespace AgroTemp.Service.Implements
                 else
                 {
                     // PerJob: release escrow only on the last work day
-                    // "Last day" = WorkDate matches EndDate, or the last entry in SelectedDays
+                    // "Last day" = WorkDate matches EndDate, or the last entry in JobPostDays
                     var workDate = jobDetail.WorkDate.HasValue
                         ? DateOnly.FromDateTime(jobDetail.WorkDate.Value)
                         : (DateOnly?)null;
@@ -481,9 +481,9 @@ namespace AgroTemp.Service.Implements
                     {
                         isLastDetail = workDate.Value >= jobPost.EndDate.Value;
                     }
-                    else if (jobPost.SelectedDays != null && jobPost.SelectedDays.Count > 0 && workDate.HasValue)
+                    else if (jobPost.JobPostDays != null && jobPost.JobPostDays.Count > 0 && workDate.HasValue)
                     {
-                        var lastSelectedDay = jobPost.SelectedDays.Max();
+                        var lastSelectedDay = jobPost.JobPostDays.Max(jpd => jpd.WorkDate);
                         isLastDetail = workDate.Value >= lastSelectedDay;
                     }
                     else

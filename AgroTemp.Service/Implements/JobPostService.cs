@@ -259,13 +259,52 @@ namespace AgroTemp.Service.Implements
                 throw new ArgumentException("WorkersNeeded must be greater than 0.");
             }
 
+            var dayRequests = request.JobPostDays ?? new List<JobPostDayRequest>();
+            if (request.JobTypeId == JobType.Daily)
+            {
+                if (!dayRequests.Any())
+                {
+                    throw new ArgumentException("JobPostDays are required for daily jobs.");
+                }
+
+                if (dayRequests.Any(d => d.WorkersNeeded <= 0))
+                {
+                    throw new ArgumentException("Each job post day must have WorkersNeeded greater than 0.");
+                }
+
+                var distinctDates = dayRequests.Select(d => d.WorkDate).Distinct().ToList();
+                if (distinctDates.Count != dayRequests.Count)
+                {
+                    throw new ArgumentException("Duplicate work dates are not allowed.");
+                }
+
+                if (distinctDates.Any(d => d < DateOnly.FromDateTime(DateTime.UtcNow)))
+                {
+                    throw new ArgumentException("Job post days cannot be in the past.");
+                }
+            }
+
             var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
             if (jobPost.Id == Guid.Empty)
             {
                 jobPost.Id = Guid.NewGuid();
             }
 
-            var workdays = ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays);
+            if (request.JobTypeId == JobType.Daily)
+            {
+                jobPost.JobPostDays = dayRequests
+                    .Select(d => new JobPostDay
+                    {
+                        Id = Guid.NewGuid(),
+                        JobPostId = jobPost.Id,
+                        WorkDate = d.WorkDate,
+                        WorkersNeeded = d.WorkersNeeded,
+                        WorkersAccepted = 0
+                    })
+                    .ToList();
+            }
+
+            var workdays = ResolveBillableDays(request.StartDate, request.EndDate, dayRequests.Select(d => d.WorkDate));
 
             if (request.JobTypeId == JobType.PerJob)
             {
@@ -273,7 +312,8 @@ namespace AgroTemp.Service.Implements
             }
             else if (request.JobTypeId == JobType.Daily)
             {
-                jobPost.WorkersNeeded = request.WorkersNeeded * workdays;
+                var totalWorkerDays = dayRequests.Sum(d => d.WorkersNeeded);
+                jobPost.WorkersNeeded = totalWorkerDays;
             }
 
             jobPost.FarmerId = farmer.Id;
@@ -282,12 +322,12 @@ namespace AgroTemp.Service.Implements
             jobPost.UpdatedAt = DateTime.UtcNow;
             jobPost.PublishedAt = request.PublishedAt;
 
-            var billableDays = request.JobTypeId == JobType.Daily
-                ? workdays
-                : 1;
+            var totalWorkerDaysForLock = request.JobTypeId == JobType.Daily
+                ? dayRequests.Sum(d => d.WorkersNeeded)
+                : request.WorkersNeeded;
             var lockAmount = request.JobTypeId == JobType.PerJob
                 ? request.WageAmount
-                : request.WageAmount * request.WorkersNeeded * billableDays;
+                : request.WageAmount * totalWorkerDaysForLock;
             try
             {
                 await _walletService.LockAmountForJobPostAsync(farmer.UserId, jobPost.Id, lockAmount);
@@ -320,6 +360,7 @@ namespace AgroTemp.Service.Implements
                 .FirstOrDefaultAsync(
                     predicate: jp => jp.Id == jobPost.Id,
                     include: q => q
+                        .Include(jp => jp.JobPostDays)
                         .Include(jp => jp.JobSkillRequirements)
                         .ThenInclude(jsr => jsr.Skill));
 
@@ -362,6 +403,7 @@ namespace AgroTemp.Service.Implements
                         predicate: jp => jp.Id == id,
                         include: q => q
                             .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobPostDays)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill));
 
@@ -431,22 +473,78 @@ namespace AgroTemp.Service.Implements
                     }
                 }
 
+                var originalJobPostDays = existingJobPost.JobPostDays.ToList();
                 var currentCreatedAt = existingJobPost.CreatedAt;
                 var currentPublishedAt = existingJobPost.PublishedAt;
                 _mapper.UpdateJobPostRequestToJobPost(request, existingJobPost);
 
-                var billableDays = ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays);
+                var dayRequests = request.JobPostDays ?? new List<JobPostDayRequest>();
+                if (request.JobTypeId == (int)JobType.Daily)
+                {
+                    if (!dayRequests.Any())
+                    {
+                        throw new ArgumentException("JobPostDays are required for daily jobs.");
+                    }
+
+                    if (dayRequests.Any(d => d.WorkersNeeded <= 0))
+                    {
+                        throw new ArgumentException("Each job post day must have WorkersNeeded greater than 0.");
+                    }
+
+                    var distinctDates = dayRequests.Select(d => d.WorkDate).Distinct().ToList();
+                    if (distinctDates.Count != dayRequests.Count)
+                    {
+                        throw new ArgumentException("Duplicate work dates are not allowed.");
+                    }
+
+                    var existingDayMap = existingJobPost.JobPostDays
+                        .ToDictionary(d => d.WorkDate, d => d);
+
+                    existingJobPost.JobPostDays = dayRequests
+                        .Select(d =>
+                        {
+                            existingDayMap.TryGetValue(d.WorkDate, out var existingDay);
+                            var accepted = existingDay?.WorkersAccepted ?? 0;
+                            return new JobPostDay
+                            {
+                                Id = existingDay?.Id ?? Guid.NewGuid(),
+                                JobPostId = existingJobPost.Id,
+                                WorkDate = d.WorkDate,
+                                WorkersNeeded = d.WorkersNeeded,
+                                WorkersAccepted = Math.Min(accepted, d.WorkersNeeded)
+                            };
+                        })
+                        .ToList();
+                }
+                else
+                {
+                    existingJobPost.JobPostDays = new List<JobPostDay>();
+                }
+
                 existingJobPost.WorkersNeeded = request.JobTypeId == (int)JobType.Daily
-                    ? request.WorkersNeeded * billableDays
+                    ? dayRequests.Sum(d => d.WorkersNeeded)
                     : request.WorkersNeeded;
+
+                if (request.JobTypeId == (int)JobType.Daily)
+                {
+                    existingJobPost.WorkersAccepted = existingJobPost.JobPostDays.Sum(d => d.WorkersAccepted);
+                }
+
+                var oldTotalWorkerDays = originalJobTypeId == (int)JobType.Daily
+                    ? originalJobPostDays.Sum(d => d.WorkersNeeded)
+                    : originalWorkersNeeded;
+
+                var newTotalWorkerDays = request.JobTypeId == (int)JobType.Daily
+                    ? dayRequests.Sum(d => d.WorkersNeeded)
+                    : existingJobPost.WorkersNeeded;
 
                 var oldLockAmount = originalJobTypeId == (int)JobType.PerJob
                     ? originalWageAmount
-                    : originalWageAmount * originalWorkersNeeded;
+                    : originalWageAmount * oldTotalWorkerDays;
 
                 var newLockAmount = request.JobTypeId == (int)JobType.PerJob
                     ? request.WageAmount
-                    : request.WageAmount * existingJobPost.WorkersNeeded;
+                    : request.WageAmount * newTotalWorkerDays;
 
                 var lockDelta = newLockAmount - oldLockAmount;
 
@@ -479,6 +577,7 @@ namespace AgroTemp.Service.Implements
                         predicate: jp => jp.Id == id,
                         include: q => q
                             .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobPostDays)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill));
 
@@ -1172,11 +1271,12 @@ namespace AgroTemp.Service.Implements
                     .GetListAsync(
                         predicate: jp => jp.StatusId == (int)JobPostStatus.Published &&
                                        ((jp.StartDate >= dateStart && jp.StartDate <= dateEnd) ||
-                                        (jp.SelectedDays != null && jp.SelectedDays.Any(d => d >= dateStart && d <= dateEnd))),
+                                        (jp.JobPostDays != null && jp.JobPostDays.Any(d => d.WorkDate >= dateStart && d.WorkDate <= dateEnd))),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
+                            .Include(jp => jp.JobPostDays)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill),
                         orderBy: jp => jp.OrderBy(x => x.StartDate));
@@ -1327,9 +1427,9 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        private static int ResolveBillableDays(DateOnly? startDate, DateOnly? endDate, IEnumerable<DateOnly>? selectedDays)
+        private static int ResolveBillableDays(DateOnly? startDate, DateOnly? endDate, IEnumerable<DateOnly>? dayDates)
         {
-            var selectedDayCount = selectedDays?.Distinct().Count() ?? 0;
+            var selectedDayCount = dayDates?.Distinct().Count() ?? 0;
             if (selectedDayCount > 0)
             {
                 return selectedDayCount;
@@ -1390,7 +1490,9 @@ namespace AgroTemp.Service.Implements
             try
             {
                 var jobPost = await _unitOfWork.GetRepository<JobPost>()
-                    .FirstOrDefaultAsync(predicate: jp => jp.Id == jobPostId);
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobPostId,
+                        include: q => q.Include(jp => jp.JobPostDays));
 
                 if (jobPost == null)
                     throw new KeyNotFoundException($"Job post with id '{jobPostId}' was not found.");
@@ -1404,13 +1506,13 @@ namespace AgroTemp.Service.Implements
                             .Include(ja => ja.Worker)
                                 .ThenInclude(w => w.User));
 
-                var result = jobPost.SelectedDays
-                    .OrderBy(day => day)
+                var result = jobPost.JobPostDays
+                    .OrderBy(day => day.WorkDate)
                     .Select(day =>
                     {
                         var workersOnDay = acceptedApplications
                             .Where(ja => ja.WorkDates != null &&
-                                         ja.WorkDates.Any(dt => DateOnly.FromDateTime(dt) == day))
+                                         ja.WorkDates.Any(dt => DateOnly.FromDateTime(dt) == day.WorkDate))
                             .Select(ja => new WorkerSummaryDTO
                             {
                                 WorkerId   = ja.Worker.Id,
@@ -1422,7 +1524,7 @@ namespace AgroTemp.Service.Implements
 
                         return new WorkersPerDayDTO
                         {
-                            Date = day,
+                            Date = day.WorkDate,
                             AcceptedWorkerCount = workersOnDay.Count,
                             Workers = workersOnDay
                         };

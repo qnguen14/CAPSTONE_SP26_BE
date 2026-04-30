@@ -126,7 +126,9 @@ namespace AgroTemp.Service.Implements
                          jp.StatusId == (int)JobPostStatus.Closed) &&
                         jp.StartDate.HasValue &&
                         jp.WorkersAccepted >= jp.WorkersNeeded,
-                    include: jp => jp.Include(p => p.JobApplications),
+                    include: jp => jp
+                        .Include(p => p.JobApplications)
+                        .Include(p => p.JobPostDays),
                     orderBy: null);
 
             if (eligiblePosts == null || !eligiblePosts.Any())
@@ -146,14 +148,14 @@ namespace AgroTemp.Service.Implements
                     continue;
                 }
 
-                if (post.SelectedDays != null && post.SelectedDays.Count > 0)
+                if (post.JobPostDays != null && post.JobPostDays.Count > 0)
                 {
                     var coveredDates = post.JobApplications
                         .Where(ja => ja.StatusId == (int)ApplicationStatus.Accepted && ja.WorkDates != null)
                         .SelectMany(ja => ja.WorkDates!.Select(d => DateOnly.FromDateTime(d)))
                         .ToHashSet();
 
-                    if (!post.SelectedDays.All(day => coveredDates.Contains(day)))
+                    if (!post.JobPostDays.All(day => coveredDates.Contains(day.WorkDate)))
                         continue;
                 }
 
