@@ -1,3 +1,5 @@
+using System;
+
 namespace AgroTemp.Domain.DTO.Farm
 {
     public class FarmDTO

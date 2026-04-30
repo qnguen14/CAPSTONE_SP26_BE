@@ -3,11 +3,11 @@ using AgroTemp.Domain.DTO;
 using AgroTemp.Domain.DTO.Farm;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
-using AgroTemp.Domain.Metadata;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace AgroTemp.Service.Implements;
 
@@ -35,6 +35,7 @@ public class FarmService : BaseService<Farm>, IFarmService
             var farms = await _unitOfWork.GetRepository<Farm>()
                 .GetListAsync(
                     predicate: f => f.FarmerId == farmerProfileId,
+                    include: q => q.Include(f => f.FarmType),
                     orderBy: q => q.OrderByDescending(f => f.IsPrimary).ThenBy(f => f.CreatedAt));
 
             return _mapper.FarmsToDto(farms);
@@ -50,7 +51,9 @@ public class FarmService : BaseService<Farm>, IFarmService
         try
         {
             var farm = await _unitOfWork.GetRepository<Farm>()
-                .FirstOrDefaultAsync(predicate: f => f.Id == id);
+                .FirstOrDefaultAsync(
+                    predicate: f => f.Id == id,
+                    include: q => q.Include(f => f.FarmType));
 
             if (farm == null)
             {
@@ -78,17 +81,13 @@ public class FarmService : BaseService<Farm>, IFarmService
             }
 
 
-            // Validate farm type specific fields
-            if (request.FarmType == FarmType.Livestock)
-            {
-                if (request.LivestockCount == null || request.LivestockCount <= 0)
-                    throw new Exception("Livestock count is required and must be greater than 0 for livestock farms.");
-            }
-            else if (request.FarmType == FarmType.Crop || request.FarmType == FarmType.Aquaculture)
-            {
-                if (request.AreaSize == null || request.AreaSize <= 0)
-                    throw new Exception($"Area size is required and must be greater than 0 for {request.FarmType.ToString().ToLower()} farms.");
-            }
+            var farmType = await _unitOfWork.GetRepository<JobCategory>()
+                .FirstOrDefaultAsync(predicate: jt => jt.Id == request.FarmTypeId);
+
+            if (farmType == null)
+                throw new Exception("Farm type not found");
+
+            ValidateFarmTypeSpecificFields(farmType, request.LivestockCount, request.AreaSize);
 
             if (request.isPrimary)
             {
@@ -112,9 +111,9 @@ public class FarmService : BaseService<Farm>, IFarmService
                 Longitude = request.Longitude,
                 LocationName = request.LocationName,
                 ImageUrl = request.ImageUrl,
-                FarmType = request.FarmType,
-                LivestockCount = request.FarmType == FarmType.Livestock ? request.LivestockCount : null,
-                AreaSize = (request.FarmType == FarmType.Crop || request.FarmType == FarmType.Aquaculture) ? request.AreaSize : null,
+                FarmTypeId = request.FarmTypeId,
+                LivestockCount = IsLivestockCategory(farmType) ? request.LivestockCount : null,
+                AreaSize = (IsCropCategory(farmType) || IsAquacultureCategory(farmType)) ? request.AreaSize : null,
                 IsPrimary = request.isPrimary,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -123,6 +122,7 @@ public class FarmService : BaseService<Farm>, IFarmService
             await _unitOfWork.GetRepository<Farm>().InsertAsync(farm);
             await _unitOfWork.SaveChangesAsync();
 
+            farm.FarmType = farmType;
             return _mapper.FarmToDto(farm);
         }
         catch (Exception ex)
@@ -136,7 +136,9 @@ public class FarmService : BaseService<Farm>, IFarmService
         try
         {
             var farm = await _unitOfWork.GetRepository<Farm>()
-                .FirstOrDefaultAsync(predicate: f => f.Id == id);
+                .FirstOrDefaultAsync(
+                    predicate: f => f.Id == id,
+                    include: q => q.Include(f => f.FarmType));
 
             if (farm == null)
             {
@@ -186,36 +188,36 @@ public class FarmService : BaseService<Farm>, IFarmService
                 farm.ImageUrl = request.ImageUrl;
             }
 
-            if (request.FarmType.HasValue)
+            if (request.FarmTypeId.HasValue)
             {
-                var newFarmType = request.FarmType.Value;
+                var newFarmType = await _unitOfWork.GetRepository<JobCategory>()
+                    .FirstOrDefaultAsync(predicate: jt => jt.Id == request.FarmTypeId.Value);
 
-                if (newFarmType == FarmType.Livestock)
-                {
-                    if (request.LivestockCount == null || request.LivestockCount <= 0)
-                        throw new Exception("Livestock count is required and must be greater than 0 for livestock farms.");
-                }
-                else if (newFarmType == FarmType.Crop || newFarmType == FarmType.Aquaculture)
-                {
-                    if (request.AreaSize == null || request.AreaSize <= 0)
-                        throw new Exception($"Area size is required and must be greater than 0 for {newFarmType.ToString().ToLower()} farms.");
-                }
+                if (newFarmType == null)
+                    throw new Exception("Farm type not found");
 
+                ValidateFarmTypeSpecificFields(newFarmType, request.LivestockCount, request.AreaSize);
+
+                farm.FarmTypeId = newFarmType.Id;
                 farm.FarmType = newFarmType;
-                farm.LivestockCount = newFarmType == FarmType.Livestock ? request.LivestockCount : null;
-                farm.AreaSize = (newFarmType == FarmType.Crop || newFarmType == FarmType.Aquaculture) ? request.AreaSize : null;
+                farm.LivestockCount = IsLivestockCategory(newFarmType) ? request.LivestockCount : null;
+                farm.AreaSize = (IsCropCategory(newFarmType) || IsAquacultureCategory(newFarmType))
+                    ? request.AreaSize
+                    : null;
             }
             else
             {
                 // FarmType unchanged — update individual fields if provided
-                if (farm.FarmType == FarmType.Livestock && request.LivestockCount.HasValue)
+                if (farm.FarmType != null && IsLivestockCategory(farm.FarmType) && request.LivestockCount.HasValue)
                 {
                     if (request.LivestockCount <= 0)
                         throw new Exception("Livestock count must be greater than 0.");
                     farm.LivestockCount = request.LivestockCount.Value;
                 }
 
-                if ((farm.FarmType == FarmType.Crop || farm.FarmType == FarmType.Aquaculture) && request.AreaSize.HasValue)
+                if (farm.FarmType != null &&
+                    (IsCropCategory(farm.FarmType) || IsAquacultureCategory(farm.FarmType)) &&
+                    request.AreaSize.HasValue)
                 {
                     if (request.AreaSize <= 0)
                         throw new Exception("Area size must be greater than 0.");
@@ -240,6 +242,32 @@ public class FarmService : BaseService<Farm>, IFarmService
             throw new Exception(ex.Message);
         }
     }
+
+    private static void ValidateFarmTypeSpecificFields(JobCategory farmType, int? livestockCount, decimal? areaSize)
+    {
+        if (IsLivestockCategory(farmType))
+        {
+            if (livestockCount == null || livestockCount <= 0)
+                throw new Exception("Livestock count is required and must be greater than 0 for livestock farms.");
+        }
+        else if (IsCropCategory(farmType) || IsAquacultureCategory(farmType))
+        {
+            if (areaSize == null || areaSize <= 0)
+            {
+                var typeName = farmType?.Name?.ToLower() ?? "selected";
+                throw new Exception($"Area size is required and must be greater than 0 for {typeName} farms.");
+            }
+        }
+    }
+
+    private static bool IsLivestockCategory(JobCategory farmType)
+        => string.Equals(farmType?.Name, "Livestock", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsCropCategory(JobCategory farmType)
+        => string.Equals(farmType?.Name, "Crop", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsAquacultureCategory(JobCategory farmType)
+        => string.Equals(farmType?.Name, "Aquaculture", StringComparison.OrdinalIgnoreCase);
 
     public async Task<bool> DeleteFarm(Guid id, Guid farmerProfileId)
     {
