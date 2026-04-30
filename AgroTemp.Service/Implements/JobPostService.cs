@@ -1504,11 +1504,21 @@ namespace AgroTemp.Service.Implements
             {
                 var jobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
-                        predicate: jp => jp.Id == jobPostId,
-                        include: q => q.Include(jp => jp.JobPostDays));
+                        predicate: jp => jp.Id == jobPostId);
 
                 if (jobPost == null)
                     throw new KeyNotFoundException($"Job post with id '{jobPostId}' was not found.");
+
+                var jobPostDays = await _unitOfWork.GetRepository<JobPostDay>()
+                    .GetListAsync(
+                        predicate: d => d.JobPostId == jobPostId,
+                        include: null,
+                        orderBy: q => q.OrderBy(d => d.WorkDate));
+
+                if (jobPostDays == null || !jobPostDays.Any())
+                {
+                    return new List<WorkersPerDayDTO>();
+                }
 
                 var acceptedApplications = await _unitOfWork.GetRepository<JobApplication>()
                     .GetListAsync(
@@ -1519,26 +1529,42 @@ namespace AgroTemp.Service.Implements
                             .Include(ja => ja.Worker)
                                 .ThenInclude(w => w.User));
 
-                var result = jobPost.JobPostDays
+                var workersByDate = acceptedApplications
+                    .Where(ja => ja.WorkDates != null)
+                    .SelectMany(ja => ja.WorkDates!
+                        .Select(dt => new
+                        {
+                            Date = DateOnly.FromDateTime(dt),
+                            Worker = ja.Worker
+                        }))
+                    .Where(x => x.Worker != null)
+                    .GroupBy(x => x.Date)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g
+                            .Select(x => x.Worker)
+                            .GroupBy(w => w.Id)
+                            .Select(wg => wg.First())
+                            .Select(w => new WorkerSummaryDTO
+                            {
+                                WorkerId = w.Id,
+                                FullName = w.FullName,
+                                PhoneNumber = w.User?.PhoneNumber ?? string.Empty,
+                                AvatarUrl = w.AvatarUrl
+                            })
+                            .ToList());
+
+                var result = jobPostDays
                     .OrderBy(day => day.WorkDate)
                     .Select(day =>
                     {
-                        var workersOnDay = acceptedApplications
-                            .Where(ja => ja.WorkDates != null &&
-                                         ja.WorkDates.Any(dt => DateOnly.FromDateTime(dt) == day.WorkDate))
-                            .Select(ja => new WorkerSummaryDTO
-                            {
-                                WorkerId   = ja.Worker.Id,
-                                FullName   = ja.Worker.FullName,
-                                PhoneNumber = ja.Worker.User?.PhoneNumber ?? string.Empty,
-                                AvatarUrl  = ja.Worker.AvatarUrl
-                            })
-                            .ToList();
+                        workersByDate.TryGetValue(day.WorkDate, out var workersOnDay);
+                        workersOnDay ??= new List<WorkerSummaryDTO>();
 
                         return new WorkersPerDayDTO
                         {
                             Date = day.WorkDate,
-                            AcceptedWorkerCount = workersOnDay.Count,
+                            AcceptedWorkerCount = day.WorkersAccepted,
                             Workers = workersOnDay
                         };
                     })
