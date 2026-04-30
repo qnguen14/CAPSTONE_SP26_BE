@@ -30,11 +30,11 @@ public class Farm
     [Column("longitude")]
     public decimal Longitude { get; set; }
 
-    [Required]
     [Column("farm_type_id")]
-    public Guid FarmTypeId { get; set; }
+    public Guid? FarmTypeId { get; set; }
 
     [ForeignKey(nameof(FarmTypeId))]
+    [InverseProperty("Farms")]
     public JobCategory FarmType { get; set; }
 
     [Column("livestock_count")]

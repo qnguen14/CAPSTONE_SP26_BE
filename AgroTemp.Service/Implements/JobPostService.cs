@@ -46,7 +46,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderBy(x => x.Title));
                 if (jobPosts == null || !jobPosts.Any())
                 {
@@ -72,10 +73,11 @@ namespace AgroTemp.Service.Implements
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill)
+                                .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User));
+                                    .ThenInclude(w => w.User)
+                            .Include(jp => jp.JobPostDays));
                 if (jobPost == null)
                 {
                     return null;
@@ -110,7 +112,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -151,7 +154,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                                    .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -190,7 +194,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                                    .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -798,7 +803,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => sortByDateDesc ? jp.OrderByDescending(x => x.CreatedAt) : jp.OrderBy(x => x.CreatedAt));
                 if (jobPosts == null || !jobPosts.Any())
                 {
@@ -842,7 +848,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => sortByDateDesc ? jp.OrderByDescending(x => x.CreatedAt) : jp.OrderBy(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -1117,7 +1124,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill));
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays));
 
                 if (query == null || !query.Any())
                 {
@@ -1193,7 +1201,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderBy(x => x.StartDate));
 
                 if (publishedJobs == null || !publishedJobs.Any())
@@ -1308,7 +1317,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderBy(x => x.Title));
 
                 var result = jobs?.Select(j => _mapper.JobPostToJobDiscoveryDto(j)).ToList() ?? new List<JobDiscoveryDTO>();
@@ -1339,7 +1349,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderByDescending(x => x.WageAmount));
 
                 var result = jobs?.Select(j => _mapper.JobPostToJobDiscoveryDto(j)).ToList() ?? new List<JobDiscoveryDTO>();
@@ -1368,7 +1379,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderBy(x => x.Title));
 
                 var result = jobs?.Select(j => _mapper.JobPostToJobDiscoveryDto(j)).ToList() ?? new List<JobDiscoveryDTO>();
@@ -1392,7 +1404,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderBy(x => x.StartDate));
 
                 if (urgentJobs == null || !urgentJobs.Any())
@@ -1618,7 +1631,9 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jp => jp.Farmer)
                             .Include(s => s.JobPost)
                             .ThenInclude(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(s => s.JobPost)
+                            .ThenInclude(jp => jp.JobPostDays),
                         orderBy: s => s.OrderByDescending(x => x.SavedAt));
 
                 return savedPosts.Select(s => new SavedJobPostDTO

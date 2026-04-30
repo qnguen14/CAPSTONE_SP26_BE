@@ -143,7 +143,7 @@ public class AgroTempDbContext : DbContext
 
         modelBuilder.Entity<Farm>()
             .HasOne(f => f.FarmType)
-            .WithMany()
+            .WithMany(jc => jc.Farms)
             .HasForeignKey(f => f.FarmTypeId)
             .OnDelete(DeleteBehavior.Restrict);
 

@@ -27,4 +27,5 @@ public class JobCategory
 
     public virtual ICollection<JobPost> JobPosts { get; set; } = new List<JobPost>();
     public virtual ICollection<Skill> Skills { get; set; } = new List<Skill>();
+    public virtual ICollection<Farm> Farms { get; set; } = new List<Farm>();
 }

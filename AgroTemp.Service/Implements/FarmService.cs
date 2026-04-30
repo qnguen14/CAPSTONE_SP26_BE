@@ -261,13 +261,13 @@ public class FarmService : BaseService<Farm>, IFarmService
     }
 
     private static bool IsLivestockCategory(JobCategory farmType)
-        => string.Equals(farmType?.Name, "Livestock", StringComparison.OrdinalIgnoreCase);
+        => farmType?.Name != null && (farmType.Name.Contains("Livestock", StringComparison.OrdinalIgnoreCase) || farmType.Name.Contains("Chăn nuôi", StringComparison.OrdinalIgnoreCase));
 
     private static bool IsCropCategory(JobCategory farmType)
-        => string.Equals(farmType?.Name, "Crop", StringComparison.OrdinalIgnoreCase);
+        => farmType?.Name != null && (farmType.Name.Contains("Crop", StringComparison.OrdinalIgnoreCase) || farmType.Name.Contains("Trồng trọt", StringComparison.OrdinalIgnoreCase));
 
     private static bool IsAquacultureCategory(JobCategory farmType)
-        => string.Equals(farmType?.Name, "Aquaculture", StringComparison.OrdinalIgnoreCase);
+        => farmType?.Name != null && (farmType.Name.Contains("Aquaculture", StringComparison.OrdinalIgnoreCase) || farmType.Name.Contains("thủy hải sản", StringComparison.OrdinalIgnoreCase) || farmType.Name.Contains("thủy sản", StringComparison.OrdinalIgnoreCase));
 
     public async Task<bool> DeleteFarm(Guid id, Guid farmerProfileId)
     {
