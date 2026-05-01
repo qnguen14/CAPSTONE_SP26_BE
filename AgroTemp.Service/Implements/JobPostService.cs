@@ -819,7 +819,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<PaginatedResponse<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true, int page = 1, int limit = 10)
+        public async Task<PaginatedResponse<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true, JobType? jobType = null, JobStatus? jobStatus = null, int page = 1, int limit = 10)
         {
             try
             {
@@ -841,7 +841,9 @@ namespace AgroTemp.Service.Implements
                             (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
                             (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&
                             (string.IsNullOrEmpty(address) || jp.Address.Contains(address)) &&
-                            (skill == null || skill.Count == 0 || jp.JobSkillRequirements.Any(jsr => skill.Contains(jsr.Skill.Name))),
+                            (skill == null || skill.Count == 0 || jp.JobSkillRequirements.Any(jsr => skill.Contains(jsr.Skill.Name))) &&
+                            (!jobType.HasValue || jp.JobTypeId == (int)jobType.Value) &&
+                            (!jobStatus.HasValue || jp.StatusId == (int)jobStatus.Value),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
@@ -972,7 +974,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobPostDTO>> GetFarmerDrafts()
+        public async Task<List<JobPostDTO>> GetFarmerDrafts(JobType? jobType = null)
         {
             try
             {
@@ -992,12 +994,13 @@ namespace AgroTemp.Service.Implements
 
                 var drafts = await _unitOfWork.GetRepository<JobPost>()
                     .GetListAsync(
-                        predicate: jp => jp.FarmerId == farmer.Id && jp.StatusId == (int)JobPostStatus.Draft,
+                        predicate: jp => jp.FarmerId == farmer.Id && jp.StatusId == (int)JobPostStatus.Draft && (!jobType.HasValue || jp.JobTypeId == (int)jobType.Value),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderByDescending(x => x.UpdatedAt));
 
                 if (drafts == null || !drafts.Any())

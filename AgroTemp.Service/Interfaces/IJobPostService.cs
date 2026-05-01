@@ -32,11 +32,11 @@ namespace AgroTemp.Service.Interfaces
 
 
         Task<List<JobPostDTO>> GetFilteredJobPosts(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true);
-        Task<PaginatedResponse<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true, int page = 1, int limit = 10);
+        Task<PaginatedResponse<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true, JobType? jobType = null, JobStatus? jobStatus = null, int page = 1, int limit = 10);
 
 
         Task<JobPostDTO> SaveJobPostDraft(CreateJobPostRequest request);
-        Task<List<JobPostDTO>> GetFarmerDrafts();
+        Task<List<JobPostDTO>> GetFarmerDrafts(JobType? jobType = null);
 
 
         Task<PaginatedJobDiscoveryResponse> SearchJobsAsync(JobSearchFilterRequest filter);

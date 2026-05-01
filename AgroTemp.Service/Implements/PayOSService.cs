@@ -5,6 +5,7 @@ using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using PayOS;
 using PayOS.Models.V1.Payouts;
@@ -19,24 +20,29 @@ namespace AgroTemp.Service.Implements;
 public class PayOSService : IPayOSService
 {
     private static readonly JsonSerializerOptions WebhookSerializerOptions = new(JsonSerializerDefaults.Web);
+    private static readonly int[] LocalFrontendPorts = { 3000, 8081 };
+    private const string DefaultLocalFrontendBaseUrl = "http://localhost:3000";
     private readonly PayOSClient _orderClient;
     private readonly PayOSClient _transferClient;
     private readonly IUnitOfWork<AgroTempDbContext> _unitOfWork;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IWalletService _walletService;
+    private readonly IConfiguration _configuration;
 
     public PayOSService(
         [FromKeyedServices("OrderClient")] PayOSClient orderClient,
         [FromKeyedServices("TransferClient")] PayOSClient transferClient,
         IUnitOfWork<AgroTempDbContext> unitOfWork,
         IHttpContextAccessor httpContextAccessor,
-        IWalletService walletService)
+        IWalletService walletService,
+        IConfiguration configuration)
     {
         _orderClient = orderClient;
         _transferClient = transferClient;
         _unitOfWork = unitOfWork;
         _httpContextAccessor = httpContextAccessor;
         _walletService = walletService;
+        _configuration = configuration;
     }
 
     public async Task<PayOSOrderResponse?> GetOrderAsync(Guid id)
@@ -85,8 +91,8 @@ public class PayOSService : IPayOSService
         var buyerEmail = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
 
         var orderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var returnUrl = "https://www.agrotemp.dev/farmer/payments/success";
-        var cancelUrl = "https://www.agrotemp.dev/farmer/payments/cancel";
+        var returnUrl = BuildFrontendUrl("/farmer/payments/success");
+        var cancelUrl = BuildFrontendUrl("/farmer/payments/cancel");
         var expiredAt = DateTimeOffset.UtcNow.AddHours(2);
         var buyerNotGetInvoice = false;
         int? taxPercentage = null;
@@ -1013,5 +1019,68 @@ public class PayOSService : IPayOSService
 
         var result = stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC).Trim();
         return result.Length > 25 ? result.Substring(0, 25).Trim() : result;
+    }
+
+    private string BuildFrontendUrl(string relativePath)
+    {
+        var baseUrl = ResolveFrontendBaseUrl().TrimEnd('/');
+        var path = relativePath.StartsWith('/') ? relativePath : $"/{relativePath}";
+        return $"{baseUrl}{path}";
+    }
+
+    private string ResolveFrontendBaseUrl()
+    {
+        // Prefer explicit configuration for deployment flexibility.
+        var configuredBaseUrl =
+            _configuration["PayOS:FrontendBaseUrl"]
+            ?? _configuration["Frontend:BaseUrl"]
+            ?? Environment.GetEnvironmentVariable("PAYOS_FRONTEND_BASE_URL")
+            ?? Environment.GetEnvironmentVariable("FRONTEND_BASE_URL");
+
+        if (!string.IsNullOrWhiteSpace(configuredBaseUrl))
+        {
+            return configuredBaseUrl;
+        }
+
+        var request = _httpContextAccessor.HttpContext?.Request;
+        var origin = request?.Headers.Origin.ToString();
+        if (Uri.TryCreate(origin, UriKind.Absolute, out var originUri)
+            && IsSupportedLocalFrontend(originUri))
+        {
+            return originUri.GetLeftPart(UriPartial.Authority);
+        }
+
+        var referer = request?.Headers.Referer.ToString();
+        if (Uri.TryCreate(referer, UriKind.Absolute, out var refererUri)
+            && IsSupportedLocalFrontend(refererUri))
+        {
+            return refererUri.GetLeftPart(UriPartial.Authority);
+        }
+
+        var requestHost = request?.Host.Host;
+        if (IsLocalHost(requestHost))
+        {
+            return DefaultLocalFrontendBaseUrl;
+        }
+
+        var environment = _configuration["ASPNETCORE_ENVIRONMENT"];
+        if (string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase))
+        {
+            return DefaultLocalFrontendBaseUrl;
+        }
+
+        return "https://www.agrotemp.dev";
+    }
+
+    private static bool IsSupportedLocalFrontend(Uri uri)
+    {
+        return IsLocalHost(uri.Host) && uri.Port > 0 && LocalFrontendPorts.Contains(uri.Port);
+    }
+
+    private static bool IsLocalHost(string? host)
+    {
+        return string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(host, "127.0.0.1", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(host, "::1", StringComparison.OrdinalIgnoreCase);
     }
 }
