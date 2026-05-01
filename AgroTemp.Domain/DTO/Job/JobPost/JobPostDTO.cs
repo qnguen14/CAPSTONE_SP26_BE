@@ -19,6 +19,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
     {
         public Guid Id { get; set; }
         public Guid FarmerProfileId { get; set; }
+        public Guid FarmerUserId { get; set; }
         public FarmerProfileSummaryDTO FarmerProfile { get; set; }
         public string ContactName { get; set; }
         public List<JobSkillRequirementSummaryDTO> JobSkillRequirements { get; set; } = new();
@@ -29,7 +30,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public string Address { get; set; }
         public DateOnly? StartDate { get; set; }
         public DateOnly? EndDate { get; set; }
-        public List<DateOnly> SelectedDays { get; set; } = new List<DateOnly>();
+        public List<JobPostDayDTO> JobPostDays { get; set; } = new();
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
         public int WorkersNeeded { get; set; }

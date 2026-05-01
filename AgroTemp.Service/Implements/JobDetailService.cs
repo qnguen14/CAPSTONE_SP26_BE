@@ -353,21 +353,25 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<PaginatedResponse<JobDetailResponseDTO>> GetJobDetailsByJobPostId(Guid jobPostId, int page = 1, int limit = 10)
+        public async Task<PaginatedResponse<JobDetailResponseDTO>> GetJobDetailsByJobPostId(Guid jobPostId, JobStatus? jobStatus, bool orderByDescending = true, int page = 1, int limit = 10)
         {
             try
             {
                 var skip = (page - 1) * limit;
                 var predicate = (System.Linq.Expressions.Expression<Func<JobDetail, bool>>)(jd => jd.JobPostId == jobPostId);
-
+                if (jobStatus.HasValue)
+                {
+                    predicate = jd => jd.JobPostId == jobPostId && jd.StatusId == (int)jobStatus.Value;
+                }
                 var total = await _unitOfWork.GetRepository<JobDetail>().CountAsync(predicate);
 
                 var query = _unitOfWork.GetRepository<JobDetail>().CreateBaseQuery(
                     predicate: predicate,
-                    orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                    orderBy: q => orderByDescending ? q.OrderByDescending(x => x.CreatedAt) : q.OrderBy(x => x.CreatedAt),
                     include: q => q.Include(x => x.Worker).ThenInclude(w => w.User)
                                     .Include(x => x.JobPost).ThenInclude(jp => jp.Farmer).ThenInclude(f => f.User)
-                                    .Include(x => x.JobAttachments));
+                                    .Include(x => x.JobAttachments)
+                                    );
 
                 var items = await query.Skip(skip).Take(limit).ToListAsync();
                 var data = _mapper.JobDetailsToJobDetailResponseDtos(items);
@@ -472,7 +476,7 @@ namespace AgroTemp.Service.Implements
                 else
                 {
                     // PerJob: release escrow only on the last work day
-                    // "Last day" = WorkDate matches EndDate, or the last entry in SelectedDays
+                    // "Last day" = WorkDate matches EndDate, or the last entry in JobPostDays
                     var workDate = jobDetail.WorkDate.HasValue
                         ? DateOnly.FromDateTime(jobDetail.WorkDate.Value)
                         : (DateOnly?)null;
@@ -481,9 +485,9 @@ namespace AgroTemp.Service.Implements
                     {
                         isLastDetail = workDate.Value >= jobPost.EndDate.Value;
                     }
-                    else if (jobPost.SelectedDays != null && jobPost.SelectedDays.Count > 0 && workDate.HasValue)
+                    else if (jobPost.JobPostDays != null && jobPost.JobPostDays.Count > 0 && workDate.HasValue)
                     {
-                        var lastSelectedDay = jobPost.SelectedDays.Max();
+                        var lastSelectedDay = jobPost.JobPostDays.Max(jpd => jpd.WorkDate);
                         isLastDetail = workDate.Value >= lastSelectedDay;
                     }
                     else

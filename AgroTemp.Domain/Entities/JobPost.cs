@@ -64,8 +64,7 @@ public class JobPost
     [Column("end_date")]
     public DateOnly? EndDate { get; set; }
 
-    [Column("selected_days")]
-    public List<DateOnly> SelectedDays { get; set; } = new List<DateOnly>();
+
 
     [Column("start_time")]
     public TimeOnly StartTime { get; set; }
@@ -114,6 +113,7 @@ public class JobPost
     [Column("status")]
     public int StatusId { get; set; }
 
+    public virtual ICollection<JobPostDay> JobPostDays { get; set; } = new List<JobPostDay>();
     public virtual ICollection<JobSkillRequirement> JobSkillRequirements { get; set; } = new List<JobSkillRequirement>();
     public virtual ICollection<JobDetail> JobDetails { get; set; } = new List<JobDetail>();
     public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();

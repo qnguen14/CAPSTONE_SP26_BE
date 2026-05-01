@@ -182,7 +182,9 @@ namespace AgroTemp.Service.Implements
                 var jobPost = await _unitOfWork.GetRepository<JobPost>()
                     .FirstOrDefaultAsync(
                         predicate: jp => jp.Id == request.JobPostId,
-                        include: q => q.Include(jp => jp.Farmer));
+                        include: q => q
+                            .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobPostDays));
 
                 if (jobPost == null)
                     throw new KeyNotFoundException("Job post not found.");
@@ -208,8 +210,10 @@ namespace AgroTemp.Service.Implements
                         throw new InvalidOperationException("Duplicate work dates are not allowed in one application.");
 
                     // Requested dates must belong to the job post selected days.
+                    var availableDates = jobPost.JobPostDays?.Select(d => d.WorkDate).ToHashSet()
+                        ?? new HashSet<DateOnly>();
                     var invalidDates = requestedDates
-                        .Where(d => !jobPost.SelectedDays.Contains(d))
+                        .Where(d => !availableDates.Contains(d))
                         .ToList();
                     if (invalidDates.Any())
                         throw new InvalidOperationException(
@@ -230,11 +234,17 @@ namespace AgroTemp.Service.Implements
 
                     foreach (var date in requestedDates)
                     {
+                        var dayConfig = jobPost.JobPostDays?.FirstOrDefault(d => d.WorkDate == date);
+                        if (dayConfig == null)
+                        {
+                            throw new InvalidOperationException($"Job post does not include work date {date:yyyy-MM-dd}.");
+                        }
+
                         var filledSlots = activeApplications
                             .Count(ja => ja.WorkDates != null &&
                                          ja.WorkDates.Any(wd => DateOnly.FromDateTime(wd) == date));
 
-                        if (filledSlots >= jobPost.WorkersNeeded)
+                        if (filledSlots >= dayConfig.WorkersNeeded)
                             throw new InvalidOperationException(
                                 $"The job post has already reached its worker capacity for {date:yyyy-MM-dd}.");
                     }
@@ -358,7 +368,12 @@ namespace AgroTemp.Service.Implements
                 var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == guid,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost).ThenInclude(jp => jp.Farmer));
+                        include: ja => ja
+                            .Include(j => j.Worker)
+                            .Include(j => j.JobPost)
+                                .ThenInclude(jp => jp.Farmer)
+                            .Include(j => j.JobPost)
+                                .ThenInclude(jp => jp.JobPostDays));
                 if (existingJobApplication == null)
                 {
                     return null;
@@ -370,11 +385,47 @@ namespace AgroTemp.Service.Implements
 
                 if (request.StatusId == (int)ApplicationStatus.Accepted)
                 {
-                    existingJobApplication.JobPost.WorkersAccepted += 1;
+                    var jobPost = existingJobApplication.JobPost;
 
-                    if (existingJobApplication.JobPost.WorkersAccepted >= existingJobApplication.JobPost.WorkersNeeded)
+                    if (jobPost.JobTypeId == (int)JobType.Daily)
                     {
-                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Closed;
+                        var requestedDates = (existingJobApplication.WorkDates ?? new List<DateTime>())
+                            .Select(d => DateOnly.FromDateTime(d))
+                            .Distinct()
+                            .ToList();
+
+                        if (!requestedDates.Any())
+                            throw new InvalidOperationException("Cannot accept a daily job application without work dates.");
+
+                        foreach (var date in requestedDates)
+                        {
+                            var dayEntry = jobPost.JobPostDays.FirstOrDefault(d => d.WorkDate == date);
+                            if (dayEntry == null)
+                                throw new InvalidOperationException($"Job post does not include work date {date:yyyy-MM-dd}.");
+
+                            if (dayEntry.WorkersAccepted >= dayEntry.WorkersNeeded)
+                                throw new InvalidOperationException($"Cannot accept application: worker capacity for {date:yyyy-MM-dd} is full.");
+
+                            dayEntry.WorkersAccepted += 1;
+                        }
+
+                        jobPost.WorkersAccepted = jobPost.JobPostDays.Sum(d => d.WorkersAccepted);
+
+                        var allDaysFull = jobPost.JobPostDays.All(d => d.WorkersAccepted >= d.WorkersNeeded);
+
+                        if (allDaysFull)
+                        {
+                            jobPost.StatusId = (int)JobPostStatus.Closed;
+                        }
+                    }
+                    else
+                    {
+                        jobPost.WorkersAccepted += 1;
+
+                        if (jobPost.WorkersAccepted >= jobPost.WorkersNeeded)
+                        {
+                            jobPost.StatusId = (int)JobPostStatus.Closed;
+                        }
                     }
                 }
 
@@ -440,6 +491,9 @@ namespace AgroTemp.Service.Implements
                 if (!jobPost.IsUrgent)
                     throw new InvalidOperationException("Auto-accept is only available for urgent job posts.");
 
+                if (jobPost.JobTypeId == (int)JobType.Daily)
+                    throw new InvalidOperationException("Auto-accept is not supported for daily job posts.");
+
                 var remainingSlots = jobPost.WorkersNeeded - jobPost.WorkersAccepted;
                 if (remainingSlots <= 0)
                     throw new InvalidOperationException("This job post has already reached its required number of workers.");
@@ -499,7 +553,12 @@ namespace AgroTemp.Service.Implements
                 var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == id,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost).ThenInclude(jp => jp.Farmer));
+                        include: ja => ja
+                            .Include(j => j.Worker)
+                            .Include(j => j.JobPost)
+                                .ThenInclude(jp => jp.Farmer)
+                            .Include(j => j.JobPost)
+                                .ThenInclude(jp => jp.JobPostDays));
 
                 if (existingJobApplication == null)
                     throw new KeyNotFoundException("Job application not found.");
@@ -515,11 +574,45 @@ namespace AgroTemp.Service.Implements
 
                 if (existingJobApplication.StatusId == (int)ApplicationStatus.Accepted)
                 {
-                    existingJobApplication.JobPost.WorkersAccepted -= 1;
-
-                    if (existingJobApplication.JobPost.StatusId == (int)JobPostStatus.Closed)
+                    if (existingJobApplication.JobPost.JobTypeId == (int)JobType.Daily)
                     {
-                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Published;
+                        var workDates = existingJobApplication.WorkDates ?? new List<DateTime>();
+                        var requestedDates = workDates
+                            .Select(d => DateOnly.FromDateTime(d))
+                            .Distinct()
+                            .ToList();
+
+                        foreach (var date in requestedDates)
+                        {
+                            var dayEntry = existingJobApplication.JobPost.JobPostDays
+                                .FirstOrDefault(d => d.WorkDate == date);
+                            if (dayEntry != null && dayEntry.WorkersAccepted > 0)
+                            {
+                                dayEntry.WorkersAccepted -= 1;
+                            }
+                        }
+
+                        existingJobApplication.JobPost.WorkersAccepted =
+                            existingJobApplication.JobPost.JobPostDays.Sum(d => d.WorkersAccepted);
+
+                        if (existingJobApplication.JobPost.StatusId == (int)JobPostStatus.Closed)
+                        {
+                            var allDaysFull = existingJobApplication.JobPost.JobPostDays
+                                .All(d => d.WorkersAccepted >= d.WorkersNeeded);
+                            if (!allDaysFull)
+                            {
+                                existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Published;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        existingJobApplication.JobPost.WorkersAccepted -= 1;
+
+                        if (existingJobApplication.JobPost.StatusId == (int)JobPostStatus.Closed)
+                        {
+                            existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Published;
+                        }
                     }
 
                     if (existingJobApplication.JobPost.Farmer != null)
@@ -557,7 +650,12 @@ namespace AgroTemp.Service.Implements
                 var existingJobApplication = await _unitOfWork.GetRepository<JobApplication>()
                     .FirstOrDefaultAsync(
                         predicate: ja => ja.Id == id,
-                        include: ja => ja.Include(j => j.Worker).Include(j => j.JobPost).ThenInclude(jp => jp.Farmer));
+                        include: ja => ja
+                            .Include(j => j.Worker)
+                            .Include(j => j.JobPost)
+                                .ThenInclude(jp => jp.Farmer)
+                            .Include(j => j.JobPost)
+                                .ThenInclude(jp => jp.JobPostDays));
 
                 if (existingJobApplication == null)
                     throw new KeyNotFoundException("Job application not found.");
@@ -573,10 +671,44 @@ namespace AgroTemp.Service.Implements
 
                 if (existingJobApplication.StatusId == (int)ApplicationStatus.Accepted)
                 {
-                    existingJobApplication.JobPost.WorkersAccepted -= 1;
-                    if (existingJobApplication.JobPost.StatusId == (int)JobPostStatus.Closed)
+                    if (existingJobApplication.JobPost.JobTypeId == (int)JobType.Daily)
                     {
-                        existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Published;
+                        var workDates = existingJobApplication.WorkDates ?? new List<DateTime>();
+                        var requestedDates = workDates
+                            .Select(d => DateOnly.FromDateTime(d))
+                            .Distinct()
+                            .ToList();
+
+                        foreach (var date in requestedDates)
+                        {
+                            var dayEntry = existingJobApplication.JobPost.JobPostDays
+                                .FirstOrDefault(d => d.WorkDate == date);
+                            if (dayEntry != null && dayEntry.WorkersAccepted > 0)
+                            {
+                                dayEntry.WorkersAccepted -= 1;
+                            }
+                        }
+
+                        existingJobApplication.JobPost.WorkersAccepted =
+                            existingJobApplication.JobPost.JobPostDays.Sum(d => d.WorkersAccepted);
+
+                        if (existingJobApplication.JobPost.StatusId == (int)JobPostStatus.Closed)
+                        {
+                            var allDaysFull = existingJobApplication.JobPost.JobPostDays
+                                .All(d => d.WorkersAccepted >= d.WorkersNeeded);
+                            if (!allDaysFull)
+                            {
+                                existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Published;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        existingJobApplication.JobPost.WorkersAccepted -= 1;
+                        if (existingJobApplication.JobPost.StatusId == (int)JobPostStatus.Closed)
+                        {
+                            existingJobApplication.JobPost.StatusId = (int)JobPostStatus.Published;
+                        }
                     }
 
                     if (existingJobApplication.Worker != null)

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260430070228_AddJobPostDaysEntityAndSchemaV3")]
+    partial class AddJobPostDaysEntityAndSchemaV3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -279,9 +282,9 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<Guid?>("FarmTypeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("farm_type_id");
+                    b.Property<int>("FarmType")
+                        .HasColumnType("integer")
+                        .HasColumnName("farm_type");
 
                     b.Property<Guid>("FarmerId")
                         .HasColumnType("uuid")
@@ -321,8 +324,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("FarmTypeId");
 
                     b.HasIndex("FarmerId");
 
@@ -1783,19 +1784,11 @@ namespace AgroTemp.Domain.Migrations
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.Farm", b =>
                 {
-                    b.HasOne("AgroTemp.Domain.Entities.JobCategory", "FarmType")
-                        .WithMany()
-                        .HasForeignKey("FarmTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("AgroTemp.Domain.Entities.Farmer", "Farmer")
                         .WithMany("Farms")
                         .HasForeignKey("FarmerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("FarmType");
 
                     b.Navigation("Farmer");
                 });

@@ -46,7 +46,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderBy(x => x.Title));
                 if (jobPosts == null || !jobPosts.Any())
                 {
@@ -72,10 +73,11 @@ namespace AgroTemp.Service.Implements
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill)
+                                .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User));
+                                    .ThenInclude(w => w.User)
+                            .Include(jp => jp.JobPostDays));
                 if (jobPost == null)
                 {
                     return null;
@@ -110,7 +112,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -151,7 +154,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                                    .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -190,7 +194,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                                    .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -259,13 +264,52 @@ namespace AgroTemp.Service.Implements
                 throw new ArgumentException("WorkersNeeded must be greater than 0.");
             }
 
+            var dayRequests = request.JobPostDays ?? new List<JobPostDayRequest>();
+            if (request.JobTypeId == JobType.Daily)
+            {
+                if (!dayRequests.Any())
+                {
+                    throw new ArgumentException("JobPostDays are required for daily jobs.");
+                }
+
+                if (dayRequests.Any(d => d.WorkersNeeded <= 0))
+                {
+                    throw new ArgumentException("Each job post day must have WorkersNeeded greater than 0.");
+                }
+
+                var distinctDates = dayRequests.Select(d => d.WorkDate).Distinct().ToList();
+                if (distinctDates.Count != dayRequests.Count)
+                {
+                    throw new ArgumentException("Duplicate work dates are not allowed.");
+                }
+
+                if (distinctDates.Any(d => d < DateOnly.FromDateTime(DateTime.UtcNow)))
+                {
+                    throw new ArgumentException("Job post days cannot be in the past.");
+                }
+            }
+
             var jobPost = _mapper.CreateJobPostRequestToJobPost(request);
             if (jobPost.Id == Guid.Empty)
             {
                 jobPost.Id = Guid.NewGuid();
             }
 
-            var workdays = ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays);
+            if (request.JobTypeId == JobType.Daily)
+            {
+                jobPost.JobPostDays = dayRequests
+                    .Select(d => new JobPostDay
+                    {
+                        Id = Guid.NewGuid(),
+                        JobPostId = jobPost.Id,
+                        WorkDate = d.WorkDate,
+                        WorkersNeeded = d.WorkersNeeded,
+                        WorkersAccepted = 0
+                    })
+                    .ToList();
+            }
+
+            var workdays = ResolveBillableDays(request.StartDate, request.EndDate, dayRequests.Select(d => d.WorkDate));
 
             if (request.JobTypeId == JobType.PerJob)
             {
@@ -273,7 +317,8 @@ namespace AgroTemp.Service.Implements
             }
             else if (request.JobTypeId == JobType.Daily)
             {
-                jobPost.WorkersNeeded = request.WorkersNeeded * workdays;
+                var totalWorkerDays = dayRequests.Sum(d => d.WorkersNeeded);
+                jobPost.WorkersNeeded = totalWorkerDays;
             }
 
             jobPost.FarmerId = farmer.Id;
@@ -282,12 +327,12 @@ namespace AgroTemp.Service.Implements
             jobPost.UpdatedAt = DateTime.UtcNow;
             jobPost.PublishedAt = request.PublishedAt;
 
-            var billableDays = request.JobTypeId == JobType.Daily
-                ? workdays
-                : 1;
+            var totalWorkerDaysForLock = request.JobTypeId == JobType.Daily
+                ? dayRequests.Sum(d => d.WorkersNeeded)
+                : request.WorkersNeeded;
             var lockAmount = request.JobTypeId == JobType.PerJob
                 ? request.WageAmount
-                : request.WageAmount * request.WorkersNeeded * billableDays;
+                : request.WageAmount * totalWorkerDaysForLock;
             try
             {
                 await _walletService.LockAmountForJobPostAsync(farmer.UserId, jobPost.Id, lockAmount);
@@ -320,6 +365,7 @@ namespace AgroTemp.Service.Implements
                 .FirstOrDefaultAsync(
                     predicate: jp => jp.Id == jobPost.Id,
                     include: q => q
+                        .Include(jp => jp.JobPostDays)
                         .Include(jp => jp.JobSkillRequirements)
                         .ThenInclude(jsr => jsr.Skill));
 
@@ -362,6 +408,7 @@ namespace AgroTemp.Service.Implements
                         predicate: jp => jp.Id == id,
                         include: q => q
                             .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobPostDays)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill));
 
@@ -431,22 +478,78 @@ namespace AgroTemp.Service.Implements
                     }
                 }
 
+                var originalJobPostDays = existingJobPost.JobPostDays.ToList();
                 var currentCreatedAt = existingJobPost.CreatedAt;
                 var currentPublishedAt = existingJobPost.PublishedAt;
                 _mapper.UpdateJobPostRequestToJobPost(request, existingJobPost);
 
-                var billableDays = ResolveBillableDays(request.StartDate, request.EndDate, request.SelectedDays);
+                var dayRequests = request.JobPostDays ?? new List<JobPostDayRequest>();
+                if (request.JobTypeId == (int)JobType.Daily)
+                {
+                    if (!dayRequests.Any())
+                    {
+                        throw new ArgumentException("JobPostDays are required for daily jobs.");
+                    }
+
+                    if (dayRequests.Any(d => d.WorkersNeeded <= 0))
+                    {
+                        throw new ArgumentException("Each job post day must have WorkersNeeded greater than 0.");
+                    }
+
+                    var distinctDates = dayRequests.Select(d => d.WorkDate).Distinct().ToList();
+                    if (distinctDates.Count != dayRequests.Count)
+                    {
+                        throw new ArgumentException("Duplicate work dates are not allowed.");
+                    }
+
+                    var existingDayMap = existingJobPost.JobPostDays
+                        .ToDictionary(d => d.WorkDate, d => d);
+
+                    existingJobPost.JobPostDays = dayRequests
+                        .Select(d =>
+                        {
+                            existingDayMap.TryGetValue(d.WorkDate, out var existingDay);
+                            var accepted = existingDay?.WorkersAccepted ?? 0;
+                            return new JobPostDay
+                            {
+                                Id = existingDay?.Id ?? Guid.NewGuid(),
+                                JobPostId = existingJobPost.Id,
+                                WorkDate = d.WorkDate,
+                                WorkersNeeded = d.WorkersNeeded,
+                                WorkersAccepted = Math.Min(accepted, d.WorkersNeeded)
+                            };
+                        })
+                        .ToList();
+                }
+                else
+                {
+                    existingJobPost.JobPostDays = new List<JobPostDay>();
+                }
+
                 existingJobPost.WorkersNeeded = request.JobTypeId == (int)JobType.Daily
-                    ? request.WorkersNeeded * billableDays
+                    ? dayRequests.Sum(d => d.WorkersNeeded)
                     : request.WorkersNeeded;
+
+                if (request.JobTypeId == (int)JobType.Daily)
+                {
+                    existingJobPost.WorkersAccepted = existingJobPost.JobPostDays.Sum(d => d.WorkersAccepted);
+                }
+
+                var oldTotalWorkerDays = originalJobTypeId == (int)JobType.Daily
+                    ? originalJobPostDays.Sum(d => d.WorkersNeeded)
+                    : originalWorkersNeeded;
+
+                var newTotalWorkerDays = request.JobTypeId == (int)JobType.Daily
+                    ? dayRequests.Sum(d => d.WorkersNeeded)
+                    : existingJobPost.WorkersNeeded;
 
                 var oldLockAmount = originalJobTypeId == (int)JobType.PerJob
                     ? originalWageAmount
-                    : originalWageAmount * originalWorkersNeeded;
+                    : originalWageAmount * oldTotalWorkerDays;
 
                 var newLockAmount = request.JobTypeId == (int)JobType.PerJob
                     ? request.WageAmount
-                    : request.WageAmount * existingJobPost.WorkersNeeded;
+                    : request.WageAmount * newTotalWorkerDays;
 
                 var lockDelta = newLockAmount - oldLockAmount;
 
@@ -479,6 +582,7 @@ namespace AgroTemp.Service.Implements
                         predicate: jp => jp.Id == id,
                         include: q => q
                             .Include(jp => jp.Farmer)
+                            .Include(jp => jp.JobPostDays)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill));
 
@@ -699,7 +803,8 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => sortByDateDesc ? jp.OrderByDescending(x => x.CreatedAt) : jp.OrderBy(x => x.CreatedAt));
                 if (jobPosts == null || !jobPosts.Any())
                 {
@@ -714,7 +819,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<PaginatedResponse<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true, int page = 1, int limit = 10)
+        public async Task<PaginatedResponse<JobPostDTO>> GetFilteredJobPostsByFarmer(string? title, string? category, string? address, List<string?> skill, bool sortByDateDesc = true, JobType? jobType = null, JobStatus? jobStatus = null, int page = 1, int limit = 10)
         {
             try
             {
@@ -736,14 +841,17 @@ namespace AgroTemp.Service.Implements
                             (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
                             (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&
                             (string.IsNullOrEmpty(address) || jp.Address.Contains(address)) &&
-                            (skill == null || skill.Count == 0 || jp.JobSkillRequirements.Any(jsr => skill.Contains(jsr.Skill.Name))),
+                            (skill == null || skill.Count == 0 || jp.JobSkillRequirements.Any(jsr => skill.Contains(jsr.Skill.Name))) &&
+                            (!jobType.HasValue || jp.JobTypeId == (int)jobType.Value) &&
+                            (!jobStatus.HasValue || jp.StatusId == (int)jobStatus.Value),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill)
                             .Include(jp => jp.JobApplications)
                                 .ThenInclude(ja => ja.Worker)
-                                    .ThenInclude(w => w.User),
+                                    .ThenInclude(w => w.User)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => sortByDateDesc ? jp.OrderByDescending(x => x.CreatedAt) : jp.OrderBy(x => x.CreatedAt));
 
                 if (jobPosts == null || !jobPosts.Any())
@@ -866,7 +974,7 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<List<JobPostDTO>> GetFarmerDrafts()
+        public async Task<List<JobPostDTO>> GetFarmerDrafts(JobType? jobType = null)
         {
             try
             {
@@ -886,12 +994,13 @@ namespace AgroTemp.Service.Implements
 
                 var drafts = await _unitOfWork.GetRepository<JobPost>()
                     .GetListAsync(
-                        predicate: jp => jp.FarmerId == farmer.Id && jp.StatusId == (int)JobPostStatus.Draft,
+                        predicate: jp => jp.FarmerId == farmer.Id && jp.StatusId == (int)JobPostStatus.Draft && (!jobType.HasValue || jp.JobTypeId == (int)jobType.Value),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderByDescending(x => x.UpdatedAt));
 
                 if (drafts == null || !drafts.Any())
@@ -967,9 +1076,47 @@ namespace AgroTemp.Service.Implements
         {
             try
             {
+                filter ??= new JobSearchFilterRequest();
+
+                Worker? currentWorker = null;
                 filter.PageNumber = filter.PageNumber < 1 ? 1 : filter.PageNumber;
                 filter.PageSize = filter.PageSize < 1 ? 10 : Math.Min(filter.PageSize, 100); // Min 1, max 100 items per page
                 var skip = (filter.PageNumber - 1) * filter.PageSize;
+
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId != Guid.Empty)
+                {
+                    currentWorker = await _unitOfWork.GetRepository<Worker>()
+                        .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId);
+
+                    if (currentWorker != null)
+                    {
+                        if (!filter.MaxDistanceKm.HasValue || filter.MaxDistanceKm.Value <= 0)
+                        {
+                            filter.MaxDistanceKm = currentWorker.TravelRadiusKmPreference ?? 20;
+                        }
+
+                        var hasCoordinates =
+                            filter.WorkerLatitude.HasValue &&
+                            filter.WorkerLongitude.HasValue &&
+                            (filter.WorkerLatitude.Value != 0 || filter.WorkerLongitude.Value != 0);
+
+                        if (!hasCoordinates && !string.IsNullOrWhiteSpace(currentWorker.PrimaryLocation))
+                        {
+                            var primaryLocation = currentWorker.PrimaryLocation.Trim();
+                            var locationFarm = await _unitOfWork.GetRepository<Farm>()
+                                .FirstOrDefaultAsync(predicate:
+                                    f => f.LocationName.ToLower() == primaryLocation.ToLower() ||
+                                         f.Address.ToLower().Contains(primaryLocation.ToLower()));
+
+                            if (locationFarm != null)
+                            {
+                                filter.WorkerLatitude = locationFarm.Latitude;
+                                filter.WorkerLongitude = locationFarm.Longitude;
+                            }
+                        }
+                    }
+                }
 
                 // Get all published and in-progress job posts with related data
                 var query = await _unitOfWork.GetRepository<JobPost>()
@@ -980,7 +1127,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill));
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays));
 
                 if (query == null || !query.Any())
                 {
@@ -995,6 +1143,23 @@ namespace AgroTemp.Service.Implements
 
                 // Apply filters
                 var filtered = JobDiscoveryHelper.ApplyJobFilters(query.ToList(), filter);
+
+                // Fallback: if worker has a primary location but coordinates cannot be resolved,
+                // default to that location name/address text filter.
+                var hasFinalCoordinates =
+                    filter.WorkerLatitude.HasValue &&
+                    filter.WorkerLongitude.HasValue &&
+                    (filter.WorkerLatitude.Value != 0 || filter.WorkerLongitude.Value != 0);
+
+                if (!hasFinalCoordinates && currentWorker != null && !string.IsNullOrWhiteSpace(currentWorker.PrimaryLocation))
+                {
+                    var primaryLocation = currentWorker.PrimaryLocation.Trim();
+                    filtered = filtered
+                        .Where(jp => jp.Farm != null &&
+                                     ((!string.IsNullOrWhiteSpace(jp.Farm.LocationName) && jp.Farm.LocationName.Contains(primaryLocation, StringComparison.OrdinalIgnoreCase)) ||
+                                      (!string.IsNullOrWhiteSpace(jp.Farm.Address) && jp.Farm.Address.Contains(primaryLocation, StringComparison.OrdinalIgnoreCase))))
+                        .ToList();
+                }
 
                 // Convert to DTOs using mapper
                 var jobDtos = _mapper.JobPostsToJobDiscoveryDtos(filtered);
@@ -1039,7 +1204,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderBy(x => x.StartDate));
 
                 if (publishedJobs == null || !publishedJobs.Any())
@@ -1117,11 +1283,12 @@ namespace AgroTemp.Service.Implements
                     .GetListAsync(
                         predicate: jp => jp.StatusId == (int)JobPostStatus.Published &&
                                        ((jp.StartDate >= dateStart && jp.StartDate <= dateEnd) ||
-                                        (jp.SelectedDays != null && jp.SelectedDays.Any(d => d >= dateStart && d <= dateEnd))),
+                                        (jp.JobPostDays != null && jp.JobPostDays.Any(d => d.WorkDate >= dateStart && d.WorkDate <= dateEnd))),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
+                            .Include(jp => jp.JobPostDays)
                             .Include(jp => jp.JobSkillRequirements)
                             .ThenInclude(jsr => jsr.Skill),
                         orderBy: jp => jp.OrderBy(x => x.StartDate));
@@ -1153,7 +1320,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderBy(x => x.Title));
 
                 var result = jobs?.Select(j => _mapper.JobPostToJobDiscoveryDto(j)).ToList() ?? new List<JobDiscoveryDTO>();
@@ -1184,7 +1352,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderByDescending(x => x.WageAmount));
 
                 var result = jobs?.Select(j => _mapper.JobPostToJobDiscoveryDto(j)).ToList() ?? new List<JobDiscoveryDTO>();
@@ -1213,7 +1382,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderBy(x => x.Title));
 
                 var result = jobs?.Select(j => _mapper.JobPostToJobDiscoveryDto(j)).ToList() ?? new List<JobDiscoveryDTO>();
@@ -1237,7 +1407,8 @@ namespace AgroTemp.Service.Implements
                             .Include(jp => jp.Farm)
                             .Include(jp => jp.JobCategory)
                             .Include(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(jp => jp.JobPostDays),
                         orderBy: jp => jp.OrderBy(x => x.StartDate));
 
                 if (urgentJobs == null || !urgentJobs.Any())
@@ -1272,9 +1443,9 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        private static int ResolveBillableDays(DateOnly? startDate, DateOnly? endDate, IEnumerable<DateOnly>? selectedDays)
+        private static int ResolveBillableDays(DateOnly? startDate, DateOnly? endDate, IEnumerable<DateOnly>? dayDates)
         {
-            var selectedDayCount = selectedDays?.Distinct().Count() ?? 0;
+            var selectedDayCount = dayDates?.Distinct().Count() ?? 0;
             if (selectedDayCount > 0)
             {
                 return selectedDayCount;
@@ -1335,10 +1506,22 @@ namespace AgroTemp.Service.Implements
             try
             {
                 var jobPost = await _unitOfWork.GetRepository<JobPost>()
-                    .FirstOrDefaultAsync(predicate: jp => jp.Id == jobPostId);
+                    .FirstOrDefaultAsync(
+                        predicate: jp => jp.Id == jobPostId);
 
                 if (jobPost == null)
                     throw new KeyNotFoundException($"Job post with id '{jobPostId}' was not found.");
+
+                var jobPostDays = await _unitOfWork.GetRepository<JobPostDay>()
+                    .GetListAsync(
+                        predicate: d => d.JobPostId == jobPostId,
+                        include: null,
+                        orderBy: q => q.OrderBy(d => d.WorkDate));
+
+                if (jobPostDays == null || !jobPostDays.Any())
+                {
+                    return new List<WorkersPerDayDTO>();
+                }
 
                 var acceptedApplications = await _unitOfWork.GetRepository<JobApplication>()
                     .GetListAsync(
@@ -1349,26 +1532,42 @@ namespace AgroTemp.Service.Implements
                             .Include(ja => ja.Worker)
                                 .ThenInclude(w => w.User));
 
-                var result = jobPost.SelectedDays
-                    .OrderBy(day => day)
+                var workersByDate = acceptedApplications
+                    .Where(ja => ja.WorkDates != null)
+                    .SelectMany(ja => ja.WorkDates!
+                        .Select(dt => new
+                        {
+                            Date = DateOnly.FromDateTime(dt),
+                            Worker = ja.Worker
+                        }))
+                    .Where(x => x.Worker != null)
+                    .GroupBy(x => x.Date)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g
+                            .Select(x => x.Worker)
+                            .GroupBy(w => w.Id)
+                            .Select(wg => wg.First())
+                            .Select(w => new WorkerSummaryDTO
+                            {
+                                WorkerId = w.Id,
+                                FullName = w.FullName,
+                                PhoneNumber = w.User?.PhoneNumber ?? string.Empty,
+                                AvatarUrl = w.AvatarUrl
+                            })
+                            .ToList());
+
+                var result = jobPostDays
+                    .OrderBy(day => day.WorkDate)
                     .Select(day =>
                     {
-                        var workersOnDay = acceptedApplications
-                            .Where(ja => ja.WorkDates != null &&
-                                         ja.WorkDates.Any(dt => DateOnly.FromDateTime(dt) == day))
-                            .Select(ja => new WorkerSummaryDTO
-                            {
-                                WorkerId   = ja.Worker.Id,
-                                FullName   = ja.Worker.FullName,
-                                PhoneNumber = ja.Worker.User?.PhoneNumber ?? string.Empty,
-                                AvatarUrl  = ja.Worker.AvatarUrl
-                            })
-                            .ToList();
+                        workersByDate.TryGetValue(day.WorkDate, out var workersOnDay);
+                        workersOnDay ??= new List<WorkerSummaryDTO>();
 
                         return new WorkersPerDayDTO
                         {
-                            Date = day,
-                            AcceptedWorkerCount = workersOnDay.Count,
+                            Date = day.WorkDate,
+                            AcceptedWorkerCount = day.WorkersAccepted,
                             Workers = workersOnDay
                         };
                     })
@@ -1461,7 +1660,9 @@ namespace AgroTemp.Service.Implements
                             .ThenInclude(jp => jp.Farmer)
                             .Include(s => s.JobPost)
                             .ThenInclude(jp => jp.JobSkillRequirements)
-                            .ThenInclude(jsr => jsr.Skill),
+                            .ThenInclude(jsr => jsr.Skill)
+                            .Include(s => s.JobPost)
+                            .ThenInclude(jp => jp.JobPostDays),
                         orderBy: s => s.OrderByDescending(x => x.SavedAt));
 
                 return savedPosts.Select(s => new SavedJobPostDTO

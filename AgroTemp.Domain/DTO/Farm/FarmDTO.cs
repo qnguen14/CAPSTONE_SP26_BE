@@ -1,4 +1,4 @@
-using AgroTemp.Domain.Metadata;
+using System;
 
 namespace AgroTemp.Domain.DTO.Farm
 {
@@ -11,8 +11,8 @@ namespace AgroTemp.Domain.DTO.Farm
         public decimal Longitude { get; set; }
         public string LocationName { get; set; }
         public List<string>? ImageUrl { get; set; }
-        public FarmType FarmType { get; set; }
-        public string FarmTypeName => FarmType.ToString();
+        public Guid? FarmTypeId { get; set; }
+        public string? FarmTypeName { get; set; }
 
         public int? LivestockCount { get; set; }
 
