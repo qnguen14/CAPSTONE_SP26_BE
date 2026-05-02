@@ -64,23 +64,27 @@ namespace AgroTemp.Service.Implements
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork<AgroTempDbContext>>();
             var walletService = scope.ServiceProvider.GetRequiredService<IWalletService>();
 
-            var now = DateTime.UtcNow;
+            var nowUtc = DateTime.UtcNow;
 
-            var nextExpiry = await CloseExpiredJobPostsAsync(unitOfWork, walletService, now);
-            var nextUnfilledCancel = await CancelUnfilledJobPostsAsync(unitOfWork, walletService, now);
-            var nextStartTime = await StartInProgressJobPostsAsync(unitOfWork, now);
+            var cancelThreshold = nowUtc.Date.AddHours(18);
+            var startThreshold = nowUtc.Date.AddHours(6);
+
+            // Run the processing logic
+            var nextExpiry = await CloseExpiredJobPostsAsync(unitOfWork, walletService, cancelThreshold);
+            var nextUnfilledCancel = await CancelUnfilledJobPostsAsync(unitOfWork, walletService, cancelThreshold);
+            var nextStartTime = await StartInProgressJobPostsAsync(unitOfWork, startThreshold);
 
             var nextEvent = Min(Min(nextExpiry, nextUnfilledCancel), nextStartTime);
 
             if (nextEvent.HasValue)
             {
-                var delay = nextEvent.Value - now;
-                return delay;
+                var delay = nextEvent.Value - nowUtc;
+
+                return delay > TimeSpan.Zero ? delay : TimeSpan.FromSeconds(1);
             }
 
             return MaxSleepDuration;
         }
-
         private async Task<DateTime?> CloseExpiredJobPostsAsync(
             IUnitOfWork<AgroTempDbContext> unitOfWork,
             IWalletService walletService,
