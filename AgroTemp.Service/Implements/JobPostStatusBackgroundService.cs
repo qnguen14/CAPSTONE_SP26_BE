@@ -33,7 +33,9 @@ namespace AgroTemp.Service.Implements
                 try
                 {
                     var delay = await ProcessAndGetNextDelayAsync();
-                    var sleepDuration = delay < MaxSleepDuration ? delay : MaxSleepDuration;
+                    var sleepDuration = delay <= TimeSpan.Zero
+                        ? TimeSpan.Zero
+                        : (delay < MaxSleepDuration ? delay : MaxSleepDuration);
 
                     _logger.LogInformation(
                         "Next status check in {Seconds:F0}s (at {WakeAt:HH:mm:ss} UTC).",
@@ -64,13 +66,17 @@ namespace AgroTemp.Service.Implements
 
             var now = DateTime.UtcNow;
 
-            var nextExpiry      = await CloseExpiredJobPostsAsync(unitOfWork, walletService, now);
-            var nextStartTime   = await StartInProgressJobPostsAsync(unitOfWork, now);
+            var nextExpiry = await CloseExpiredJobPostsAsync(unitOfWork, walletService, now);
+            var nextUnfilledCancel = await CancelUnfilledJobPostsAsync(unitOfWork, walletService, now);
+            var nextStartTime = await StartInProgressJobPostsAsync(unitOfWork, now);
 
-            var nextEvent = Min(nextExpiry, nextStartTime);
+            var nextEvent = Min(Min(nextExpiry, nextUnfilledCancel), nextStartTime);
 
             if (nextEvent.HasValue)
-                return nextEvent.Value - DateTime.UtcNow;
+            {
+                var delay = nextEvent.Value - now;
+                return delay;
+            }
 
             return MaxSleepDuration;
         }
@@ -121,18 +127,101 @@ namespace AgroTemp.Service.Implements
 
                         if (lockedAmount > 0)
                         {
-                            await walletService.RefundLockedAmountForJobPostAsync(
-                                post.Farmer.UserId,
-                                post.Id,
-                                lockedAmount);
+                            try
+                            {
+                                await walletService.RefundLockedAmountForJobPostAsync(
+                                    post.Farmer.UserId,
+                                    post.Id,
+                                    lockedAmount);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to refund locked amount for JobPost {JobPostId} (Farmer: {FarmerId}). Continuing.", post.Id, post.Farmer.UserId);
+                            }
                         }
                     }
                 }
 
-                await unitOfWork.SaveChangesAsync();
+                var saved = await unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("Saved changes after cancelling posts: {SavedCount}.", saved);
             }
 
             return nextExpiry;
+        }
+
+        private async Task<DateTime?> CancelUnfilledJobPostsAsync(
+            IUnitOfWork<AgroTempDbContext> unitOfWork,
+            IWalletService walletService,
+            DateTime now)
+        {
+            var publishedWithStart = await unitOfWork.GetRepository<JobPost>()
+                .GetListAsync(
+                    predicate: jp =>
+                        jp.StatusId == (int)JobPostStatus.Published &&
+                        jp.StartDate.HasValue,
+                    include: jp => jp.Include(p => p.Farmer),
+                    orderBy: null);
+
+            if (publishedWithStart == null || !publishedWithStart.Any())
+                return null;
+
+            var toCancel = new List<JobPost>();
+            DateTime? nextStart = null;
+
+            foreach (var post in publishedWithStart)
+            {
+                var startsAt = post.StartDate!.Value.ToDateTime(post.StartTime);
+
+                if (startsAt > now)
+                {
+                    if (nextStart == null || startsAt < nextStart.Value)
+                        nextStart = startsAt;
+                    continue;
+                }
+
+                if (post.WorkersAccepted >= post.WorkersNeeded)
+                    continue; // not unfilled
+
+                toCancel.Add(post);
+            }
+
+            if (toCancel.Any())
+            {
+                _logger.LogInformation("Cancelling {Count} unfilled job post(s) that missed start time.", toCancel.Count);
+
+                foreach (var post in toCancel)
+                {
+                    post.StatusId = (int)JobPostStatus.Cancelled;
+                    unitOfWork.GetRepository<JobPost>().UpdateAsync(post);
+
+                    if (post.Farmer != null)
+                    {
+                        var lockedAmount = post.JobTypeId == (int)JobType.PerJob
+                            ? post.WageAmount
+                            : post.WageAmount * post.WorkersNeeded;
+
+                        if (lockedAmount > 0)
+                        {
+                            try
+                            {
+                                await walletService.RefundLockedAmountForJobPostAsync(
+                                    post.Farmer.UserId,
+                                    post.Id,
+                                    lockedAmount);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to refund locked amount for unfilled JobPost {JobPostId} (Farmer: {FarmerId}). Continuing.", post.Id, post.Farmer.UserId);
+                            }
+                        }
+                    }
+                }
+
+                var saved = await unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("Saved changes after cancelling unfilled posts: {SavedCount}.", saved);
+            }
+
+            return nextStart;
         }
 
         private async Task<DateTime?> StartInProgressJobPostsAsync(
