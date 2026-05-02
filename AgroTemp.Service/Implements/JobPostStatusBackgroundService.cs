@@ -1,6 +1,7 @@
 using AgroTemp.Domain.Context;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Repository.Interfaces;
+using AgroTemp.Service.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -59,10 +60,11 @@ namespace AgroTemp.Service.Implements
         {
             using var scope = _scopeFactory.CreateScope();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork<AgroTempDbContext>>();
+            var walletService = scope.ServiceProvider.GetRequiredService<IWalletService>();
 
             var now = DateTime.UtcNow;
 
-            var nextExpiry      = await CloseExpiredJobPostsAsync(unitOfWork, now);
+            var nextExpiry      = await CloseExpiredJobPostsAsync(unitOfWork, walletService, now);
             var nextStartTime   = await StartInProgressJobPostsAsync(unitOfWork, now);
 
             var nextEvent = Min(nextExpiry, nextStartTime);
@@ -74,14 +76,16 @@ namespace AgroTemp.Service.Implements
         }
 
         private async Task<DateTime?> CloseExpiredJobPostsAsync(
-            IUnitOfWork<AgroTempDbContext> unitOfWork, DateTime now)
+            IUnitOfWork<AgroTempDbContext> unitOfWork,
+            IWalletService walletService,
+            DateTime now)
         {
             var publishedPosts = await unitOfWork.GetRepository<JobPost>()
                 .GetListAsync(
                     predicate: jp =>
                         jp.StatusId == (int)JobPostStatus.Published &&
                         jp.EndDate.HasValue,
-                    include: null,
+                    include: jp => jp.Include(p => p.Farmer),
                     orderBy: null);
 
             if (publishedPosts == null || !publishedPosts.Any())
@@ -102,12 +106,27 @@ namespace AgroTemp.Service.Implements
 
             if (expiredPosts.Any())
             {
-                _logger.LogInformation("Closing {Count} expired job post(s).", expiredPosts.Count);
+                _logger.LogInformation("Cancelling {Count} expired job post(s).", expiredPosts.Count);
 
                 foreach (var post in expiredPosts)
                 {
-                    post.StatusId = (int)JobPostStatus.Closed;
+                    post.StatusId = (int)JobPostStatus.Cancelled;
                     unitOfWork.GetRepository<JobPost>().UpdateAsync(post);
+
+                    if (post.Farmer != null)
+                    {
+                        var lockedAmount = post.JobTypeId == (int)JobType.PerJob
+                            ? post.WageAmount
+                            : post.WageAmount * post.WorkersNeeded;
+
+                        if (lockedAmount > 0)
+                        {
+                            await walletService.RefundLockedAmountForJobPostAsync(
+                                post.Farmer.UserId,
+                                post.Id,
+                                lockedAmount);
+                        }
+                    }
                 }
 
                 await unitOfWork.SaveChangesAsync();
