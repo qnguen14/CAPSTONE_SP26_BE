@@ -837,6 +837,7 @@ namespace AgroTemp.Service.Implements
                 var jobPosts = await _unitOfWork.GetRepository<JobPost>()
                     .GetListAsync(
                         predicate: jp =>
+                            jp.StatusId != (int)JobPostStatus.Draft &&
                             jp.FarmerId == farmer.Id &&
                             (string.IsNullOrEmpty(title) || jp.Title.Contains(title)) &&
                             (string.IsNullOrEmpty(category) || jp.JobCategory.Name == category) &&

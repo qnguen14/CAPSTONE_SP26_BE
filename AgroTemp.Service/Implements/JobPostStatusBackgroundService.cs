@@ -89,7 +89,7 @@ namespace AgroTemp.Service.Implements
             var publishedPosts = await unitOfWork.GetRepository<JobPost>()
                 .GetListAsync(
                     predicate: jp =>
-                        jp.StatusId == (int)JobPostStatus.Published &&
+                        jp.StatusId == (int)JobPostStatus.Closed &&
                         jp.EndDate.HasValue,
                     include: jp => jp.Include(p => p.Farmer),
                     orderBy: null);
@@ -157,7 +157,7 @@ namespace AgroTemp.Service.Implements
             var publishedWithStart = await unitOfWork.GetRepository<JobPost>()
                 .GetListAsync(
                     predicate: jp =>
-                        jp.StatusId == (int)JobPostStatus.Published &&
+                        jp.StatusId == (int)JobPostStatus.Closed &&
                         jp.StartDate.HasValue,
                     include: jp => jp.Include(p => p.Farmer),
                     orderBy: null);
@@ -230,8 +230,7 @@ namespace AgroTemp.Service.Implements
             var eligiblePosts = await unitOfWork.GetRepository<JobPost>()
                 .GetListAsync(
                     predicate: jp =>
-                        (jp.StatusId == (int)JobPostStatus.Published ||
-                         jp.StatusId == (int)JobPostStatus.Closed) &&
+                        jp.StatusId == (int)JobPostStatus.Closed &&
                         jp.StartDate.HasValue &&
                         jp.WorkersAccepted >= jp.WorkersNeeded,
                     include: jp => jp
