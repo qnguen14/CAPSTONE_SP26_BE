@@ -1165,6 +1165,32 @@ namespace AgroTemp.Service.Implements
                 // Convert to DTOs using mapper
                 var jobDtos = _mapper.JobPostsToJobDiscoveryDtos(filtered);
 
+                var hasDistanceInput =
+                    filter.WorkerLatitude.HasValue &&
+                    filter.WorkerLongitude.HasValue &&
+                    (filter.WorkerLatitude.Value != 0 || filter.WorkerLongitude.Value != 0);
+
+                if (hasDistanceInput)
+                {
+                    var farmByJobId = filtered
+                        .Where(jp => jp.Farm != null)
+                        .ToDictionary(jp => jp.Id, jp => jp.Farm);
+
+                    foreach (var dto in jobDtos)
+                    {
+                        if (farmByJobId.TryGetValue(dto.Id, out var farm))
+                        {
+                            var distance = DistanceCalculator.GetDistanceInKilometers(
+                                filter.WorkerLatitude!.Value,
+                                filter.WorkerLongitude!.Value,
+                                farm.Latitude,
+                                farm.Longitude);
+
+                            dto.DistanceKm = Math.Round(distance, 2);
+                        }
+                    }
+                }
+
                 // Post-process: Add distance, match score and other calculated fields
                 foreach (var dto in jobDtos)
                 {
