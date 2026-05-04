@@ -18,5 +18,8 @@ public interface IDisputeReportService
     // Comments
     Task<List<DisputeReportCommentDTO>> GetDisputeCommentsAsync(Guid disputeId, Guid currentUserId, bool isAdmin);
     Task<DisputeReportCommentDTO> AddDisputeCommentAsync(Guid disputeId, Guid currentUserId, bool isAdmin, CreateDisputeReportCommentRequest request);
+
+    // Job post embed search (admin only)
+    Task<List<JobPostEmbedDTO>> SearchJobPostsForEmbedAsync(string? search, int page, int pageSize);
 }
     

@@ -1,4 +1,4 @@
-using AgroTemp.Domain.Entities;
+﻿using AgroTemp.Domain.Entities;
 
 namespace AgroTemp.Domain.DTO.DisputeReport;
 
@@ -13,5 +13,7 @@ public class DisputeReportCommentDTO
     public string? AttachmentUrl { get; set; }
     /// <summary>The user this admin message is addressed to. Null = sent by reporter/accused (not a targeted admin message).</summary>
     public Guid? TargetUserId { get; set; }
+    /// <summary>Populated when admin attaches a job post. Renders as an embedded link card on the client.</summary>
+    public JobPostEmbedDTO? JobPostEmbed { get; set; }
     public DateTime CreatedAt { get; set; }
 }

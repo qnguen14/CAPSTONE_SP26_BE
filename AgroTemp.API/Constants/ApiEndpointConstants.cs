@@ -244,6 +244,7 @@ public class ApiEndpointConstants
         public const string ReviewDisputeEndpoint = DisputeEndpoint + "/{id:guid}/review";
         public const string UpdateDisputeStatusEndpoint = DisputeEndpoint + "/{id:guid}/status";
         public const string ResolveDisputeEndpoint = DisputeEndpoint + "/{id:guid}/resolve";
+        public const string SearchJobPostsForEmbedEndpoint = DisputeEndpoint + "/job-posts";
     }
 
     public static class Weather

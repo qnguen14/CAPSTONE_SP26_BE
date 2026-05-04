@@ -377,6 +377,25 @@ public partial class MapperlyMapper : IMapperlyMapper
             else if (comment.User.Role == UserRole.Worker) dto.UserName = comment.User.Worker?.FullName ?? "Worker";
         }
 
+        if (comment.JobPost != null)
+        {
+            dto.JobPostEmbed = new JobPostEmbedDTO
+            {
+                Id = comment.JobPost.Id,
+                Title = comment.JobPost.Title,
+                Address = comment.JobPost.Address,
+                WageAmount = comment.JobPost.WageAmount,
+                StatusId = comment.JobPost.StatusId,
+                StatusName = Enum.IsDefined(typeof(JobPostStatus), comment.JobPost.StatusId)
+                    ? ((JobPostStatus)comment.JobPost.StatusId).ToString()
+                    : "Unknown",
+                FarmerName = comment.JobPost.Farmer?.ContactName,
+                StartDate = comment.JobPost.StartDate,
+                EndDate = comment.JobPost.EndDate,
+                IsUrgent = comment.JobPost.IsUrgent
+            };
+        }
+
         return dto;
     }
 
