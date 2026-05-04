@@ -533,6 +533,37 @@ public class DisputeReportController : ControllerBase
         }
     }
 
+    [HttpGet(ApiEndpointConstants.Dispute.SearchJobPostsForEmbedEndpoint)]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostEmbedDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobPostEmbedDTO>>> SearchJobPostsForEmbed(
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            var results = await _disputeReportService.SearchJobPostsForEmbedAsync(search, page, pageSize);
+            return Ok(new ApiResponse<IEnumerable<JobPostEmbedDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job posts retrieved successfully",
+                Data = results
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching job posts for embed");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while searching job posts",
+                Data = null
+            });
+        }
+    }
+
     [HttpGet(ApiEndpointConstants.Dispute.DisputeEndpoint + "/{id:guid}/comments")]
     [Authorize(Roles = "Admin,Farmer,Worker")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<DisputeReportCommentDTO>>), StatusCodes.Status200OK)]

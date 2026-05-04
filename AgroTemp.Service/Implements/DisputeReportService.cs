@@ -430,6 +430,44 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
         return await UpdateDisputeStatusAsync(id, adminUserId, dispute.StatusId);
     }
 
+    public async Task<List<JobPostEmbedDTO>> SearchJobPostsForEmbedAsync(string? search, int page, int pageSize)
+    {
+        var query = _unitOfWork.Context.Set<JobPost>()
+            .Include(jp => jp.Farmer)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var lower = search.ToLower();
+            query = query.Where(jp =>
+                jp.Title.ToLower().Contains(lower) ||
+                (jp.Address != null && jp.Address.ToLower().Contains(lower)) ||
+                (jp.Farmer != null && jp.Farmer.ContactName != null && jp.Farmer.ContactName.ToLower().Contains(lower)));
+        }
+
+        var items = await query
+            .OrderByDescending(jp => jp.PublishedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return items.Select(jp => new JobPostEmbedDTO
+        {
+            Id = jp.Id,
+            Title = jp.Title,
+            Address = jp.Address,
+            WageAmount = jp.WageAmount,
+            StatusId = jp.StatusId,
+            StatusName = Enum.IsDefined(typeof(JobPostStatus), jp.StatusId)
+                ? ((JobPostStatus)jp.StatusId).ToString()
+                : "Unknown",
+            FarmerName = jp.Farmer?.ContactName,
+            StartDate = jp.StartDate,
+            EndDate = jp.EndDate,
+            IsUrgent = jp.IsUrgent
+        }).ToList();
+    }
+
     private async Task EnsureIsOwnerAsync(DisputeReport dispute, Guid currentUserId)
     {
         var farmer = await _unitOfWork.GetRepository<Farmer>()
@@ -464,6 +502,8 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
             .ThenInclude(u => u.Farmer)
             .Include(c => c.User)
             .ThenInclude(u => u.Worker)
+            .Include(c => c.JobPost)
+            .ThenInclude(jp => jp.Farmer)
             .Where(c => c.DisputeReportId == disputeId);
 
         if (!isAdmin)
@@ -511,6 +551,21 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
             targetUserId = request.TargetUserId.Value;
         }
 
+        // Validate JobPostId - only admin can embed a job post
+        Guid? jobPostId = null;
+        if (request.JobPostId.HasValue)
+        {
+            if (!isAdmin)
+                throw new UnauthorizedAccessException("Only admins can attach a job post to a comment.");
+
+            var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                .FirstOrDefaultAsync(predicate: j => j.Id == request.JobPostId.Value);
+            if (jobPost == null)
+                throw new KeyNotFoundException("Job post not found.");
+
+            jobPostId = request.JobPostId.Value;
+        }
+
         var comment = new DisputeReportComment
         {
             Id = Guid.NewGuid(),
@@ -519,6 +574,7 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
             Content = request.Content,
             AttachmentUrl = request.AttachmentUrl,
             TargetUserId = targetUserId,
+            JobPostId = jobPostId,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -530,6 +586,8 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
             .ThenInclude(u => u.Farmer)
             .Include(c => c.User)
             .ThenInclude(u => u.Worker)
+            .Include(c => c.JobPost)
+            .ThenInclude(jp => jp.Farmer)
             .FirstOrDefaultAsync(c => c.Id == comment.Id);
 
         return _mapper.DisputeReportCommentToDto(createdComment!);
