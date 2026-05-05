@@ -7,9 +7,8 @@ public interface IMessageService
 {
     Task<PaginatedResponse<MessageDTO>> GetMessagesAsync(Guid otherUserId, int page, int limit);
 
-    Task<MessageDTO> SendMessageAsync(Guid receiverId, string content);
+    Task<MessageDTO> SendMessageAsync(Guid receiverId, string content, Guid? jobPostId = null);
 
-    // Mark all unread messages sent from `senderId` to the current user as read.
     Task<int> MarkConversationAsReadAsync(Guid senderId);
 
     Task<List<ConversationDTO>> GetRecentConversationsAsync();

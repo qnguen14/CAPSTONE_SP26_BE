@@ -1,3 +1,5 @@
+using AgroTemp.Domain.DTO.DisputeReport;
+
 namespace AgroTemp.Domain.DTO.Message;
 
 public class UserBriefDTO
@@ -24,6 +26,8 @@ public class MessageDTO
     public UserBriefDTO? Sender { get; set; }
 
     public UserBriefDTO? Receiver { get; set; }
+
+    public JobPostEmbedDTO? JobPostEmbed { get; set; }
 }
 
 public class ConversationDTO
