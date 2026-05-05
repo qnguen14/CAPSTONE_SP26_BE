@@ -138,6 +138,7 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<ISkillService, SkillService>();
             services.AddScoped<IRatingService, RatingService>();
             services.AddHostedService<JobPostStatusBackgroundService>();
+            services.AddHostedService<JobApplicationBackgroundService>();
             services.AddScoped<IDisputeReportService, DisputeReportService>();
             services.AddScoped<IWalletService, WalletService>();
             services.AddScoped<IWalletTransactionService, WalletTransactionService>();
