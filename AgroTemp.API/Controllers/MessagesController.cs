@@ -72,7 +72,17 @@ public class MessagesController : ControllerBase
                 });
             }
 
-            var message = await _messageService.SendMessageAsync(request.ReceiverId, request.Content);
+            if (request.JobPostId.HasValue && !User.IsInRole("Admin"))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new ApiResponse<object>
+                {
+                    StatusCode = StatusCodes.Status403Forbidden,
+                    Message = "Only admins can attach a job post to a message.",
+                    Data = null
+                });
+            }
+
+            var message = await _messageService.SendMessageAsync(request.ReceiverId, request.Content, request.JobPostId);
 
             await _chatHubContext.Clients
                .Group(message.SenderId.ToString())

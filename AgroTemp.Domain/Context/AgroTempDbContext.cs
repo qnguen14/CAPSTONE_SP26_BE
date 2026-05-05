@@ -82,6 +82,13 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(m => m.RecipientId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<ChatMessage>()
+            .HasOne(m => m.JobPost)
+            .WithMany()
+            .HasForeignKey(m => m.JobPostId)
+            .OnDelete(DeleteBehavior.SetNull)
+            .IsRequired(false);
+
         modelBuilder.Entity<User>()
             .HasMany(u => u.DeviceTokens)
             .WithOne(dt => dt.User)
