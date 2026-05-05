@@ -1142,8 +1142,26 @@ namespace AgroTemp.Service.Implements
                     };
                 }
 
+                var hasDistanceInput =
+                    filter.WorkerLatitude.HasValue &&
+                    filter.WorkerLongitude.HasValue &&
+                    (filter.WorkerLatitude.Value != 0 || filter.WorkerLongitude.Value != 0);
+
+                var shouldApplyRoadDistanceFilter = hasDistanceInput && filter.MaxDistanceKm.HasValue && filter.MaxDistanceKm.Value > 0;
+                var maxDistanceKm = filter.MaxDistanceKm;
+
+                if (shouldApplyRoadDistanceFilter)
+                {
+                    filter.MaxDistanceKm = null;
+                }
+
                 // Apply filters
                 var filtered = JobDiscoveryHelper.ApplyJobFilters(query.ToList(), filter);
+
+                if (shouldApplyRoadDistanceFilter)
+                {
+                    filter.MaxDistanceKm = maxDistanceKm;
+                }
 
                 // Fallback: if worker has a primary location but coordinates cannot be resolved,
                 // default to that location name/address text filter.
@@ -1165,22 +1183,29 @@ namespace AgroTemp.Service.Implements
                 // Convert to DTOs using mapper
                 var jobDtos = _mapper.JobPostsToJobDiscoveryDtos(filtered);
 
-                var hasDistanceInput =
-                    filter.WorkerLatitude.HasValue &&
-                    filter.WorkerLongitude.HasValue &&
-                    (filter.WorkerLatitude.Value != 0 || filter.WorkerLongitude.Value != 0);
-
                 if (hasDistanceInput)
                 {
                     var farmByJobId = filtered
                         .Where(jp => jp.Farm != null)
                         .ToDictionary(jp => jp.Id, jp => jp.Farm);
 
+                    using var routeHttpClient = new HttpClient
+                    {
+                        Timeout = TimeSpan.FromSeconds(8)
+                    };
+
                     foreach (var dto in jobDtos)
                     {
                         if (farmByJobId.TryGetValue(dto.Id, out var farm))
                         {
-                            var distance = DistanceCalculator.GetDistanceInKilometers(
+                            var roadDistance = await DistanceCalculator.GetRoadRouteDistanceInKilometersAsync(
+                                filter.WorkerLatitude!.Value,
+                                filter.WorkerLongitude!.Value,
+                                farm.Latitude,
+                                farm.Longitude,
+                                routeHttpClient);
+
+                            var distance = roadDistance ?? DistanceCalculator.GetDistanceInKilometers(
                                 filter.WorkerLatitude!.Value,
                                 filter.WorkerLongitude!.Value,
                                 farm.Latitude,
@@ -1188,6 +1213,13 @@ namespace AgroTemp.Service.Implements
 
                             dto.DistanceKm = Math.Round(distance, 2);
                         }
+                    }
+
+                    if (shouldApplyRoadDistanceFilter)
+                    {
+                        jobDtos = jobDtos
+                            .Where(j => j.DistanceKm.HasValue && j.DistanceKm.Value <= maxDistanceKm)
+                            .ToList();
                     }
                 }
 
