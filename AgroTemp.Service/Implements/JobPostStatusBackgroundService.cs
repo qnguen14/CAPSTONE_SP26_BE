@@ -66,13 +66,10 @@ namespace AgroTemp.Service.Implements
 
             var nowUtc = DateTime.UtcNow;
 
-            var cancelThreshold = nowUtc.Date.AddHours(18);
-            var startThreshold = nowUtc.Date.AddHours(6);
-
             // Run the processing logic
-            var nextExpiry = await CloseExpiredJobPostsAsync(unitOfWork, walletService, cancelThreshold);
-            var nextUnfilledCancel = await CancelUnfilledJobPostsAsync(unitOfWork, walletService, cancelThreshold);
-            var nextStartTime = await StartInProgressJobPostsAsync(unitOfWork, startThreshold);
+            var nextExpiry = await CloseExpiredJobPostsAsync(unitOfWork, walletService, nowUtc);
+            var nextUnfilledCancel = await CancelUnfilledJobPostsAsync(unitOfWork, walletService, nowUtc);
+            var nextStartTime = await StartInProgressJobPostsAsync(unitOfWork, nowUtc);
 
             var nextEvent = Min(Min(nextExpiry, nextUnfilledCancel), nextStartTime);
 
@@ -163,7 +160,9 @@ namespace AgroTemp.Service.Implements
                     predicate: jp =>
                         jp.StatusId == (int)JobPostStatus.Closed &&
                         jp.StartDate.HasValue,
-                    include: jp => jp.Include(p => p.Farmer),
+                    include: jp => jp
+                        .Include(p => p.Farmer)
+                        .Include(p => p.JobPostDays),
                     orderBy: null);
 
             if (publishedWithStart == null || !publishedWithStart.Any())
@@ -183,8 +182,17 @@ namespace AgroTemp.Service.Implements
                     continue;
                 }
 
-                if (post.WorkersAccepted >= post.WorkersNeeded)
-                    continue; // not unfilled
+                if (post.JobTypeId == (int)JobType.Daily && post.JobPostDays != null && post.JobPostDays.Any())
+                {
+                    var allDaysFull = post.JobPostDays.All(d => d.WorkersAccepted >= d.WorkersNeeded);
+                    if (allDaysFull)
+                        continue;
+                }
+                else
+                {
+                    if (post.WorkersAccepted >= post.WorkersNeeded)
+                        continue; // not unfilled
+                }
 
                 toCancel.Add(post);
             }
@@ -261,12 +269,14 @@ namespace AgroTemp.Service.Implements
 
                 if (post.JobPostDays != null && post.JobPostDays.Count > 0)
                 {
-                    var coveredDates = post.JobApplications
+                    var acceptedDateCounts = post.JobApplications
                         .Where(ja => ja.StatusId == (int)ApplicationStatus.Accepted && ja.WorkDates != null)
                         .SelectMany(ja => ja.WorkDates!.Select(d => DateOnly.FromDateTime(d)))
-                        .ToHashSet();
+                        .GroupBy(d => d)
+                        .ToDictionary(g => g.Key, g => g.Count());
 
-                    if (!post.JobPostDays.All(day => coveredDates.Contains(day.WorkDate)))
+                    if (!post.JobPostDays.All(day =>
+                        acceptedDateCounts.TryGetValue(day.WorkDate, out var accepted) && accepted >= day.WorkersNeeded))
                         continue;
                 }
 
