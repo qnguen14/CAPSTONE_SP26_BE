@@ -90,10 +90,12 @@ namespace AgroTemp.Service.Implements
             var publishedPosts = await unitOfWork.GetRepository<JobPost>()
                 .GetListAsync(
                     predicate: jp =>
-                        jp.StatusId == (int)JobPostStatus.Closed &&
+                        jp.StatusId == (int)JobPostStatus.Published &&
                         jp.EndDate.HasValue,
                     include: jp => jp.Include(p => p.Farmer),
                     orderBy: null);
+
+            _logger.LogDebug("Found {Count} published posts with end date.", publishedPosts?.Count ?? 0);
 
             if (publishedPosts == null || !publishedPosts.Any())
                 return null;
@@ -119,6 +121,8 @@ namespace AgroTemp.Service.Implements
                 {
                     post.StatusId = (int)JobPostStatus.Cancelled;
                     unitOfWork.GetRepository<JobPost>().UpdateAsync(post);
+
+                    _logger.LogInformation("Cancelling expired JobPost {JobPostId} which expired at {ExpiresAt:O}.", post.Id, post.EndDate);
 
                     if (post.Farmer != null)
                     {
@@ -158,12 +162,14 @@ namespace AgroTemp.Service.Implements
             var publishedWithStart = await unitOfWork.GetRepository<JobPost>()
                 .GetListAsync(
                     predicate: jp =>
-                        jp.StatusId == (int)JobPostStatus.Closed &&
+                        jp.StatusId == (int)JobPostStatus.Published &&
                         jp.StartDate.HasValue,
                     include: jp => jp
                         .Include(p => p.Farmer)
                         .Include(p => p.JobPostDays),
                     orderBy: null);
+
+            _logger.LogDebug("Found {Count} published posts with start date.", publishedWithStart?.Count ?? 0);
 
             if (publishedWithStart == null || !publishedWithStart.Any())
                 return null;
@@ -182,17 +188,56 @@ namespace AgroTemp.Service.Implements
                     continue;
                 }
 
-                if (post.JobTypeId == (int)JobType.Daily && post.JobPostDays != null && post.JobPostDays.Any())
+                if (post.JobTypeId == (int)JobType.Daily)
                 {
-                    var allDaysFull = post.JobPostDays.All(d => d.WorkersAccepted >= d.WorkersNeeded);
-                    if (allDaysFull)
-                        continue;
+                    if (post.JobPostDays == null || !post.JobPostDays.Any())
+                    {
+                        _logger.LogWarning("JobPost {JobPostId} is Daily but has no JobPostDays; marking unfilled for cancellation.", post.Id);
+                    }
+                    else
+                    {
+                        var today = DateOnly.FromDateTime(now);
+
+                        // If any day that is due (on or before today) is not full, cancel the post
+                        var dueUnfilled = post.JobPostDays
+                            .Where(d => d.WorkDate <= today)
+                            .FirstOrDefault(d => d.WorkersAccepted < d.WorkersNeeded);
+
+                        if (dueUnfilled != null)
+                        {
+                            _logger.LogInformation("JobPost {JobPostId} has due unfilled day {WorkDate} (accepted={Accepted}, needed={Needed}); will cancel.",
+                                post.Id, dueUnfilled.WorkDate, dueUnfilled.WorkersAccepted, dueUnfilled.WorkersNeeded);
+                        }
+                        else
+                        {
+                            // No due unfilled days — if the start day exists and is full, skip cancellation
+                            var startDay = post.JobPostDays.FirstOrDefault(d => d.WorkDate == post.StartDate!.Value);
+                            if (startDay != null && startDay.WorkersAccepted >= startDay.WorkersNeeded)
+                            {
+                                continue;
+                            }
+
+                            if (startDay == null)
+                            {
+                                _logger.LogWarning("JobPost {JobPostId} has no JobPostDay for StartDate {StartDate}; marking unfilled for cancellation.", post.Id, post.StartDate);
+                            }
+                            else
+                            {
+                                // Start day exists but not full and not due-unfilled (edge case), treat as unfilled
+                                _logger.LogInformation("JobPost {JobPostId} start day {WorkDate} not full (accepted={Accepted}, needed={Needed}); will cancel.",
+                                    post.Id, startDay.WorkDate, startDay.WorkersAccepted, startDay.WorkersNeeded);
+                            }
+                        }
+                    }
                 }
                 else
                 {
                     if (post.WorkersAccepted >= post.WorkersNeeded)
                         continue; // not unfilled
                 }
+
+                _logger.LogInformation("JobPost {JobPostId} will be cancelled for missing workers. JobType={JobType}, StartsAt={StartsAt:O}, Now={Now:O}, Accepted={Accepted}, Needed={Needed}",
+                    post.Id, post.JobTypeId, startsAt, now, post.WorkersAccepted, post.WorkersNeeded);
 
                 toCancel.Add(post);
             }
@@ -242,13 +287,15 @@ namespace AgroTemp.Service.Implements
             var eligiblePosts = await unitOfWork.GetRepository<JobPost>()
                 .GetListAsync(
                     predicate: jp =>
-                        jp.StatusId == (int)JobPostStatus.Closed &&
+                        jp.StatusId == (int)JobPostStatus.Published &&
                         jp.StartDate.HasValue &&
                         jp.WorkersAccepted >= jp.WorkersNeeded,
                     include: jp => jp
                         .Include(p => p.JobApplications)
                         .Include(p => p.JobPostDays),
                     orderBy: null);
+
+            _logger.LogDebug("Found {Count} eligible published posts for starting.", eligiblePosts?.Count ?? 0);
 
             if (eligiblePosts == null || !eligiblePosts.Any())
                 return null;
@@ -277,7 +324,10 @@ namespace AgroTemp.Service.Implements
 
                     if (!post.JobPostDays.All(day =>
                         acceptedDateCounts.TryGetValue(day.WorkDate, out var accepted) && accepted >= day.WorkersNeeded))
+                    {
+                        _logger.LogDebug("JobPost {JobPostId} not ready to start: insufficient accepted workers for some days.", post.Id);
                         continue;
+                    }
                 }
 
                 readyPosts.Add(post);
@@ -292,6 +342,7 @@ namespace AgroTemp.Service.Implements
                 {
                     post.StatusId = (int)JobPostStatus.InProgress;
                     unitOfWork.GetRepository<JobPost>().UpdateAsync(post);
+                    _logger.LogInformation("JobPost {JobPostId} set to InProgress.", post.Id);
                 }
 
                 await unitOfWork.SaveChangesAsync();

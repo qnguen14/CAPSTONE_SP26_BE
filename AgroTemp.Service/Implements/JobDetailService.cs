@@ -504,6 +504,37 @@ namespace AgroTemp.Service.Implements
 
                 await _walletService.ReleaseEscrowAndPayWorkerAsync(jobDetail, workerPayment, refund, isLastDetail);
 
+                // Mark JobPost as Completed if all conditions are met
+                if (jobType == JobType.PerJob && isLastDetail)
+                {
+                    // PerJob: mark as completed on last detail approval
+                    jobPost.StatusId = (int)JobPostStatus.Completed;
+                    _unitOfWork.GetRepository<JobPost>().UpdateAsync(jobPost);
+                }
+                else if (jobType == JobType.Daily && jobPost.JobPostDays != null && jobPost.JobPostDays.Count > 0)
+                {
+                    // Daily: check if all days have been approved
+                    var completedDetails = await _unitOfWork.GetRepository<JobDetail>()
+                        .GetListAsync(
+                            predicate: jd => jd.JobPostId == jobPost.Id && jd.StatusId == (int)JobStatus.Completed,
+                            include: null,
+                            orderBy: null);
+
+                    var approvedDateCounts = completedDetails
+                        .Where(jd => jd.WorkDate.HasValue)
+                        .GroupBy(jd => DateOnly.FromDateTime(jd.WorkDate.Value))
+                        .ToDictionary(g => g.Key, g => g.Count());
+
+                    bool allDaysApproved = jobPost.JobPostDays.All(day =>
+                        approvedDateCounts.TryGetValue(day.WorkDate, out var approved) && approved >= day.WorkersNeeded);
+
+                    if (allDaysApproved)
+                    {
+                        jobPost.StatusId = (int)JobPostStatus.Completed;
+                        _unitOfWork.GetRepository<JobPost>().UpdateAsync(jobPost);
+                    }
+                }
+
                 _unitOfWork.GetRepository<JobDetail>().UpdateAsync(jobDetail);
                 await _unitOfWork.SaveChangesAsync();
 
