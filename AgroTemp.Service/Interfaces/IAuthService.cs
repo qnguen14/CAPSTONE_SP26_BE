@@ -12,4 +12,5 @@ public interface IAuthService
     Task ForgotPassword(ForgotPasswordRequest request);
     Task<bool> ResetPassword(ResetPasswordRequest request);
     Task Logout(string token);
+    Task<RefreshResponse> Refresh(RefreshRequest request);
 }

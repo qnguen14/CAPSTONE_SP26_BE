@@ -74,6 +74,45 @@ public class AuthController : Controller
         }
     }
 
+    [HttpPost(ApiEndpointConstants.Auth.RefreshTokenEndpoint)]
+    [ProducesResponseType(typeof(ApiResponse<RefreshResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+    {
+        try
+        {
+            var response = await _authService.Refresh(request);
+            return Ok(new ApiResponse<RefreshResponse>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Token refreshed",
+                Data = response
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex.Message);
+            return Unauthorized(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status401Unauthorized,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during token refresh");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred during token refresh",
+                Data = null
+            });
+        }
+    }
+
     /// <summary>
     /// Register Ã¢â‚¬â€ sends a verification OTP to the provided email
     /// </summary>

@@ -30,6 +30,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<JobAttachment> JobAttachments { get; set; }
     public DbSet<Rating> Ratings { get; set; }
     public DbSet<BlacklistedToken> BlacklistedTokens { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<PayOSOrder> PayOSOrders { get; set; }
     public DbSet<PayOSOrderItem> PayOSOrderItems { get; set; }

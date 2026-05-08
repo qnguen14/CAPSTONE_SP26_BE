@@ -39,6 +39,30 @@ public class AuthService : BaseService<User>, IAuthService
         _walletService = walletService;
     }
 
+    private string GenerateRandomToken(int size = 64)
+    {
+        var bytes = new byte[size];
+        System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
+        return Convert.ToBase64String(bytes);
+    }
+
+    private async Task<RefreshToken> CreateAndStoreRefreshTokenAsync(User user, int days = 30)
+    {
+        var token = GenerateRandomToken();
+        var refresh = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            Token = token,
+            UserId = user.Id,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(days)
+        };
+
+        await _unitOfWork.GetRepository<RefreshToken>().InsertAsync(refresh);
+        await _unitOfWork.SaveChangesAsync();
+        return refresh;
+    }
+
     public async Task<LoginResponse> Login(LoginRequest request)
     {
         if (string.IsNullOrEmpty(request.Email) && string.IsNullOrEmpty(request.PhoneNumber))
@@ -84,6 +108,9 @@ public class AuthService : BaseService<User>, IAuthService
         var token = await GenerateJwtToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
 
+        // Create and store refresh token
+        var refresh = await CreateAndStoreRefreshTokenAsync(user);
+
         return new LoginResponse
         {
             Token = token,
@@ -91,7 +118,8 @@ public class AuthService : BaseService<User>, IAuthService
             Email = user.Email,
             UserId = user.Id,
             Role = user.Role.ToString(),
-            IsVerified = user.IsVerified
+            IsVerified = user.IsVerified,
+            RefreshToken = refresh.Token
         };
     }
 
@@ -196,6 +224,7 @@ public class AuthService : BaseService<User>, IAuthService
 
         // Return a JWT so the user is logged in immediately after verifying
         var token = await GenerateJwtToken(user);
+        var refresh = await CreateAndStoreRefreshTokenAsync(user);
         return new LoginResponse
         {
             Token = token,
@@ -203,7 +232,8 @@ public class AuthService : BaseService<User>, IAuthService
             Email = user.Email,
             UserId = user.Id,
             Role = user.Role.ToString(),
-            IsVerified = user.IsVerified
+            IsVerified = user.IsVerified,
+            RefreshToken = refresh.Token
         };
     }
 
@@ -309,6 +339,8 @@ public class AuthService : BaseService<User>, IAuthService
             var token = await GenerateJwtToken(user);
             var expiresAt = DateTime.UtcNow.AddHours(24);
 
+            var refresh = await CreateAndStoreRefreshTokenAsync(user);
+
             return new LoginResponse
             {
                 Token = token,
@@ -316,7 +348,8 @@ public class AuthService : BaseService<User>, IAuthService
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 UserId = user.Id,
-                IsVerified = user.IsVerified
+                IsVerified = user.IsVerified,
+                RefreshToken = refresh.Token
             };
         }
         catch (InvalidJwtException)
@@ -356,6 +389,59 @@ public class AuthService : BaseService<User>, IAuthService
 
         await _unitOfWork.GetRepository<BlacklistedToken>().InsertAsync(blacklistedToken);
         await _unitOfWork.SaveChangesAsync();
+
+        // Revoke any active refresh tokens associated with the user (if we can extract user id)
+        var nameIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(nameIdClaim) && Guid.TryParse(nameIdClaim, out var userId))
+        {
+            var refreshRepo = _unitOfWork.GetRepository<RefreshToken>();
+            var activeRefreshes = await refreshRepo.GetListAsync(predicate: r => r.UserId == userId && r.RevokedAt == null && r.ExpiresAt > DateTime.UtcNow);
+            foreach (var r in activeRefreshes)
+            {
+                r.RevokedAt = DateTime.UtcNow;
+                refreshRepo.UpdateAsync(r);
+            }
+            await _unitOfWork.SaveChangesAsync();
+        }
+    }
+
+    public async Task<RefreshResponse> Refresh(RefreshRequest request)
+    {
+        if (string.IsNullOrEmpty(request.RefreshToken))
+        {
+            throw new UnauthorizedAccessException("Invalid refresh token");
+        }
+
+        var repo = _unitOfWork.GetRepository<RefreshToken>();
+        var stored = (await repo.GetListAsync(predicate: r => r.Token == request.RefreshToken)).FirstOrDefault();
+
+        if (stored == null || stored.RevokedAt != null || stored.ExpiresAt <= DateTime.UtcNow)
+        {
+            throw new UnauthorizedAccessException("Invalid or expired refresh token");
+        }
+
+        // Find associated user
+        var users = await _unitOfWork.GetRepository<User>().GetListAsync(predicate: u => u.Id == stored.UserId && u.IsActive);
+        var user = users.FirstOrDefault();
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException("Invalid refresh token");
+        }
+
+        // Rotate refresh token: revoke the old and create a new one
+        stored.RevokedAt = DateTime.UtcNow;
+        _unitOfWork.GetRepository<RefreshToken>().UpdateAsync(stored);
+
+        var newRefresh = await CreateAndStoreRefreshTokenAsync(user);
+
+        // Generate a new access token
+        var accessToken = await GenerateJwtToken(user);
+
+        return new RefreshResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = newRefresh.Token
+        };
     }
 
     private async Task<string> GenerateJwtToken(User user)
