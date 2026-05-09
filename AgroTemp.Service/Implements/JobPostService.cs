@@ -768,29 +768,32 @@ namespace AgroTemp.Service.Implements
             }
         }
 
-        public async Task<PaginatedAdminJobPostsResponse> GetJobPostsForAdmin(int page = 1, int limit = 20)
+        public async Task<PaginatedAdminJobPostsResponse> GetJobPostsForAdmin(int page = 1, int limit = 20, JobPostStatus? status = null, string? title = null)
         {
             try
             {
                 page = page < 1 ? 1 : page;
                 limit = limit < 1 ? 1 : limit;
                 var skip = (page - 1) * limit;
+                var normalizedTitle = title?.Trim().ToLower();
 
-                var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                var allJobPosts = await _unitOfWork.GetRepository<JobPost>()
                     .GetListAsync(
-                        predicate: null,
+                        predicate: jp =>
+                            (!status.HasValue || jp.StatusId == (int)status.Value) &&
+                            (string.IsNullOrWhiteSpace(normalizedTitle) || jp.Title.ToLower().Contains(normalizedTitle)),
                         include: q => q
                             .Include(jp => jp.Farmer)
                             .Include(jp => jp.JobDetails)
                             .ThenInclude(jd => jd.Worker),
                         orderBy: jp => jp.OrderByDescending(x => x.CreatedAt));
 
-                var total = jobPosts?.Count ?? 0;
-                var active = jobPosts?.Count(jp => jp.StatusId == (int)JobPostStatus.Published || jp.StatusId == (int)JobPostStatus.InProgress) ?? 0;
-                var completed = jobPosts?.Count(jp => jp.StatusId == (int)JobPostStatus.Completed) ?? 0;
+                var total = allJobPosts?.Count ?? 0;
+                var active = allJobPosts?.Count(jp => jp.StatusId == (int)JobPostStatus.Published || jp.StatusId == (int)JobPostStatus.InProgress) ?? 0;
+                var completed = allJobPosts?.Count(jp => jp.StatusId == (int)JobPostStatus.Completed) ?? 0;
                 var completionRate = total > 0 ? Math.Round((double)completed / total * 100, 1) : 0.0;
 
-                var pageItems = jobPosts?.Skip(skip).Take(limit).Select(jp => new AdminJobPostItemDTO
+                var pageItems = allJobPosts?.Skip(skip).Take(limit).Select(jp => new AdminJobPostItemDTO
                 {
                     Id = jp.Id,
                     Title = jp.Title,
