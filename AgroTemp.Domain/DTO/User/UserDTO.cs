@@ -12,5 +12,6 @@ public class UserDTO
     public string Role { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }
+    public int WarningCount { get; set; }
     public bool IsVerified { get; set; }
 }

@@ -6,6 +6,8 @@ public class WorkerProfileDTO
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
+    public bool IsActive { get; set; }
+    public int WarningCount { get; set; }
     public string FullName { get; set; }
     public string Date_of_birth { get; set; }
     public string PrimaryLocation { get; set; }
@@ -24,4 +26,5 @@ public class WorkerProfileDTO
     public List<SkillResponse> Skills { get; set; } = new List<SkillResponse>();
     public int GenderId { get; set; }
     public string Gender { get; set; }
+    public UserDTO User { get; set; }
 }

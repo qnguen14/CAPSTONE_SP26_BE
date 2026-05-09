@@ -47,6 +47,8 @@ public partial class MapperlyMapper : IMapperlyMapper
         {
             Id = farmer.Id,
             UserId = farmer.UserId,
+            IsActive = farmer.User?.IsActive ?? true,
+            WarningCount = farmer.User?.WarningCount ?? 0,
             ContactName = farmer.ContactName,
             Address = farmer.Address,
             DateOfBirth = farmer.DateOfBirth,
@@ -73,6 +75,8 @@ public partial class MapperlyMapper : IMapperlyMapper
         {
             Id = worker.Id,
             UserId = worker.UserId,
+            IsActive = worker.User?.IsActive ?? true,
+            WarningCount = worker.User?.WarningCount ?? 0,
             FullName = worker.FullName,
             Date_of_birth = worker.DateOfBirth.ToString(),
             PrimaryLocation = worker.PrimaryLocation,
