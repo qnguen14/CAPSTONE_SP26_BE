@@ -31,14 +31,28 @@ public class DisputeReportController : ControllerBase
 
     [HttpGet(ApiEndpointConstants.Dispute.GetAllDisputesEndpoint)]
     [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(ApiResponse<CustomDisputeReportDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedDisputeResponse<DisputeReportDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<CustomDisputeReportDTO>> GetAllDisputes()
+    public async Task<ActionResult<PaginatedDisputeResponse<DisputeReportDTO>>> GetAllDisputes(
+        [FromQuery] string? jobPostName = null,
+        [FromQuery] int? disputeTypeId = null,
+        [FromQuery] int? statusId = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
         try
         {
-            var response = await _disputeReportService.GetAllDisputesAsync();
-            return Ok(new ApiResponse<CustomDisputeReportDTO>
+            var filterRequest = new FilterDisputeRequest
+            {
+                JobPostName = jobPostName,
+                DisputeTypeId = disputeTypeId,
+                StatusId = statusId,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+            
+            var response = await _disputeReportService.FilterDisputesAsync(filterRequest);
+            return Ok(new ApiResponse<PaginatedDisputeResponse<DisputeReportDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
                 Message = "Disputes retrieved successfully",
@@ -132,6 +146,7 @@ public class DisputeReportController : ControllerBase
             });
         }
     }
+
 
     [HttpGet(ApiEndpointConstants.Dispute.GetDisputeByIdEndpoint)]
     [Authorize(Roles = "Admin,Farmer,Worker")]

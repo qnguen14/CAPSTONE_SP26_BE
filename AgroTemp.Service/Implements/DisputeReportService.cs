@@ -2,6 +2,7 @@ using AgroTemp.Domain.Context;
 using AgroTemp.Domain.DTO.DisputeReport;
 using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Mapper;
+using AgroTemp.Domain.Metadata;
 using AgroTemp.Repository.Interfaces;
 using AgroTemp.Service.Base;
 using AgroTemp.Service.Interfaces;
@@ -371,6 +372,82 @@ public class DisputeReportService : BaseService<DisputeReport>, IDisputeReportSe
 
         return disputes == null || !disputes.Any()
             ? new List<DisputeReportDTO>() : _mapper.DisputeReportsToDisputeReportDtos(disputes);
+    }
+
+    public async Task<PaginatedDisputeResponse<DisputeReportDTO>> FilterDisputesAsync(FilterDisputeRequest filterRequest)
+    {
+        // Build the predicate for filtering
+        var predicate = new Func<DisputeReport, bool>(d =>
+        {
+            // Filter by job post name
+            if (!string.IsNullOrWhiteSpace(filterRequest.JobPostName) && 
+                (d.JobPost == null || !d.JobPost.Title.Contains(filterRequest.JobPostName, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            // Filter by dispute type
+            if (filterRequest.DisputeTypeId.HasValue && d.DisputeTypeId != filterRequest.DisputeTypeId.Value)
+            {
+                return false;
+            }
+
+            // Filter by status
+            if (filterRequest.StatusId.HasValue && d.StatusId != filterRequest.StatusId.Value)
+            {
+                return false;
+            }
+
+            return true;
+        });
+
+        // Get total count before pagination
+        var allDisputes = await _unitOfWork.GetRepository<DisputeReport>()
+            .GetListAsync(
+                predicate: null,
+                include: q => q
+                    .Include(d => d.Farmer)
+                    .Include(d => d.Worker)
+                    .Include(d => d.JobPost)
+                    .Include(d => d.ResolvedBy),
+                orderBy: d => d.OrderByDescending(x => x.CreatedAt));
+
+        var filteredDisputes = allDisputes.Where(predicate).ToList();
+        var totalCount = filteredDisputes.Count;
+
+        // Apply pagination
+        var pageNumber = filterRequest.PageNumber > 0 ? filterRequest.PageNumber : 1;
+        var pageSize = filterRequest.PageSize > 0 ? filterRequest.PageSize : 10;
+        var skipCount = (pageNumber - 1) * pageSize;
+
+        var paginatedDisputes = filteredDisputes
+            .Skip(skipCount)
+            .Take(pageSize)
+            .ToList();
+
+        // Get workers and farmers
+        var workers = await _unitOfWork
+            .GetRepository<Worker>()
+            .GetListAsync(include: u => u
+                .Include(x => x.User)
+            );
+        var farmers = await _unitOfWork
+            .GetRepository<Farmer>()
+            .GetListAsync(include: u => u
+                .Include(x => x.User)
+            );
+
+        return new PaginatedDisputeResponse<DisputeReportDTO>
+        {
+            Items = paginatedDisputes.Any() 
+                ? _mapper.DisputeReportsToDisputeReportDtos(paginatedDisputes) 
+                : new List<DisputeReportDTO>(),
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            Workers = _mapper.WorkerToDto(workers),
+            Farmers = _mapper.FarmerToDto(farmers)
+        };
     }
 
     public async Task<DisputeReportDTO?> ReviewDisputeAsync(Guid id, Guid adminUserId, ReviewDisputeReportRequest request)
