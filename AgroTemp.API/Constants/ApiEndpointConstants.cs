@@ -21,6 +21,7 @@ public class ApiEndpointConstants
         public const string LogoutEndpoint = ApiEndpoint + "/logout";
         public const string VerifyEmailEndpoint = ApiEndpoint + "/verify-email";
         public const string ResendVerificationEndpoint = ApiEndpoint + "/resend-verification";
+        public const string RefreshTokenEndpoint = ApiEndpoint + "/refresh";
     }
 
     public static class User
@@ -244,6 +245,7 @@ public class ApiEndpointConstants
         public const string ReviewDisputeEndpoint = DisputeEndpoint + "/{id:guid}/review";
         public const string UpdateDisputeStatusEndpoint = DisputeEndpoint + "/{id:guid}/status";
         public const string ResolveDisputeEndpoint = DisputeEndpoint + "/{id:guid}/resolve";
+        public const string SearchJobPostsForEmbedEndpoint = DisputeEndpoint + "/job-posts";
     }
 
     public static class Weather

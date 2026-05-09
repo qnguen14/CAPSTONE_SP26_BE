@@ -147,44 +147,6 @@ public class DisputeReportController : ControllerBase
         }
     }
 
-    [HttpPost(ApiEndpointConstants.Dispute.FilterDisputesEndpoint)]
-    [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(ApiResponse<PaginatedDisputeResponse<DisputeReportDTO>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<PaginatedDisputeResponse<DisputeReportDTO>>> FilterDisputes([FromBody] FilterDisputeRequest filterRequest)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status400BadRequest,
-                Message = "Invalid filter request data",
-                Data = ModelState
-            });
-        }
-
-        try
-        {
-            var response = await _disputeReportService.FilterDisputesAsync(filterRequest);
-            return Ok(new ApiResponse<PaginatedDisputeResponse<DisputeReportDTO>>
-            {
-                StatusCode = StatusCodes.Status200OK,
-                Message = "Disputes filtered successfully",
-                Data = response
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error filtering disputes");
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
-            {
-                StatusCode = StatusCodes.Status500InternalServerError,
-                Message = "An error occurred while filtering disputes",
-                Data = null
-            });
-        }
-    }
 
     [HttpGet(ApiEndpointConstants.Dispute.GetDisputeByIdEndpoint)]
     [Authorize(Roles = "Admin,Farmer,Worker")]
@@ -581,6 +543,37 @@ public class DisputeReportController : ControllerBase
             {
                 StatusCode = StatusCodes.Status500InternalServerError,
                 Message = "An error occurred while updating the dispute status",
+                Data = null
+            });
+        }
+    }
+
+    [HttpGet(ApiEndpointConstants.Dispute.SearchJobPostsForEmbedEndpoint)]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostEmbedDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<JobPostEmbedDTO>>> SearchJobPostsForEmbed(
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            var results = await _disputeReportService.SearchJobPostsForEmbedAsync(search, page, pageSize);
+            return Ok(new ApiResponse<IEnumerable<JobPostEmbedDTO>>
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Message = "Job posts retrieved successfully",
+                Data = results
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching job posts for embed");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+                Message = "An error occurred while searching job posts",
                 Data = null
             });
         }

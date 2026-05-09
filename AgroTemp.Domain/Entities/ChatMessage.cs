@@ -37,4 +37,9 @@ public class ChatMessage
 
     [Column("read_at")]
     public DateTime? ReadAt { get; set; }
+
+    [Column("job_post_id")]
+    [ForeignKey(nameof(JobPost))]
+    public Guid? JobPostId { get; set; }
+    public virtual JobPost? JobPost { get; set; }
 }

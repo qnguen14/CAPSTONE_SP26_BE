@@ -17,6 +17,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<Farm> Farms { get; set; }
     public DbSet<JobCategory> JobCategories { get; set; }
     public DbSet<JobPost> JobPosts { get; set; }
+    public DbSet<JobPostDay> JobPostDays { get; set; }
     public DbSet<WorkerSkill> WorkerSkills { get; set; }
     public DbSet<Skill> Skills { get; set; }
     public DbSet<JobSkillRequirement> JobSkillRequirements { get; set; }
@@ -29,6 +30,7 @@ public class AgroTempDbContext : DbContext
     public DbSet<JobAttachment> JobAttachments { get; set; }
     public DbSet<Rating> Ratings { get; set; }
     public DbSet<BlacklistedToken> BlacklistedTokens { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<PayOSOrder> PayOSOrders { get; set; }
     public DbSet<PayOSOrderItem> PayOSOrderItems { get; set; }
@@ -44,7 +46,7 @@ public class AgroTempDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasDefaultSchema("AgroTempV2");
+        modelBuilder.HasDefaultSchema("AgroTempV3");
 
         // Configure User-Worker one-to-one relationship
         modelBuilder.Entity<User>()
@@ -81,6 +83,13 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(m => m.RecipientId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<ChatMessage>()
+            .HasOne(m => m.JobPost)
+            .WithMany()
+            .HasForeignKey(m => m.JobPostId)
+            .OnDelete(DeleteBehavior.SetNull)
+            .IsRequired(false);
+
         modelBuilder.Entity<User>()
             .HasMany(u => u.DeviceTokens)
             .WithOne(dt => dt.User)
@@ -114,6 +123,14 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(jp => jp.FarmerId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Configure Farm-JobPost: RESTRICT to prevent silent cascade deletion.
+        // FarmService.DeleteFarm handles escrow refund + job post cleanup explicitly before deleting the farm.
+        modelBuilder.Entity<JobPost>()
+            .HasOne(jp => jp.Farm)
+            .WithMany()
+            .HasForeignKey(jp => jp.FarmId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Configure enum conversions for JobPost
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.JobTypeId)
@@ -140,6 +157,12 @@ public class AgroTempDbContext : DbContext
             .Property(f => f.Longitude)
             .HasPrecision(10, 7); // e.g., -180.0000000 to 180.0000000
 
+        modelBuilder.Entity<Farm>()
+            .HasOne(f => f.FarmType)
+            .WithMany(jc => jc.Farms)
+            .HasForeignKey(f => f.FarmTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.WageAmount)
             .HasPrecision(18, 2); // e.g., currency amounts
@@ -150,6 +173,16 @@ public class AgroTempDbContext : DbContext
             .WithOne(ja => ja.JobPost)
             .HasForeignKey(ja => ja.JobPostId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<JobPostDay>()
+            .HasOne(jpd => jpd.JobPost)
+            .WithMany(jp => jp.JobPostDays)
+            .HasForeignKey(jpd => jpd.JobPostId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<JobPostDay>()
+            .HasIndex(jpd => new { jpd.JobPostId, jpd.WorkDate })
+            .IsUnique();
 
         // Configure Worker-JobApplication one-to-many relationship
         modelBuilder.Entity<Worker>()

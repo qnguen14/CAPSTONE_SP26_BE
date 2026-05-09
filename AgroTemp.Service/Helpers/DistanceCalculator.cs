@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.Text.Json;
 
 namespace AgroTemp.Service.Helpers
 {
@@ -39,6 +41,71 @@ namespace AgroTemp.Service.Helpers
                 return $"{Math.Round(distanceKm * 1000)} m";
             }
             return $"{Math.Round(distanceKm, 1)} km";
+        }
+
+        public static async Task<double?> GetRoadRouteDistanceInKilometersAsync(
+            decimal lat1,
+            decimal lon1,
+            decimal lat2,
+            decimal lon2,
+            HttpClient? httpClient = null,
+            CancellationToken cancellationToken = default)
+        {
+            var ownsClient = httpClient == null;
+            httpClient ??= new HttpClient();
+
+            if (ownsClient)
+            {
+                httpClient.Timeout = TimeSpan.FromSeconds(8);
+            }
+
+            try
+            {
+                var url = $"https://router.project-osrm.org/route/v1/driving/" +
+                          $"{lon1.ToString(CultureInfo.InvariantCulture)},{lat1.ToString(CultureInfo.InvariantCulture)};" +
+                          $"{lon2.ToString(CultureInfo.InvariantCulture)},{lat2.ToString(CultureInfo.InvariantCulture)}" +
+                          "?overview=false&alternatives=false&steps=false";
+
+                using var response = await httpClient.GetAsync(url, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    return null;
+                }
+
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+                var root = document.RootElement;
+
+                if (!root.TryGetProperty("code", out var code) || !string.Equals(code.GetString(), "Ok", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
+                if (!root.TryGetProperty("routes", out var routes) || routes.ValueKind != JsonValueKind.Array || routes.GetArrayLength() == 0)
+                {
+                    return null;
+                }
+
+                var firstRoute = routes[0];
+                if (!firstRoute.TryGetProperty("distance", out var distanceMetersElement))
+                {
+                    return null;
+                }
+
+                var distanceMeters = distanceMetersElement.GetDouble();
+                return distanceMeters / 1000d;
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                if (ownsClient)
+                {
+                    httpClient.Dispose();
+                }
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PayOS.Exceptions;
 
 namespace AgroTemp.API.Controllers;
 
@@ -70,6 +71,16 @@ public class WithdrawController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogWarning(ex, "PayOS payout rejected withdrawal request");
             return BadRequest(new ApiResponse<object>
             {
                 StatusCode = StatusCodes.Status400BadRequest,

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AgroTemp.Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AgroTemp.Domain.Migrations
 {
     [DbContext(typeof(AgroTempDbContext))]
-    partial class AgroTempDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260504120452_AddJobPostEmbedToDisputeComment")]
+    partial class AddJobPostEmbedToDisputeComment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,10 +63,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_read");
 
-                    b.Property<Guid?>("JobPostId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("job_post_id");
-
                     b.Property<string>("MessageContent")
                         .IsRequired()
                         .HasColumnType("text")
@@ -86,8 +85,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasColumnName("sent_at");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("JobPostId");
 
                     b.HasIndex("RecipientId");
 
@@ -1270,39 +1267,6 @@ namespace AgroTemp.Domain.Migrations
                     b.ToTable("Rating", "AgroTempV3");
                 });
 
-            modelBuilder.Entity("AgroTemp.Domain.Entities.RefreshToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("revoked_at");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("token");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Refresh_Tokens", "AgroTempV3");
-                });
-
             modelBuilder.Entity("AgroTemp.Domain.Entities.SavedJobPost", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1750,11 +1714,6 @@ namespace AgroTemp.Domain.Migrations
 
             modelBuilder.Entity("AgroTemp.Domain.Entities.ChatMessage", b =>
                 {
-                    b.HasOne("AgroTemp.Domain.Entities.JobPost", "JobPost")
-                        .WithMany()
-                        .HasForeignKey("JobPostId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("AgroTemp.Domain.Entities.User", "Recipient")
                         .WithMany("ReceivedMessages")
                         .HasForeignKey("RecipientId")
@@ -1766,8 +1725,6 @@ namespace AgroTemp.Domain.Migrations
                         .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("JobPost");
 
                     b.Navigation("Recipient");
 
@@ -1824,7 +1781,8 @@ namespace AgroTemp.Domain.Migrations
 
                     b.HasOne("AgroTemp.Domain.Entities.JobPost", "JobPost")
                         .WithMany()
-                        .HasForeignKey("JobPostId");
+                        .HasForeignKey("JobPostId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("AgroTemp.Domain.Entities.User", "User")
                         .WithMany()
@@ -1930,7 +1888,7 @@ namespace AgroTemp.Domain.Migrations
                     b.HasOne("AgroTemp.Domain.Entities.Farm", "Farm")
                         .WithMany()
                         .HasForeignKey("FarmId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("AgroTemp.Domain.Entities.Farmer", "Farmer")

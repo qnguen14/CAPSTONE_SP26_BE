@@ -1,5 +1,6 @@
     using System.Linq.Expressions;
     using AgroTemp.Domain.Context;
+    using AgroTemp.Domain.DTO.DisputeReport;
     using AgroTemp.Domain.DTO.Message;
     using AgroTemp.Domain.Entities;
     using AgroTemp.Domain.Metadata;
@@ -52,7 +53,8 @@
                     .Include(m => m.Sender).ThenInclude(u => u.Worker)
                     .Include(m => m.Sender).ThenInclude(u => u.Farmer)
                     .Include(m => m.Recipient).ThenInclude(u => u.Worker)
-                    .Include(m => m.Recipient).ThenInclude(u => u.Farmer),
+                    .Include(m => m.Recipient).ThenInclude(u => u.Farmer)
+                    .Include(m => m.JobPost).ThenInclude(jp => jp.Farmer),
                 asNoTracking: true);
 
             var items = await query.Skip(skip).Take(limit).ToListAsync();
@@ -68,7 +70,8 @@
                     Read = m.IsRead,
                     CreatedAt = m.SentAt,
                     Sender = BuildUserBrief(m.Sender),
-                    Receiver = BuildUserBrief(m.Recipient)
+                    Receiver = BuildUserBrief(m.Recipient),
+                    JobPostEmbed = BuildJobPostEmbed(m.JobPost)
                 }).ToList(),
                 Pagination = new PaginationMetadata
                 {
@@ -80,7 +83,7 @@
             };
         }
 
-        public async Task<MessageDTO> SendMessageAsync(Guid receiverId, string content)
+        public async Task<MessageDTO> SendMessageAsync(Guid receiverId, string content, Guid? jobPostId = null)
         {
             var currentUserId = GetCurrentUserId();
             if (currentUserId == Guid.Empty)
@@ -93,9 +96,17 @@
                 throw new ArgumentException("receiverId is required");
             }
 
-            if (string.IsNullOrWhiteSpace(content))
+            if (string.IsNullOrWhiteSpace(content) && jobPostId == null)
             {
-                throw new ArgumentException("content is required");
+                throw new ArgumentException("content is required when no job post is attached");
+            }
+
+            if (jobPostId.HasValue)
+            {
+                var jobPost = await _unitOfWork.GetRepository<JobPost>()
+                    .FirstOrDefaultAsync(predicate: j => j.Id == jobPostId.Value);
+                if (jobPost == null)
+                    throw new KeyNotFoundException("Job post not found.");
             }
 
             var entity = new ChatMessage
@@ -103,16 +114,17 @@
                 Id = Guid.NewGuid(),
                 SenderId = currentUserId,
                 RecipientId = receiverId,
-                MessageContent = content.Trim(),
+                MessageContent = string.IsNullOrWhiteSpace(content) ? string.Empty : content.Trim(),
                 IsRead = false,
                 SentAt = DateTime.UtcNow,
-                ReadAt = null
+                ReadAt = null,
+                JobPostId = jobPostId
             };
 
             await _unitOfWork.GetRepository<ChatMessage>().InsertAsync(entity);
             await _unitOfWork.SaveChangesAsync();
 
-            // Reload with navigation properties to populate Sender/Receiver
+            // Reload with navigation properties to populate Sender/Receiver/JobPost
             var saved = await _unitOfWork.GetRepository<ChatMessage>().CreateBaseQuery(
                 predicate: m => m.Id == entity.Id,
                 orderBy: null,
@@ -120,7 +132,8 @@
                     .Include(m => m.Sender).ThenInclude(u => u.Worker)
                     .Include(m => m.Sender).ThenInclude(u => u.Farmer)
                     .Include(m => m.Recipient).ThenInclude(u => u.Worker)
-                    .Include(m => m.Recipient).ThenInclude(u => u.Farmer),
+                    .Include(m => m.Recipient).ThenInclude(u => u.Farmer)
+                    .Include(m => m.JobPost).ThenInclude(jp => jp.Farmer),
                 asNoTracking: true)
                 .FirstOrDefaultAsync() ?? entity;
 
@@ -133,7 +146,8 @@
                 Read = saved.IsRead,
                 CreatedAt = saved.SentAt,
                 Sender = BuildUserBrief(saved.Sender),
-                Receiver = BuildUserBrief(saved.Recipient)
+                Receiver = BuildUserBrief(saved.Recipient),
+                JobPostEmbed = BuildJobPostEmbed(saved.JobPost)
             };
         }
 
@@ -196,7 +210,8 @@
                     .Include(m => m.Sender).ThenInclude(u => u.Worker)
                     .Include(m => m.Sender).ThenInclude(u => u.Farmer)
                     .Include(m => m.Recipient).ThenInclude(u => u.Worker)
-                    .Include(m => m.Recipient).ThenInclude(u => u.Farmer),
+                    .Include(m => m.Recipient).ThenInclude(u => u.Farmer)
+                    .Include(m => m.JobPost).ThenInclude(jp => jp.Farmer),
                 asNoTracking: true)
                 .ToListAsync();
 
@@ -217,16 +232,17 @@
                 {
                     Contact = BuildUserBrief(otherUser)!,
                     LastMessage = new MessageDTO
-                    {
-                        Id = latest.Id,
-                        SenderId = latest.SenderId,
-                        ReceiverId = latest.RecipientId,
-                        Content = latest.MessageContent,
-                        Read = latest.IsRead,
-                        CreatedAt = latest.SentAt,
-                        Sender = BuildUserBrief(latest.Sender),
-                        Receiver = BuildUserBrief(latest.Recipient)
-                    },
+                        {
+                            Id = latest.Id,
+                            SenderId = latest.SenderId,
+                            ReceiverId = latest.RecipientId,
+                            Content = latest.MessageContent,
+                            Read = latest.IsRead,
+                            CreatedAt = latest.SentAt,
+                            Sender = BuildUserBrief(latest.Sender),
+                            Receiver = BuildUserBrief(latest.Recipient),
+                            JobPostEmbed = BuildJobPostEmbed(latest.JobPost)
+                        },
                     UnreadCount = unreadCount
                 });
             }
@@ -250,6 +266,27 @@
                 Id = user.Id,
                 Name = name,
                 AvatarUrl = avatar
+            };
+        }
+
+        private static JobPostEmbedDTO? BuildJobPostEmbed(JobPost? jobPost)
+        {
+            if (jobPost is null) return null;
+
+            return new JobPostEmbedDTO
+            {
+                Id = jobPost.Id,
+                Title = jobPost.Title,
+                Address = jobPost.Address,
+                WageAmount = jobPost.WageAmount,
+                StatusId = jobPost.StatusId,
+                StatusName = Enum.IsDefined(typeof(JobPostStatus), jobPost.StatusId)
+                    ? ((JobPostStatus)jobPost.StatusId).ToString()
+                    : "Unknown",
+                FarmerName = jobPost.Farmer?.ContactName,
+                StartDate = jobPost.StartDate,
+                EndDate = jobPost.EndDate,
+                IsUrgent = jobPost.IsUrgent
             };
         }
     }

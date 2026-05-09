@@ -62,6 +62,8 @@ public partial class MapperlyMapper : IMapperlyMapper
 
     //Farm
     [MapProperty(nameof(Farm.FarmerId), nameof(FarmDTO.FarmerProfileId))]
+    [MapProperty(nameof(Farm.FarmTypeId), nameof(FarmDTO.FarmTypeId))]
+    [MapProperty("FarmType.Name", nameof(FarmDTO.FarmTypeName))]
     public partial FarmDTO FarmToDto(Farm farm);
     public partial List<FarmDTO> FarmsToDto(IEnumerable<Farm> farms);
 
@@ -120,9 +122,46 @@ public partial class MapperlyMapper : IMapperlyMapper
 
     // JobPost
     [MapProperty(nameof(JobPost.FarmerId), nameof(JobPostDTO.FarmerProfileId))]
+    [MapProperty(nameof(JobPost.Farmer.UserId), nameof(JobPostDTO.FarmerUserId))]
     [MapProperty(nameof(JobPost.Farmer.ContactName), nameof(JobPostDTO.ContactName))]
     [MapProperty(nameof(JobPost.Farmer), nameof(JobPostDTO.FarmerProfile))]
-    public partial JobPostDTO JobPostToJobPostDto(JobPost jobPost);
+    public partial JobPostDTO JobPostToJobPostDtoManual(JobPost jobPost);
+
+    public JobPostDTO JobPostToJobPostDto(JobPost jobPost)
+    {
+        if (jobPost == null) return null;
+        var dto = JobPostToJobPostDtoManual(jobPost);
+        
+        if (jobPost.JobApplications != null)
+        {
+            dto.Workers = jobPost.JobApplications
+                .Where(ja => ja.StatusId == (int)ApplicationStatus.Accepted && ja.Worker != null)
+                .Select(ja => new WorkerJobPostDTO
+                {
+                    Id = ja.Worker.Id,
+                    FullName = ja.Worker.FullName,
+                    PhoneNumber = ja.Worker.User?.PhoneNumber ?? string.Empty,
+                    AvatarUrl = ja.Worker.AvatarUrl
+                })
+                .ToList();
+        }
+
+        if (jobPost.JobPostDays != null)
+        {
+            dto.JobPostDays = jobPost.JobPostDays
+                .OrderBy(jpd => jpd.WorkDate)
+                .Select(jpd => new JobPostDayDTO
+                {
+                    WorkDate = jpd.WorkDate,
+                    WorkersNeeded = jpd.WorkersNeeded,
+                    WorkersAccepted = jpd.WorkersAccepted
+                })
+                .ToList();
+        }
+
+        return dto;
+    }
+
     public partial List<JobPostDTO> JobPostsToJobPostDtos(IEnumerable<JobPost> jobPosts);
 
     // JobDiscovery
@@ -138,8 +177,13 @@ public partial class MapperlyMapper : IMapperlyMapper
             _ => "Unknown"
         };
 
-        var startDate = jobPost.StartDate ?? (jobPost.SelectedDays?.FirstOrDefault());
-        var endDate = jobPost.EndDate ?? (jobPost.SelectedDays?.LastOrDefault());
+        var jobPostDays = jobPost.JobPostDays?
+            .Select(jpd => jpd.WorkDate)
+            .OrderBy(d => d)
+            .ToList() ?? new List<DateOnly>();
+
+        var startDate = jobPost.StartDate ?? (jobPostDays.Any() ? jobPostDays.First() : (DateOnly?)null);
+        var endDate = jobPost.EndDate ?? (jobPostDays.Any() ? jobPostDays.Last() : (DateOnly?)null);
         int? durationDays = null;
         if (startDate.HasValue && endDate.HasValue)
         {
@@ -161,7 +205,15 @@ public partial class MapperlyMapper : IMapperlyMapper
             Address = jobPost.Address,
             StartDate = jobPost.StartDate,
             EndDate = jobPost.EndDate,
-            SelectedDays = jobPost.SelectedDays,
+            JobPostDays = jobPost.JobPostDays?
+                .OrderBy(jpd => jpd.WorkDate)
+                .Select(jpd => new JobPostDayDTO
+                {
+                    WorkDate = jpd.WorkDate,
+                    WorkersNeeded = jpd.WorkersNeeded,
+                    WorkersAccepted = jpd.WorkersAccepted
+                })
+                .ToList() ?? new List<JobPostDayDTO>(),
             StartTime = jobPost.StartTime,
             EndTime = jobPost.EndTime,
             WorkersNeeded = jobPost.WorkersNeeded,
@@ -323,6 +375,25 @@ public partial class MapperlyMapper : IMapperlyMapper
             if (comment.User.Role == UserRole.Admin) dto.UserName = "Admin";
             else if (comment.User.Role == UserRole.Farmer) dto.UserName = comment.User.Farmer?.ContactName ?? "Farmer";
             else if (comment.User.Role == UserRole.Worker) dto.UserName = comment.User.Worker?.FullName ?? "Worker";
+        }
+
+        if (comment.JobPost != null)
+        {
+            dto.JobPostEmbed = new JobPostEmbedDTO
+            {
+                Id = comment.JobPost.Id,
+                Title = comment.JobPost.Title,
+                Address = comment.JobPost.Address,
+                WageAmount = comment.JobPost.WageAmount,
+                StatusId = comment.JobPost.StatusId,
+                StatusName = Enum.IsDefined(typeof(JobPostStatus), comment.JobPost.StatusId)
+                    ? ((JobPostStatus)comment.JobPost.StatusId).ToString()
+                    : "Unknown",
+                FarmerName = comment.JobPost.Farmer?.ContactName,
+                StartDate = comment.JobPost.StartDate,
+                EndDate = comment.JobPost.EndDate,
+                IsUrgent = comment.JobPost.IsUrgent
+            };
         }
 
         return dto;

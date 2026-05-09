@@ -102,6 +102,16 @@ public class PaymentController : ControllerBase
                 Data = order
             });
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "PayOS business error while creating order");
+            return BadRequest(new ApiResponse<object>
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                Message = "Payment gateway is unavailable for this merchant",
+                Data = ex.Message
+            });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create order");

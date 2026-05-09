@@ -92,7 +92,9 @@ namespace AgroTemp.Service.Helpers
                 {
                     filtered = filtered.Where(jp =>
                         (jp.StartDate?.ToDateTime(TimeOnly.MinValue) >= dateStart && jp.StartDate?.ToDateTime(TimeOnly.MinValue) <= dateEnd) ||
-                        (jp.SelectedDays.Any(d => d.ToDateTime(TimeOnly.MinValue) >= dateStart && d.ToDateTime(TimeOnly.MinValue) <= dateEnd))).ToList();
+                        (jp.JobPostDays != null && jp.JobPostDays.Any(d =>
+                            d.WorkDate.ToDateTime(TimeOnly.MinValue) >= dateStart &&
+                            d.WorkDate.ToDateTime(TimeOnly.MinValue) <= dateEnd))).ToList();
                 }
             }
 

@@ -43,14 +43,17 @@ namespace AgroTemp.API.Configuration
             services.AddScoped<IExpoPushService, ExpoPushService>();
             services.AddScoped<IDashboardService, DashboardService>();
 
-            // Setup static IP proxy for PayOS if running on Heroku
-            HttpClient? payOsProxyClient = null;
-            var fixieUrl = Environment.GetEnvironmentVariable("FIXIE_URL");
-            if (!string.IsNullOrEmpty(fixieUrl))
+            // Build a dedicated proxy client for payout flows only.
+            // This keeps deposit/create-payment traffic direct (no proxy),
+            // while still supporting static IP for withdraw/payout calls.
+            HttpClient? payoutProxyClient = null;
+            var payoutFixieUrl = Environment.GetEnvironmentVariable("FIXIE_URL_PAYOUT")
+                                ?? Environment.GetEnvironmentVariable("FIXIE_URL");
+            if (!string.IsNullOrWhiteSpace(payoutFixieUrl))
             {
-                var proxyUri = new Uri(fixieUrl);
+                var proxyUri = new Uri(payoutFixieUrl);
                 var proxy = new System.Net.WebProxy(proxyUri.Host, proxyUri.Port);
-                
+
                 if (!string.IsNullOrEmpty(proxyUri.UserInfo))
                 {
                     var authParts = proxyUri.UserInfo.Split(':');
@@ -66,9 +69,9 @@ namespace AgroTemp.API.Configuration
                     UseProxy = true,
                     PreAuthenticate = true
                 };
-                
+
                 var loggingHandler = new PayOSLoggingHandler(handler);
-                payOsProxyClient = new HttpClient(loggingHandler);
+                payoutProxyClient = new HttpClient(loggingHandler);
             }
 
             // Helper function to get config with fallbacks and handle empty strings
@@ -82,6 +85,26 @@ namespace AgroTemp.API.Configuration
                 return !string.IsNullOrWhiteSpace(val) ? val : (fallback ?? string.Empty);
             }
 
+            string GetConfigFromMany(string key, string[] envKeys, string? fallback = null)
+            {
+                var val = configuration[key];
+                if (!string.IsNullOrWhiteSpace(val))
+                {
+                    return val;
+                }
+
+                foreach (var envKey in envKeys)
+                {
+                    val = Environment.GetEnvironmentVariable(envKey);
+                    if (!string.IsNullOrWhiteSpace(val))
+                    {
+                        return val;
+                    }
+                }
+
+                return fallback ?? string.Empty;
+            }
+
             // payOS client for payment link flow (deposit/top-up)
             services.AddKeyedSingleton<PayOSClient>("OrderClient", (sp, _) => new PayOSClient(new PayOSOptions
             {
@@ -89,23 +112,33 @@ namespace AgroTemp.API.Configuration
                 ApiKey = GetConfig("PayOS:ApiKey", "PAYOS_API_KEY"),
                 ChecksumKey = GetConfig("PayOS:ChecksumKey", "PAYOS_CHECKSUM_KEY"),
                 LogLevel = LogLevel.Debug,
-                HttpClient = payOsProxyClient
+                HttpClient = null
             }));
 
             // payOS client for payout flow (withdraw)
             services.AddKeyedSingleton<PayOSClient>("TransferClient", (sp, _) => new PayOSClient(new PayOSOptions
             {
-                ClientId = GetConfig("PayOS:PayoutClientId", "PAYOS_PAYOUT_CLIENT_ID", GetConfig("PayOS:ClientId", "PAYOS_CLIENT_ID")),
-                ApiKey = GetConfig("PayOS:PayoutApiKey", "PAYOS_PAYOUT_API_KEY", GetConfig("PayOS:ApiKey", "PAYOS_API_KEY")),
-                ChecksumKey = GetConfig("PayOS:PayoutChecksumKey", "PAYOS_PAYOUT_CHECKSUM_KEY", GetConfig("PayOS:ChecksumKey", "PAYOS_CHECKSUM_KEY")),
+                ClientId = GetConfigFromMany(
+                    "PayOS:PayoutClientId",
+                    new[] { "PAYOS_PAYOUT_CLIENT_ID", "PAYOS_TRANSFER_CLIENT_ID" },
+                    GetConfig("PayOS:ClientId", "PAYOS_CLIENT_ID")),
+                ApiKey = GetConfigFromMany(
+                    "PayOS:PayoutApiKey",
+                    new[] { "PAYOS_PAYOUT_API_KEY", "PAYOS_TRANSFER_API_KEY" },
+                    GetConfig("PayOS:ApiKey", "PAYOS_API_KEY")),
+                ChecksumKey = GetConfigFromMany(
+                    "PayOS:PayoutChecksumKey",
+                    new[] { "PAYOS_PAYOUT_CHECKSUM_KEY", "PAYOS_TRANSFER_CHECKSUM_KEY" },
+                    GetConfig("PayOS:ChecksumKey", "PAYOS_CHECKSUM_KEY")),
                 LogLevel = LogLevel.Debug,
-                HttpClient = payOsProxyClient
+                HttpClient = payoutProxyClient
             }));
 
             services.AddScoped<IPayOSService, PayOSService>();
             services.AddScoped<ISkillService, SkillService>();
             services.AddScoped<IRatingService, RatingService>();
             services.AddHostedService<JobPostStatusBackgroundService>();
+            services.AddHostedService<JobApplicationBackgroundService>();
             services.AddScoped<IDisputeReportService, DisputeReportService>();
             services.AddScoped<IWalletService, WalletService>();
             services.AddScoped<IWalletTransactionService, WalletTransactionService>();
@@ -131,7 +164,7 @@ namespace AgroTemp.API.Configuration
                 ClientId = GetConfig("PayOS:ClientId", "PAYOS_CLIENT_ID"),
                 ApiKey = GetConfig("PayOS:ApiKey", "PAYOS_API_KEY"),
                 ChecksumKey = GetConfig("PayOS:ChecksumKey", "PAYOS_CHECKSUM_KEY"),
-                HttpClient = payOsProxyClient
+                HttpClient = null
             }));
 
             // Third-Party Services

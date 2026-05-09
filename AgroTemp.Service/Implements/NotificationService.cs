@@ -232,6 +232,7 @@ public class NotificationService : BaseService<Notification>, INotificationServi
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     ExpoPushToken = token,
+                    DeviceName = deviceName,
                     Platform = DevicePlatform.Android,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,

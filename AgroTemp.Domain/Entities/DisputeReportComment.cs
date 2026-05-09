@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AgroTemp.Domain.Entities;
@@ -35,6 +35,12 @@ public class DisputeReportComment
 
     [Column("attachment_url")]
     public string? AttachmentUrl { get; set; }
+
+   
+    [Column("job_post_id")]
+    [ForeignKey(nameof(JobPost))]
+    public Guid? JobPostId { get; set; }
+    public virtual JobPost? JobPost { get; set; }
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

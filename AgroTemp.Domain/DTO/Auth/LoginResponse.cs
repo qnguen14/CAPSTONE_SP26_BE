@@ -8,4 +8,6 @@ public class LoginResponse
     public string Role { get; set; }
     public Guid UserId { get; set; }
     public Boolean IsVerified { get; set; }
+    // Optional refresh token returned on login/verify
+    public string RefreshToken { get; set; }
 }

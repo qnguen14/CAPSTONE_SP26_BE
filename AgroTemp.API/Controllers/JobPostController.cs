@@ -493,16 +493,17 @@ public class JobPostController : ControllerBase
     }
 
     [HttpGet(ApiEndpointConstants.Job.GetFilteredJobPostsByFarmerEndpoint)]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<JobPostDTO>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<JobPostDTO>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFilteredJobPostsByFarmer([FromQuery] string? title, [FromQuery] string? category, [FromQuery] string? address, [FromQuery] List<string>? skill, [FromQuery] bool? sortByDatesDescending)
+    public async Task<ActionResult<PaginatedResponse<JobPostDTO>>> GetFilteredJobPostsByFarmer([FromQuery] string? title, 
+    [FromQuery] string? category, [FromQuery] string? address, [FromQuery] List<string>? skill, [FromQuery] bool? sortByDatesDescending, [FromQuery] JobType? jobType = null, [FromQuery] JobStatus? jobStatus = null, [FromQuery] int page = 1, [FromQuery] int limit = 10)
     {
         try
         {
-            var response = await _jobPostService.GetFilteredJobPostsByFarmer(title, category, address, skill, sortByDatesDescending ?? true);
-            var apiResponse = new ApiResponse<IEnumerable<JobPostDTO>>
+            var response = await _jobPostService.GetFilteredJobPostsByFarmer(title, category, address, skill, sortByDatesDescending ?? true, jobType, jobStatus, page, limit);
+            var apiResponse = new ApiResponse<PaginatedResponse<JobPostDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
                 Message = "Filtered job posts retrieved successfully",
@@ -578,11 +579,11 @@ public class JobPostController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFarmerDrafts()
+    public async Task<ActionResult<IEnumerable<JobPostDTO>>> GetFarmerDrafts([FromQuery] JobType? jobType = null)
     {
         try
         {
-            var response = await _jobPostService.GetFarmerDrafts();
+            var response = await _jobPostService.GetFarmerDrafts(jobType);
             var apiResponse = new ApiResponse<IEnumerable<JobPostDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,

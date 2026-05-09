@@ -12,11 +12,11 @@ public class WeatherService : IWeatherService
     private readonly IConfiguration _configuration;
     private readonly ILogger<WeatherService> _logger;
 
-    private const string WeatherBaseUrl  = "https://api.openweathermap.org/data/2.5/weather";
+    private const string WeatherBaseUrl         = "https://api.openweathermap.org/data/2.5/weather";
     private const string WeatherForecastBaseUrl = "https://api.openweathermap.org/data/2.5/forecast";
-    private const string NominatimUrl    = "https://nominatim.openstreetmap.org/search";
+    private const string NominatimUrl           = "https://nominatim.openstreetmap.org/search";
 
-    private const string NominatimAgent  = "AgroTempApp/1.0 (contact@agrotemp.vn)";
+    private const string NominatimAgent = "AgroTempApp/1.0 (contact@agrotemp.vn)";
 
     public WeatherService(HttpClient httpClient, IConfiguration configuration, ILogger<WeatherService> logger)
     {
@@ -100,6 +100,12 @@ public class WeatherService : IWeatherService
         if (string.IsNullOrWhiteSpace(apiKey))
             apiKey = _configuration["OpenWeather:SecretKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
+            apiKey = Environment.GetEnvironmentVariable("OPENWEATHER_API_KEY");
+        if (string.IsNullOrWhiteSpace(apiKey))
+            apiKey = Environment.GetEnvironmentVariable("OPEN_WEATHER_API_KEY");
+        if (string.IsNullOrWhiteSpace(apiKey))
+            apiKey = Environment.GetEnvironmentVariable("OPENWEATHER_SECRET_KEY");
+        if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("OpenWeather API key is not configured.");
         return apiKey;
     }
@@ -108,8 +114,8 @@ public class WeatherService : IWeatherService
     {
         try
         {
-            var apiKey = GetApiKey();
-            var currentUrl = $"{WeatherBaseUrl}?{query}&appid={apiKey}&units=metric&lang=vi";
+            var apiKey      = GetApiKey();
+            var currentUrl  = $"{WeatherBaseUrl}?{query}&appid={apiKey}&units=metric&lang=vi";
             var forecastUrl = $"{WeatherForecastBaseUrl}?{query}&appid={apiKey}&units=metric&lang=vi";
 
             var currentResponse = await _httpClient.GetAsync(currentUrl);
@@ -130,10 +136,10 @@ public class WeatherService : IWeatherService
                 throw new HttpRequestException($"Forecast API returned {(int)forecastResponse.StatusCode}: {forecastResponse.ReasonPhrase}");
             }
 
-            var currentJson = await currentResponse.Content.ReadAsStringAsync();
+            var currentJson  = await currentResponse.Content.ReadAsStringAsync();
             var forecastJson = await forecastResponse.Content.ReadAsStringAsync();
 
-            using var currentDoc = JsonDocument.Parse(currentJson);
+            using var currentDoc  = JsonDocument.Parse(currentJson);
             using var forecastDoc = JsonDocument.Parse(forecastJson);
 
             var weather = ParseCurrentWeather(currentDoc.RootElement);
@@ -151,16 +157,16 @@ public class WeatherService : IWeatherService
 
     private WeatherDTO ParseCurrentWeather(JsonElement root)
     {
-        var main  = root.GetProperty("main");
+        var main    = root.GetProperty("main");
         var weather = root.GetProperty("weather")[0];
-        var wind  = root.GetProperty("wind");
-        var sys   = root.GetProperty("sys");
-        var coord = root.GetProperty("coord");
+        var wind    = root.GetProperty("wind");
+        var sys     = root.GetProperty("sys");
+        var coord   = root.GetProperty("coord");
 
         return new WeatherDTO
         {
-            City        = root.GetProperty("name").GetString()    ?? string.Empty,
-            Country     = sys.GetProperty("country").GetString()  ?? string.Empty,
+            City        = root.GetProperty("name").GetString()   ?? string.Empty,
+            Country     = sys.GetProperty("country").GetString() ?? string.Empty,
             Latitude    = coord.GetProperty("lat").GetDouble(),
             Longitude   = coord.GetProperty("lon").GetDouble(),
             Temperature = main.GetProperty("temp").GetDouble(),
@@ -187,33 +193,24 @@ public class WeatherService : IWeatherService
         }
 
         var now = DateTime.UtcNow;
-        // OpenWeather 5-day/3-hour forecast provides up to 40 slots.
         var end = now.AddDays(5);
 
         foreach (var item in forecastList.EnumerateArray())
         {
             if (!item.TryGetProperty("dt", out var dtElement))
-            {
                 continue;
-            }
 
             var forecastTime = DateTimeOffset.FromUnixTimeSeconds(dtElement.GetInt64()).UtcDateTime;
             if (forecastTime < now || forecastTime > end)
-            {
                 continue;
-            }
 
             if (!item.TryGetProperty("main", out var main))
-            {
                 continue;
-            }
 
             if (!item.TryGetProperty("weather", out var weatherList)
                 || weatherList.ValueKind != JsonValueKind.Array
                 || weatherList.GetArrayLength() == 0)
-            {
                 continue;
-            }
 
             var weather = weatherList[0];
 
@@ -228,20 +225,18 @@ public class WeatherService : IWeatherService
             result.Add(new WeatherForecastItemDTO
             {
                 ForecastTime = forecastTime,
-                Temperature = main.GetProperty("temp").GetDouble(),
-                FeelsLike = main.GetProperty("feels_like").GetDouble(),
-                TempMin = main.GetProperty("temp_min").GetDouble(),
-                TempMax = main.GetProperty("temp_max").GetDouble(),
-                Humidity = main.GetProperty("humidity").GetInt32(),
-                WindSpeed = windSpeed,
-                Description = weather.GetProperty("description").GetString() ?? string.Empty,
-                Icon = weather.GetProperty("icon").GetString() ?? string.Empty
+                Temperature  = main.GetProperty("temp").GetDouble(),
+                FeelsLike    = main.GetProperty("feels_like").GetDouble(),
+                TempMin      = main.GetProperty("temp_min").GetDouble(),
+                TempMax      = main.GetProperty("temp_max").GetDouble(),
+                Humidity     = main.GetProperty("humidity").GetInt32(),
+                WindSpeed    = windSpeed,
+                Description  = weather.GetProperty("description").GetString() ?? string.Empty,
+                Icon         = weather.GetProperty("icon").GetString()        ?? string.Empty
             });
 
             if (result.Count >= 40)
-            {
                 break;
-            }
         }
 
         return result;
@@ -250,24 +245,15 @@ public class WeatherService : IWeatherService
     private static void ApplyDailyRangeFromForecast(WeatherDTO weather)
     {
         if (weather.HourlyForecast.Count == 0)
-        {
             return;
-        }
 
         var min = double.MaxValue;
         var max = double.MinValue;
 
         foreach (var hourly in weather.HourlyForecast)
         {
-            if (hourly.TempMin < min)
-            {
-                min = hourly.TempMin;
-            }
-
-            if (hourly.TempMax > max)
-            {
-                max = hourly.TempMax;
-            }
+            if (hourly.TempMin < min) min = hourly.TempMin;
+            if (hourly.TempMax > max) max = hourly.TempMax;
         }
 
         weather.TempMin = min;

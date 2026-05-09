@@ -346,12 +346,14 @@ public class JobDetailController : ControllerBase
     [Microsoft.AspNetCore.Routing.EndpointName("JobDetailGetJobDetailsByJobPostId")]
     public async Task<ActionResult<PaginatedResponse<JobDetailResponseDTO>>> GetJobDetailsByJobPostId(
         [FromRoute] Guid id,
+        [FromQuery] JobStatus? jobStatus,
+        [FromQuery] bool orderByDescending = true,  
         [FromQuery] int page = 1,
         [FromQuery] int limit = 10)
     {
         try
         {
-            var response = await _jobDetailService.GetJobDetailsByJobPostId(id, page, limit);
+            var response = await _jobDetailService.GetJobDetailsByJobPostId(id, jobStatus, orderByDescending, page, limit);
             var apiResponse = new ApiResponse<PaginatedResponse<JobDetailResponseDTO>>
             {
                 StatusCode = StatusCodes.Status200OK,
