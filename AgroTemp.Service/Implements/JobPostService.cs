@@ -658,34 +658,7 @@ namespace AgroTemp.Service.Implements
                         lockedAmount);
                 }
 
-                var applicants = await _unitOfWork.GetRepository<JobApplication>()
-                    .GetListAsync(
-                        predicate: ja => ja.JobPostId == id &&
-                                         ja.StatusId == (int)ApplicationStatus.Pending,
-                        include: q => q.Include(ja => ja.Worker));
-
-                if (applicants != null && applicants.Any())
-                {
-                    foreach (var application in applicants)
-                    {
-                        application.StatusId = (int)ApplicationStatus.Rejected;
-                        application.RespondedAt = DateTime.UtcNow;
-                        application.ResponseMessage = "Bài đăng đã bị hủy bởi chủ tuyển dụng.";
-                        _unitOfWork.GetRepository<JobApplication>().UpdateAsync(application);
-
-                        if (application.Worker != null)
-                        {
-                            await _notificationService.CreateAsync(new CreateNotificationRequest
-                            {
-                                UserId = application.Worker.UserId,
-                                Type = NotificationType.JobAcceptance,
-                                Title = "Bài đăng công việc đã bị hủy",
-                                Message = $"Bài đăng công việc \"{existingJobPost.Title}\" mà bạn đã ứng tuyển đã bị hủy bởi chủ tuyển dụng.",
-                                RelatedEntityId = existingJobPost.Id
-                            });
-                        }
-                    }
-                }
+                await RejectPendingApplicationsAsync(existingJobPost);
 
                 await _unitOfWork.SaveChangesAsync();
 
@@ -1650,6 +1623,39 @@ namespace AgroTemp.Service.Implements
                     Message = $"Một công việc mới \"{jobPost.Title}\" vừa được đăng và phù hợp với kỹ năng của bạn. Hãy xem ngay!",
                     RelatedEntityId = jobPost.Id
                 });
+            }
+        }
+
+        private async Task RejectPendingApplicationsAsync(JobPost jobPost)
+        {
+            var applicants = await _unitOfWork.GetRepository<JobApplication>()
+                .GetListAsync(
+                    predicate: ja => ja.JobPostId == jobPost.Id,
+                    include: q => q.Include(ja => ja.Worker));
+
+            if (applicants == null || !applicants.Any())
+            {
+                return;
+            }
+
+            foreach (var application in applicants)
+            {
+                application.StatusId = (int)ApplicationStatus.Cancelled;
+                application.RespondedAt = DateTime.UtcNow;
+                application.ResponseMessage = "Bài đăng đã bị hủy bởi chủ tuyển dụng.";
+                _unitOfWork.GetRepository<JobApplication>().UpdateAsync(application);
+
+                if (application.Worker != null)
+                {
+                    await _notificationService.CreateAsync(new CreateNotificationRequest
+                    {
+                        UserId = application.Worker.UserId,
+                        Type = NotificationType.JobAcceptance,
+                        Title = "Bài đăng công việc đã bị hủy",
+                        Message = $"Bài đăng công việc \"{jobPost.Title}\" mà bạn đã ứng tuyển đã bị hủy bởi chủ tuyển dụng.",
+                        RelatedEntityId = jobPost.Id
+                    });
+                }
             }
         }
 
