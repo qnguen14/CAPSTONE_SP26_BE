@@ -659,16 +659,20 @@ namespace AgroTemp.Service.Implements
                 }
 
                 var applicants = await _unitOfWork.GetRepository<JobApplication>()
-                .GetListAsync(
-                    predicate: ja => ja.JobPostId == id &&
-                                     ja.StatusId != (int)ApplicationStatus.Cancelled &&
-                                     ja.StatusId != (int)ApplicationStatus.Rejected,
-                    include: q => q.Include(ja => ja.Worker));
+                    .GetListAsync(
+                        predicate: ja => ja.JobPostId == id &&
+                                         ja.StatusId == (int)ApplicationStatus.Pending,
+                        include: q => q.Include(ja => ja.Worker));
 
                 if (applicants != null && applicants.Any())
                 {
                     foreach (var application in applicants)
                     {
+                        application.StatusId = (int)ApplicationStatus.Rejected;
+                        application.RespondedAt = DateTime.UtcNow;
+                        application.ResponseMessage = "Bài đăng đã bị hủy bởi chủ tuyển dụng.";
+                        _unitOfWork.GetRepository<JobApplication>().UpdateAsync(application);
+
                         if (application.Worker != null)
                         {
                             await _notificationService.CreateAsync(new CreateNotificationRequest
