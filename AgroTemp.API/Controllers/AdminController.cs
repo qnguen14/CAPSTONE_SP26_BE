@@ -1,6 +1,7 @@
 using AgroTemp.API.Constants;
 using AgroTemp.Domain.DTO.Admin;
 using AgroTemp.Domain.DTO.Job.JobPost;
+using AgroTemp.Domain.Entities;
 using AgroTemp.Domain.Metadata;
 using AgroTemp.Service.Implements;
 using AgroTemp.Service.Interfaces;
@@ -57,11 +58,11 @@ public class AdminController : ControllerBase
     [ProducesResponseType(typeof(PaginatedAdminJobPostsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<PaginatedAdminJobPostsResponse>> GetJobPostsForAdmin([FromQuery] int page = 1, [FromQuery] int limit = 20)
+    public async Task<ActionResult<PaginatedAdminJobPostsResponse>> GetJobPostsForAdmin([FromQuery] int page = 1, [FromQuery] int limit = 20, [FromQuery] JobPostStatus? status = null, [FromQuery] string? title = null)
     {
         try
         {
-            var response = await _jobPostService.GetJobPostsForAdmin(page, limit);
+            var response = await _jobPostService.GetJobPostsForAdmin(page, limit, status, title);
             return Ok(response);
         }
         catch (UnauthorizedAccessException ex)

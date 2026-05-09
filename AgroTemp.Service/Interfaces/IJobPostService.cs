@@ -40,7 +40,7 @@ namespace AgroTemp.Service.Interfaces
 
 
         Task<PaginatedJobDiscoveryResponse> SearchJobsAsync(JobSearchFilterRequest filter);
-        Task<PaginatedAdminJobPostsResponse> GetJobPostsForAdmin(int page = 1, int limit = 20);
+        Task<PaginatedAdminJobPostsResponse> GetJobPostsForAdmin(int page = 1, int limit = 20, JobPostStatus? status = null, string? title = null);
         Task<List<JobDiscoveryDTO>> GetNearbyJobsAsync(decimal latitude, decimal longitude, double maxDistanceKm = 20);
         Task<List<JobDiscoveryDTO>> GetJobsByDateAsync(string dateFilter);
         Task<List<JobDiscoveryDTO>> GetJobsBySkillAsync(List<string> skills);
