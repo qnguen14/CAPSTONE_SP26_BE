@@ -123,6 +123,14 @@ public class AgroTempDbContext : DbContext
             .HasForeignKey(jp => jp.FarmerId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Configure Farm-JobPost: RESTRICT to prevent silent cascade deletion.
+        // FarmService.DeleteFarm handles escrow refund + job post cleanup explicitly before deleting the farm.
+        modelBuilder.Entity<JobPost>()
+            .HasOne(jp => jp.Farm)
+            .WithMany()
+            .HasForeignKey(jp => jp.FarmId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Configure enum conversions for JobPost
         modelBuilder.Entity<JobPost>()
             .Property(jp => jp.JobTypeId)
