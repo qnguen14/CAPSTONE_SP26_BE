@@ -1079,13 +1079,102 @@ namespace AgroTemp.Service.Implements
             {
                 filter ??= new JobSearchFilterRequest();
 
+                // Set defaults
+                if (filter.JobTypeId.HasValue && filter.JobTypeId.Value <= 0) filter.JobTypeId = null;
+                if (filter.MaxDistanceKm.HasValue && filter.MaxDistanceKm.Value <= 0) filter.MaxDistanceKm = null;
+                if (filter.MinWageAmount.HasValue && filter.MinWageAmount.Value <= 0) filter.MinWageAmount = null;
+                if (filter.MaxWageAmount.HasValue && filter.MaxWageAmount.Value <= 0) filter.MaxWageAmount = null;
+                if (filter.JobCategoryId.HasValue && filter.JobCategoryId.Value == Guid.Empty) filter.JobCategoryId = null;
+
+                if (!string.IsNullOrWhiteSpace(filter.SearchKeyword) &&
+                    string.Equals(filter.SearchKeyword.Trim(), "string", StringComparison.OrdinalIgnoreCase))
+                {
+                    filter.SearchKeyword = null;
+                }
+
+                if (!string.IsNullOrWhiteSpace(filter.DateFilter) &&
+                    string.Equals(filter.DateFilter.Trim(), "string", StringComparison.OrdinalIgnoreCase))
+                {
+                    filter.DateFilter = null;
+                }
+
+                if (!string.IsNullOrWhiteSpace(filter.DurationType) &&
+                    string.Equals(filter.DurationType.Trim(), "string", StringComparison.OrdinalIgnoreCase))
+                {
+                    filter.DurationType = null;
+                }
+
+                if (!string.IsNullOrWhiteSpace(filter.PaymentMethod) &&
+                    string.Equals(filter.PaymentMethod.Trim(), "string", StringComparison.OrdinalIgnoreCase))
+                {
+                    filter.PaymentMethod = null;
+                }
+
+                if (!string.IsNullOrWhiteSpace(filter.SortBy) &&
+                    string.Equals(filter.SortBy.Trim(), "string", StringComparison.OrdinalIgnoreCase))
+                {
+                    filter.SortBy = "distance";
+                }
+
+                if (filter.RequiredSkills != null)
+                {
+                    filter.RequiredSkills = filter.RequiredSkills
+                        .Where(s => !string.IsNullOrWhiteSpace(s) && !string.Equals(s.Trim(), "string", StringComparison.OrdinalIgnoreCase))
+                        .Select(s => s.Trim())
+                        .ToList();
+
+                    if (!filter.RequiredSkills.Any())
+                    {
+                        filter.RequiredSkills = null;
+                    }
+                }
+
+                // Set placeholder payload
+                var isSwaggerPlaceholderPayload =
+                    !filter.JobTypeId.HasValue &&
+                    !filter.MaxDistanceKm.HasValue &&
+                    !filter.MinWageAmount.HasValue &&
+                    !filter.MaxWageAmount.HasValue &&
+                    filter.RequiredSkills == null &&
+                    string.IsNullOrWhiteSpace(filter.SearchKeyword) &&
+                    string.IsNullOrWhiteSpace(filter.DateFilter) &&
+                    string.IsNullOrWhiteSpace(filter.DurationType) &&
+                    string.IsNullOrWhiteSpace(filter.PaymentMethod) &&
+                    filter.StartDateFrom.HasValue &&
+                    filter.StartDateTo.HasValue &&
+                    filter.StartDateFrom.Value == filter.StartDateTo.Value;
+
+                if (isSwaggerPlaceholderPayload)
+                {
+                    filter.StartDateFrom = null;
+                    filter.StartDateTo = null;
+                    filter.JobCategoryId = null;
+                    filter.OnlyUrgent = null;
+                }
+
+                var hasAnyExplicitFilter =
+                    (filter.WorkerLatitude.HasValue && filter.WorkerLatitude.Value != 0) ||
+                    (filter.WorkerLongitude.HasValue && filter.WorkerLongitude.Value != 0) ||
+                    (filter.MaxDistanceKm.HasValue && filter.MaxDistanceKm.Value > 0) ||
+                    filter.MinWageAmount.HasValue ||
+                    filter.MaxWageAmount.HasValue ||
+                    filter.JobTypeId.HasValue ||
+                    filter.JobCategoryId.HasValue ||
+                    !string.IsNullOrWhiteSpace(filter.SearchKeyword) ||
+                    (filter.RequiredSkills?.Any() == true) ||
+                    !string.IsNullOrWhiteSpace(filter.DateFilter) ||
+                    filter.StartDateFrom.HasValue ||
+                    filter.StartDateTo.HasValue ||
+                    !string.IsNullOrWhiteSpace(filter.DurationType) ||
+                    (filter.OnlyUrgent.HasValue && filter.OnlyUrgent.Value);
+
                 Worker? currentWorker = null;
                 filter.PageNumber = filter.PageNumber < 1 ? 1 : filter.PageNumber;
                 filter.PageSize = filter.PageSize < 1 ? 10 : Math.Min(filter.PageSize, 100); // Min 1, max 100 items per page
                 var skip = (filter.PageNumber - 1) * filter.PageSize;
 
                 var currentUserId = GetCurrentUserId();
-                if (currentUserId != Guid.Empty)
+                if (hasAnyExplicitFilter && currentUserId != Guid.Empty)
                 {
                     currentWorker = await _unitOfWork.GetRepository<Worker>()
                         .FirstOrDefaultAsync(predicate: w => w.UserId == currentUserId);
@@ -1170,7 +1259,7 @@ namespace AgroTemp.Service.Implements
                     filter.WorkerLongitude.HasValue &&
                     (filter.WorkerLatitude.Value != 0 || filter.WorkerLongitude.Value != 0);
 
-                if (!hasFinalCoordinates && currentWorker != null && !string.IsNullOrWhiteSpace(currentWorker.PrimaryLocation))
+                if (hasAnyExplicitFilter && !hasFinalCoordinates && currentWorker != null && !string.IsNullOrWhiteSpace(currentWorker.PrimaryLocation))
                 {
                     var primaryLocation = currentWorker.PrimaryLocation.Trim();
                     filtered = filtered
