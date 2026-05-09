@@ -1,4 +1,5 @@
 using AgroTemp.Domain.DTO.DisputeReport;
+using AgroTemp.Domain.Metadata;
 
 namespace AgroTemp.Service.Interfaces;
 
@@ -15,8 +16,10 @@ public interface IDisputeReportService
     Task<DisputeReportDTO?> ResolveDisputeAsync(Guid id, Guid adminUserId, ResolveDisputeRequest request);
     Task<List<DisputeReportDTO>> GetMyDisputesAsync(Guid currentUserId);
 
+    // Filter with pagination
+    Task<PaginatedDisputeResponse<DisputeReportDTO>> FilterDisputesAsync(FilterDisputeRequest filterRequest);
+
     // Comments
     Task<List<DisputeReportCommentDTO>> GetDisputeCommentsAsync(Guid disputeId, Guid currentUserId, bool isAdmin);
     Task<DisputeReportCommentDTO> AddDisputeCommentAsync(Guid disputeId, Guid currentUserId, bool isAdmin, CreateDisputeReportCommentRequest request);
 }
-    
