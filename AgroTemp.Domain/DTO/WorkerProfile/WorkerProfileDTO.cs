@@ -8,6 +8,7 @@ public class WorkerProfileDTO
     public Guid UserId { get; set; }
     public bool IsActive { get; set; }
     public int WarningCount { get; set; }
+    public DateTime LastWarnedAt { get; set; }
     public string FullName { get; set; }
     public string Date_of_birth { get; set; }
     public string PrimaryLocation { get; set; }

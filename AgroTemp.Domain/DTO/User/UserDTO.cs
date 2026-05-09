@@ -13,5 +13,6 @@ public class UserDTO
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }
     public int WarningCount { get; set; }
+    public DateTime LastWarnedAt { get; set; }
     public bool IsVerified { get; set; }
 }
