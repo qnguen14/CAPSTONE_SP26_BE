@@ -15,10 +15,7 @@ namespace AgroTemp.Domain.DTO.Job.JobPost
         public string? SearchKeyword { get; set; }
         public List<string>? RequiredSkills { get; set; }
         public string? DateFilter { get; set; }
-        public DateTime? StartDateFrom { get; set; }
-        public DateTime? StartDateTo { get; set; }
         public string? DurationType { get; set; }
-        public string? PaymentMethod { get; set; }
         public bool? OnlyUrgent { get; set; }
         public decimal? MinWorkerRating { get; set; }
         public int PageNumber { get; set; } = 1;

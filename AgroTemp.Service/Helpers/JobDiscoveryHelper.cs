@@ -98,17 +98,6 @@ namespace AgroTemp.Service.Helpers
                 }
             }
 
-            // Filter by custom date range
-            if (filter.StartDateFrom.HasValue)
-            {
-                filtered = filtered.Where(jp => jp.StartDate?.ToDateTime(TimeOnly.MinValue) >= filter.StartDateFrom.Value).ToList();
-            }
-
-            if (filter.StartDateTo.HasValue)
-            {
-                filtered = filtered.Where(jp => jp.StartDate?.ToDateTime(TimeOnly.MinValue) <= filter.StartDateTo.Value).ToList();
-            }
-
             // Filter by duration
             if (!string.IsNullOrWhiteSpace(filter.DurationType))
             {
