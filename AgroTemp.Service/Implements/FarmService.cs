@@ -289,11 +289,7 @@ public class FarmService : BaseService<Farm>, IFarmService
             var jobPosts = await _unitOfWork.GetRepository<JobPost>()
                 .GetListAsync(predicate: jp => jp.FarmId == id);
 
-            // 2. Hard block: cannot delete farm if any job is actively running with workers
-            var hasActiveJobs = jobPosts.Any(jp =>
-                jp.StatusId == (int)JobPostStatus.InProgress);
-
-            if (hasActiveJobs)
+            if (jobPosts.Any())
                 throw new Exception(
                     "Cannot delete this farm because it has job posts currently in progress. " +
                     "Please wait for all active jobs to complete or cancel them first.");
