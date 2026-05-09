@@ -15,17 +15,20 @@ public class FarmService : BaseService<Farm>, IFarmService
 {
     private readonly IMapperlyMapper _mapper;
     private readonly ICloudinaryService _cloudinaryService;
+    private readonly IWalletService _walletService;
 
     public FarmService(
         IUnitOfWork<AgroTempDbContext> unitOfWork,
         IHttpContextAccessor httpContextAccessor,
         IMapperlyMapper mapper,
-        ICloudinaryService cloudinaryService) : base(unitOfWork, httpContextAccessor, mapper)
+        ICloudinaryService cloudinaryService,
+        IWalletService walletService) : base(unitOfWork, httpContextAccessor, mapper)
     {
         _unitOfWork = unitOfWork;
         _httpContextAccessor = httpContextAccessor;
         _mapper = mapper;
         _cloudinaryService = cloudinaryService;
+        _walletService = walletService;
     }
 
     public async Task<List<FarmDTO>> GetFarmByFarmer(Guid farmerProfileId)
@@ -277,14 +280,72 @@ public class FarmService : BaseService<Farm>, IFarmService
                 .FirstOrDefaultAsync(predicate: f => f.Id == id);
 
             if (farm == null)
-            {
                 throw new Exception("Farm not found");
-            }
 
             if (farm.FarmerId != farmerProfileId)
-            {
                 throw new Exception("You can only delete your own farms");
+
+            // 1. Load all job posts belonging to this farm
+            var jobPosts = await _unitOfWork.GetRepository<JobPost>()
+                .GetListAsync(predicate: jp => jp.FarmId == id);
+
+            // 2. Hard block: cannot delete farm if any job is actively running with workers
+            var hasActiveJobs = jobPosts.Any(jp =>
+                jp.StatusId == (int)JobPostStatus.InProgress);
+
+            if (hasActiveJobs)
+                throw new Exception(
+                    "Cannot delete this farm because it has job posts currently in progress. " +
+                    "Please wait for all active jobs to complete or cancel them first.");
+
+            // 3. Resolve farmer's UserId for wallet operations
+            var farmer = await _unitOfWork.GetRepository<Farmer>()
+                .FirstOrDefaultAsync(predicate: f => f.Id == farmerProfileId);
+
+            if (farmer == null)
+                throw new Exception("Farmer profile not found");
+
+            // 4. For each job post that still has locked escrow, refund it before cancellation
+            var jobsNeedingCleanup = jobPosts.Where(jp =>
+                jp.StatusId == (int)JobPostStatus.Published ||
+                jp.StatusId == (int)JobPostStatus.Draft).ToList();
+
+            foreach (var jobPost in jobsNeedingCleanup)
+            {
+
+                var totalEscrowForPost = jobPost.WageAmount * jobPost.WorkersNeeded;
+
+                if (totalEscrowForPost > 0)
+                {
+                    await _walletService.RefundLockedAmountForJobPostAsync(
+                        farmerUserId: farmer.UserId,
+                        jobPostId: jobPost.Id,
+                        amount: totalEscrowForPost);
+                }
+
+                jobPost.StatusId = (int)JobPostStatus.Cancelled;
+                jobPost.UpdatedAt = DateTime.UtcNow;
+                _unitOfWork.GetRepository<JobPost>().UpdateAsync(jobPost);
             }
+
+            if (jobsNeedingCleanup.Any())
+                await _unitOfWork.SaveChangesAsync();
+
+
+            var terminalJobPosts = jobPosts.Where(jp =>
+                jp.StatusId == (int)JobPostStatus.Cancelled ||
+                jp.StatusId == (int)JobPostStatus.Completed ||
+                jp.StatusId == (int)JobPostStatus.Closed).ToList();
+
+            var allFarmJobPosts = await _unitOfWork.GetRepository<JobPost>()
+                .GetListAsync(predicate: jp => jp.FarmId == id);
+
+            foreach (var jp in allFarmJobPosts)
+            {
+                _unitOfWork.GetRepository<JobPost>().DeleteAsync(jp);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
 
             _unitOfWork.GetRepository<Farm>().DeleteAsync(farm);
             await _unitOfWork.SaveChangesAsync();
