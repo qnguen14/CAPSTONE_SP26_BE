@@ -230,12 +230,14 @@ namespace AgroTemp.Service.Implements
 
             if (farmer.User.WarningCount > 3)
             {
-                throw new UnauthorizedAccessException("Farmer over warning dispute");
+                throw new UnauthorizedAccessException("Bạn không thể đăng bài vì bị tố cáo quá số lần quy định");
             }
 
             if (DateTime.Now <= farmer.User.LastWarnedAt?.AddDays(farmer.User.WarningCount * 3))
             {
-                throw new UnauthorizedAccessException($"Farmer can't create job post before {farmer.User.LastWarnedAt?.AddDays(farmer.User.WarningCount * 3)}");
+                throw new UnauthorizedAccessException(
+                    $"Bạn không thể tạo bài đăng công việc trước ngày {farmer.User.LastWarnedAt?.AddDays(farmer.User.WarningCount * 3)} do bị tố cáo"
+                );
             }
 
             var requestedSkillIds = request.SkillIds?

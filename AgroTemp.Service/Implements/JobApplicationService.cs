@@ -264,12 +264,12 @@ namespace AgroTemp.Service.Implements
 
                 if (worker.User.WarningCount > 3)
                 {
-                    throw new UnauthorizedAccessException("Worker over warning dispute");
+                    throw new UnauthorizedAccessException("Bạn không thể ứng tuyển do bị tố cáo quá số lần quy định.");
                 }
 
                 if (DateTime.UtcNow <= worker.User.LastWarnedAt?.AddDays(worker.User.WarningCount * 3))
                 {
-                    throw new UnauthorizedAccessException($"Worker can't apply job post before {worker.User.LastWarnedAt?.AddDays(worker.User.WarningCount * 3)}");
+                    throw new UnauthorizedAccessException($"Bạn không thể ứng tuyển trước ngày {worker.User.LastWarnedAt?.AddDays(worker.User.WarningCount * 3)} do bị tố cáo");
                 }
 
                 var jobApplication = _mapper.CreateJobApplicationRequestToJobApplication(request);
